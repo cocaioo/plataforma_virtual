@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Diagnóstico Situacional da UBS</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="container">
+    <!-- CABEÇALHO -->
+    <header class="header">
+      <h1>Diagnóstico Situacional da UBS</h1>
+      <p class="subtitle">
+        Formulário para registro de dados do relatório situacional da Unidade Básica de Saúde
+      </p>
+    </header>
+
+    <!-- SEÇÃO 1 – INFORMAÇÕES GERAIS DA UBS -->
+    <section class="card">
+      <h2>Informações gerais da UBS</h2>
+
+      <div class="field-grid">
+        <div class="field">
+          <label for="nomeUBS">Nome da UBS *</label>
+          <input
+            id="nomeUBS"
+            type="text"
+            placeholder="Ex: ESF 41 - Adalto Parentes Sampaio"
+          />
+        </div>
+
+        <div class="field">
+          <label for="cnes">CNES</label>
+          <input id="cnes" type="text" placeholder="Ex: 0000000" />
+        </div>
+
+        <div class="field">
+          <label for="dataInauguracao">Data de inauguração</label>
+          <input id="dataInauguracao" type="date" />
+        </div>
+
+        <div class="field">
+          <label for="dataReforma">Data da última reforma</label>
+          <input id="dataReforma" type="date" />
+        </div>
+
+        <div class="field">
+          <label for="areaAtuacao">Área de atuação (bairros/localidades)</label>
+          <input
+            id="areaAtuacao"
+            type="text"
+            placeholder="Ex: Alto Santa Maria, Dirceu Arcoverde"
+          />
+        </div>
+
+        <div class="field">
+          <label for="numHabitantes">Número de habitantes ativos</label>
+          <input id="numHabitantes" type="number" placeholder="Ex: 4500" />
+        </div>
+
+        <div class="field">
+          <label for="numMicroareas">Número de microáreas</label>
+          <input id="numMicroareas" type="number" placeholder="Ex: 8" />
+        </div>
+
+        <div class="field">
+          <label for="numFamilias">Número de famílias cadastradas</label>
+          <input id="numFamilias" type="number" placeholder="Ex: 900" />
+        </div>
+
+        <div class="field">
+          <label for="numDomicilios">Número de domicílios</label>
+          <input id="numDomicilios" type="number" placeholder="Ex: 2000" />
+        </div>
+
+        <div class="field">
+          <label for="domiciliosRurais">Domicílios rurais</label>
+          <input id="domiciliosRurais" type="number" placeholder="Ex: 15" />
+        </div>
+
+        <div class="field">
+          <label for="domiciliosUrbanos">Domicílios urbanos</label>
+          <input id="domiciliosUrbanos" type="number" placeholder="Ex: 1985" />
+        </div>
+
+        <div class="field">
+          <label for="periodoReferencia">Período de referência *</label>
+          <input
+            id="periodoReferencia"
+            type="text"
+            placeholder="Ex: Junho/2025, 2025 Q1"
+          />
+        </div>
+
+        <div class="field full-width">
+          <label for="observacoesGerais">Observações gerais</label>
+          <textarea
+            id="observacoesGerais"
+            rows="3"
+            placeholder="Informações adicionais sobre a UBS..."
+          ></textarea>
+        </div>
+      </div>
+    </section>
+
+    <!-- SEÇÃO 2 – SERVIÇOS OFERECIDOS -->
+    <section class="card">
+      <h2>Serviços oferecidos pela UBS</h2>
+      <p class="section-help">
+        Marque os serviços que a UBS oferece atualmente à população.
+      </p>
+
+      <div class="checkbox-grid">
+        <label class="checkbox-item">
+          <input type="checkbox" />
+          <span>Pré-natal</span>
+        </label>
+        <label class="checkbox-item">
+          <input type="checkbox" />
+          <span>Coleta de PCCU</span>
+        </label>
+        <label class="checkbox-item">
+          <input type="checkbox" />
+          <span>Consultas médicas</span>
+        </label>
+        <label class="checkbox-item">
+          <input type="checkbox" />
+          <span>Sorologias</span>
+        </label>
+        <label class="checkbox-item">
+          <input type="checkbox" />
+          <span>Testes rápidos de IST</span>
+        </label>
+        <label class="checkbox-item">
+          <input type="checkbox" />
+          <span>Teste do pezinho</span>
+        </label>
+        <label class="checkbox-item">
+          <input type="checkbox" />
+          <span>Visitas domiciliares</span>
+        </label>
+        <label class="checkbox-item">
+          <input type="checkbox" />
+          <span>Programa Bolsa Família</span>
+        </label>
+        <label class="checkbox-item">
+          <input type="checkbox" />
+          <span>Grupo de hábitos saudáveis</span>
+        </label>
+        <label class="checkbox-item">
+          <input type="checkbox" />
+          <span>PSE (Programa Saúde na Escola)</span>
+        </label>
+        <label class="checkbox-item">
+          <input type="checkbox" />
+          <span>Vacinação</span>
+        </label>
+        <label class="checkbox-item">
+          <input type="checkbox" />
+          <span>Saúde da criança</span>
+        </label>
+        <label class="checkbox-item">
+          <input type="checkbox" />
+          <span>Hipertensão e diabetes</span>
+        </label>
+        <label class="checkbox-item">
+          <input type="checkbox" />
+          <span>Saúde do homem</span>
+        </label>
+        <label class="checkbox-item">
+          <input type="checkbox" />
+          <span>Saúde da mulher</span>
+        </label>
+        <label class="checkbox-item">
+          <input type="checkbox" />
+          <span>Saúde do idoso</span>
+        </label>
+        <label class="checkbox-item">
+          <input type="checkbox" />
+          <span>Saúde mental</span>
+        </label>
+        <label class="checkbox-item">
+          <input type="checkbox" />
+          <span>Programa de tabagismo</span>
+        </label>
+        <label class="checkbox-item">
+          <input type="checkbox" />
+          <span>Vigilância epidemiológica</span>
+        </label>
+        <label class="checkbox-item">
+          <input type="checkbox" />
+          <span>Atividades coletivas e preventivas</span>
+        </label>
+      </div>
+
+      <div class="field-grid" style="margin-top: 16px">
+        <div class="field full-width">
+          <label for="outrosServicos">Outros serviços (especifique)</label>
+          <textarea
+            id="outrosServicos"
+            rows="2"
+            placeholder="Descreva outros serviços não listados acima..."
+          ></textarea>
+        </div>
+      </div>
+    </section>
+
+    <!-- SEÇÃO 3 – INDICADORES EPIDEMIOLÓGICOS (DINÂMICOS) -->
+    <section class="card">
+      <h2>Indicadores epidemiológicos</h2>
+      <p class="section-help">
+        Consulte os indicadores já cadastrados e adicione ou atualize indicadores conforme a
+        necessidade da equipe.
+      </p>
+
+      <!-- LISTA DE INDICADORES (VISUAL) -->
+      <div class="indicator-list">
+        <div class="indicator-item">
+          <div class="indicator-main">
+            <span class="indicator-name">Hipertensos cadastrados</span>
+            <span class="indicator-type">Tipo: Número absoluto</span>
+          </div>
+          <div class="indicator-meta">
+            <span class="indicator-value">Último valor: 510</span>
+            <span class="indicator-period">Período: 2025 Q1</span>
+            <span class="indicator-precision">Precisão: Preciso</span>
+          </div>
+          <div class="indicator-actions-inline">
+            <button class="btn-icon btn-icon-danger">Excluir</button>
+          </div>
+        </div>
+
+        <div class="indicator-item">
+          <div class="indicator-main">
+            <span class="indicator-name">Diabéticos cadastrados</span>
+            <span class="indicator-type">Tipo: Número absoluto</span>
+          </div>
+          <div class="indicator-meta">
+            <span class="indicator-value">Último valor: 120</span>
+            <span class="indicator-period">Período: 2025 Q1</span>
+            <span class="indicator-precision">Precisão: Aproximado</span>
+          </div>
+          <div class="indicator-actions-inline">
+            <button class="btn-icon btn-icon-danger">Excluir</button>
+          </div>
+        </div>
+
+        <div class="indicator-item">
+          <div class="indicator-main">
+            <span class="indicator-name">Gestantes acompanhadas</span>
+            <span class="indicator-type">Tipo: Número absoluto</span>
+          </div>
+          <div class="indicator-meta">
+            <span class="indicator-value">Último valor: 23</span>
+            <span class="indicator-period">Período: 2025 Q1</span>
+            <span class="indicator-precision">Precisão: Preciso</span>
+          </div>
+          <div class="indicator-actions-inline">
+            <button class="btn-icon btn-icon-danger">Excluir</button>
+          </div>
+        </div>
+
+        <button class="btn btn-ghost indicator-add-inline">
+          + Ver todos os indicadores cadastrados
+        </button>
+      </div>
+
+      <hr class="section-divider" />
+
+      <!-- FORM PARA ADICIONAR / ATUALIZAR INDICADOR -->
+      <div class="indicator-form">
+        <h3>Adicionar ou atualizar indicador</h3>
+        <p class="section-help">
+          Preencha abaixo para criar um novo indicador ou atualizar o valor de um indicador já
+          existente. Todos os indicadores são numéricos; informe também se o valor é preciso ou
+          aproximado.
+        </p>
+
+        <div class="field-grid">
+          <div class="field">
+            <label for="indicatorName">Nome do indicador *</label>
+            <input
+              id="indicatorName"
+              type="text"
+              placeholder="Ex: Hipertensos cadastrados, Casos de tuberculose"
+            />
+          </div>
+
+          <div class="field">
+            <label for="indicatorType">Tipo de dado *</label>
+            <select id="indicatorType">
+              <option>Selecione</option>
+              <option>Número absoluto</option>
+              <option>Percentual (%)</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="indicatorPrecision">Grau de precisão do valor *</label>
+            <select id="indicatorPrecision">
+              <option>Selecione</option>
+              <option>Preciso</option>
+              <option>Aproximado</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="indicatorValue">Valor *</label>
+            <input
+              id="indicatorValue"
+              type="number"
+              step="0.01"
+              placeholder="Ex: 510 ou 76,5"
+            />
+          </div>
+
+          <div class="field">
+            <label for="indicatorPeriod">Período de referência *</label>
+            <input
+              id="indicatorPeriod"
+              type="text"
+              placeholder="Ex: 2025 Q1, Março/2025"
+            />
+          </div>
+
+          <div class="field full-width">
+            <label for="indicatorNotes">Observações (opcional)</label>
+            <textarea
+              id="indicatorNotes"
+              rows="2"
+              placeholder="Ex: fonte do dado, comentários sobre o cálculo, se é estimativa baseada em amostra, etc."
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="indicator-actions">
+          <button class="btn btn-secondary">Limpar</button>
+          <button class="btn btn-primary">Salvar indicador</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- SEÇÃO 4 – PROFISSIONAIS DA EQUIPE (DINÂMICOS) -->
+    <section class="card">
+      <h2>Profissionais da equipe</h2>
+      <p class="section-help">
+        Consulte os profissionais já cadastrados e adicione ou atualize conforme a composição da
+        equipe da UBS.
+      </p>
+
+      <!-- LISTA DE PROFISSIONAIS (VISUAL) -->
+      <div class="professional-list">
+        <div class="professional-item">
+          <div class="professional-main">
+            <span class="professional-role">Agente Comunitário de Saúde (ACS)</span>
+            <span class="professional-qty">Quantidade: 8</span>
+          </div>
+          <div class="professional-meta">
+            <span class="professional-type">Vínculo: Efetivo</span>
+            <span class="professional-notes">Observações: Curso Saúde com Agente.</span>
+          </div>
+          <div class="professional-actions-inline">
+            <button class="btn-icon btn-icon-danger">Excluir</button>
+          </div>
+        </div>
+
+        <div class="professional-item">
+          <div class="professional-main">
+            <span class="professional-role">Enfermeiro da Família</span>
+            <span class="professional-qty">Quantidade: 1</span>
+          </div>
+          <div class="professional-meta">
+            <span class="professional-type">Vínculo: Efetivo</span>
+            <span class="professional-notes">Observações: Também gestor(a) da UBS.</span>
+          </div>
+          <div class="professional-actions-inline">
+            <button class="btn-icon btn-icon-danger">Excluir</button>
+          </div>
+        </div>
+
+        <div class="professional-item">
+          <div class="professional-main">
+            <span class="professional-role">Equipe de Residência (UFDPar)</span>
+            <span class="professional-qty">Quantidade: 4</span>
+          </div>
+          <div class="professional-meta">
+            <span class="professional-type">Vínculo: Residência</span>
+            <span class="professional-notes">
+              Observações: 1 enfermeiro, 1 fisioterapeuta, 1 psicólogo, 1 farmacêutico.
+            </span>
+          </div>
+          <div class="professional-actions-inline">
+            <button class="btn-icon btn-icon-danger">Excluir</button>
+          </div>
+        </div>
+
+        <button class="btn btn-ghost professional-add-inline">
+          + Ver todos os profissionais cadastrados
+        </button>
+      </div>
+
+      <hr class="section-divider" />
+
+      <!-- FORM PARA ADICIONAR / ATUALIZAR PROFISSIONAL -->
+      <div class="professional-form">
+        <h3>Adicionar ou atualizar profissional</h3>
+        <p class="section-help">
+          Preencha abaixo para registrar um tipo de profissional da equipe (cargo/função) e a
+          quantidade correspondente.
+        </p>
+
+        <div class="field-grid">
+          <div class="field">
+            <label for="profRole">Cargo / função *</label>
+            <input
+              id="profRole"
+              type="text"
+              placeholder="Ex: Enfermeiro da Família, ACS, Terapeuta Ocupacional"
+            />
+          </div>
+
+          <div class="field">
+            <label for="profQty">Quantidade *</label>
+            <input id="profQty" type="number" min="0" placeholder="Ex: 2" />
+          </div>
+
+          <div class="field">
+            <label for="profType">Tipo de vínculo</label>
+            <select id="profType">
+              <option>Selecione</option>
+              <option>Efetivo</option>
+              <option>Contratado</option>
+              <option>Residente</option>
+              <option>Estagiário</option>
+              <option>Outro</option>
+            </select>
+          </div>
+
+          <div class="field full-width">
+            <label for="profNotes">Observações (opcional)</label>
+            <textarea
+              id="profNotes"
+              rows="2"
+              placeholder="Ex: especificar categorias (1 enfermeiro, 1 fisioterapeuta...), carga horária, programa de residência, etc."
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="indicator-actions">
+          <button class="btn btn-secondary">Limpar</button>
+          <button class="btn btn-primary">Salvar profissional</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- SEÇÃO 5 – TERRITÓRIO E DETERMINANTES SOCIAIS -->
+    <section class="card">
+      <h2>Território e determinantes sociais</h2>
+
+      <div class="field-grid">
+        <div class="field full-width">
+          <label for="descricaoTerritorio">Descrição do território</label>
+          <textarea
+            id="descricaoTerritorio"
+            rows="4"
+            placeholder="Descreva características do território: perfil socioeconômico, infraestrutura urbana, saneamento, áreas de risco, etc."
+          ></textarea>
+        </div>
+
+        <div class="field full-width">
+          <label for="potencialidades">Potencialidades do território</label>
+          <textarea
+            id="potencialidades"
+            rows="3"
+            placeholder="Ex: presença de igrejas, escolas, grupos comunitários, empresas, programas de residência, segurança 24h..."
+          ></textarea>
+        </div>
+
+        <div class="field full-width">
+          <label for="riscos">Riscos e vulnerabilidades</label>
+          <textarea
+            id="riscos"
+            rows="3"
+            placeholder="Ex: aterro controlado, áreas de alagamento, áreas desertas com assaltos frequentes, acúmulo de água, falta de coleta de lixo, terrenos baldios, vegetação densa, doenças relacionadas (leishmaniose, arboviroses, verminoses)..."
+          ></textarea>
+        </div>
+      </div>
+    </section>
+
+    <!-- SEÇÃO 6 – PROBLEMAS E NECESSIDADES -->
+    <section class="card">
+      <h2>Problemas e necessidades da UBS</h2>
+
+      <div class="field-grid">
+        <div class="field full-width">
+          <label for="problemasIdentificados">Problemas identificados</label>
+          <textarea
+            id="problemasIdentificados"
+            rows="4"
+            placeholder="Ex: dificuldade em atingir metas do Previne Brasil por falta de equipamentos/estrutura, ausência de dentista, perda frequente de famílias no cadastro dos ACS, dificuldade de gestantes acessarem exames básicos, inconsistências de dados no PEC, sobrecarga de trabalho, computadores insuficientes, falta de salas equipadas, dificuldade para conseguir consultas com especialistas, lei municipal impondo limite mínimo de atendimentos (prejudicando qualidade), falta de insumos, equipe e-Multi sobrecarregada, materiais de limpeza insuficientes, janelas danificadas, falta de mobiliário/ventilação nas salas, equipamentos danificados, falta de cadeiras/armários no auditório, falta de pias, paredes/tetos rachados, problemas elétricos, dificuldades dos ACS (EPIs inadequados, falta de uniformes, dificuldade na recepção das famílias), desvalorização dos profissionais, alta rotatividade de recepcionistas/atendentes de regulação, etc."
+          ></textarea>
+        </div>
+
+        <div class="field full-width">
+          <label for="necessidadesEquipamentos">
+            Necessidades de equipamentos e insumos
+          </label>
+          <textarea
+            id="necessidadesEquipamentos"
+            rows="4"
+            placeholder="Ex: dentista, conserto de janelas, equipamentos, ar-condicionado, ventiladores, banqueta para PCCU, macas, degraus, recipientes de desinfecção, móveis de cozinha, mesas de escritório, lâmpadas, extintores de incêndio, cadeiras de recepção, cadeiras individuais, lixeiras, cadeiras de escritório, materiais de escritório, materiais de limpeza, monitor de PA pediátrico, ferramentas de curativos, computadores, estabilizadores, materiais de manutenção, arquivo, otoscópio..."
+          ></textarea>
+        </div>
+
+        <div class="field full-width">
+          <label for="necessidadesACS">Necessidades específicas dos ACS</label>
+          <textarea
+            id="necessidadesACS"
+            rows="3"
+            placeholder="Ex: EPIs, uniformes, balanças, livros, guarda-chuvas, materiais de escritório, monitores digitais de PA/glicemia..."
+          ></textarea>
+        </div>
+
+        <div class="field full-width">
+          <label for="necessidadesInfraestrutura">
+            Necessidades de infraestrutura e manutenção
+          </label>
+          <textarea
+            id="necessidadesInfraestrutura"
+            rows="3"
+            placeholder="Ex: poda de árvores, coleta de lixo, capina, controle de pragas, limpeza de caixa d'água..."
+          ></textarea>
+        </div>
+      </div>
+    </section>
+
+    <!-- RODAPÉ COM BOTÕES DE AÇÃO -->
+    <footer class="form-footer">
+      <button class="btn btn-secondary">Salvar rascunho</button>
+      <button class="btn btn-primary">Enviar diagnóstico</button>
+    </footer>
+  </div>
+</body>
+</html>
