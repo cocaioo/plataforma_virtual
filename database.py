@@ -5,7 +5,7 @@ from sqlalchemy.orm import sessionmaker
 
 # Defina a URL do Postgres em DATABASE_URL, ex:
 # postgresql+psycopg2://usuario:senha@host:5432/nome_do_banco
-DATABASE_URL = os.getenv("DATABASE_URL")
+DATABASE_URL = os.getenv("postgresql+psycopg2://postgres:admin@localhost:5432/plataformavirtual")
 if not DATABASE_URL:
     raise RuntimeError(
         "Configure a variavel de ambiente DATABASE_URL, ex: "
