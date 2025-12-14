@@ -1,24 +1,42 @@
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import sessionmaker, declarative_base
 import os
+from dotenv import load_dotenv
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+load_dotenv()
 
-# Defina a URL do Postgres em DATABASE_URL, ex:
-# postgresql+psycopg2://usuario:senha@host:5432/nome_do_banco
-DATABASE_URL = os.getenv("postgresql+psycopg2://postgres:admin@localhost:5432/plataformavirtual")
-if not DATABASE_URL:
-    raise RuntimeError(
-        "Configure a variavel de ambiente DATABASE_URL, ex: "
-        "postgresql+psycopg2://user:pass@localhost:5432/dbname"
-    )
+DATABASE_USER = os.getenv("DB_USER", "admin")
+DATABASE_PASSWORD = os.getenv("DB_PASSWORD", "admin")
+DATABASE_HOST = os.getenv("DB_HOST", "127.0.0.1")
+DATABASE_PORT = os.getenv("DB_PORT", "5432")
+DATABASE_NAME = os.getenv("DB_NAME", "my_db")
 
-engine = create_engine(DATABASE_URL, future=True, echo=False)
-SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False, future=True)
+# Use 'postgresql+asyncpg://' em vez de 'postgresql://'
+DATABASE_URL = f"postgresql+asyncpg://{DATABASE_USER}:{DATABASE_PASSWORD}@{DATABASE_HOST}:{DATABASE_PORT}/{DATABASE_NAME}"
 
+# Engine async com asyncpg
+engine = create_async_engine(
+    DATABASE_URL,
+    echo=False,
+    future=True,
+    pool_pre_ping=True,
+)
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+# Session factory
+AsyncSessionLocal = sessionmaker(
+    engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+    autoflush=False,
+    autocommit=False,
+)
+
+Base = declarative_base()
+
+# Dependency para FastAPI
+async def get_db():
+    async with AsyncSessionLocal() as session:
+        try:
+            yield session
+        finally:
+            await session.close()
