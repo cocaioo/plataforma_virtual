@@ -29,7 +29,10 @@ export function Register() {
         cpf: form.cpf,
         senha: form.senha,
       });
-      setStatus({ loading: false, error: "", success: "Cadastro concluído! Verifique seu email." });
+      setStatus({ loading: false, error: "", success: "Cadastro concluído! Você já pode fazer login." });
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 2000);
     } catch (err) {
       setStatus({ loading: false, error: err.message, success: "" });
     }
@@ -55,7 +58,7 @@ export function Register() {
           <input name="cpf" value={form.cpf} onChange={onChange} required />
         </label>
         <label>
-          Senha
+          Senha (mínimo 8 caracteres, 1 maiúscula, 1 minúscula, 1 número)
           <input name="senha" type="password" value={form.senha} onChange={onChange} required />
         </label>
         <label>

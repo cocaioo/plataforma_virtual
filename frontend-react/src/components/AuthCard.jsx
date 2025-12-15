@@ -17,7 +17,10 @@ export function AuthCard() {
     }
     try {
       const data = await api.login({ email: form.email, senha: form.senha });
-      setStatus({ loading: false, error: "", success: `Bem-vindo, ${data.nome}!` });
+      setStatus({ loading: false, error: "", success: `Bem-vindo, ${data.user.nome}!` });
+      setTimeout(() => {
+        window.location.href = "/dashboard";
+      }, 1000);
     } catch (err) {
       setStatus({ loading: false, error: err.message, success: "" });
     }

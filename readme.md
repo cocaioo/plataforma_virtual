@@ -10,6 +10,8 @@ Protótipo de uma plataforma para apoiar a gestão da Atenção Primária à Sa�
 - **SQLAlchemy 2.0** - ORM async
 - **asyncpg** - Driver PostgreSQL assíncrono
 - **Python 3.13**
+- **JWT** - Autenticação com tokens
+- **SlowAPI** - Rate limiting
 
 ### Frontend
 - **React 18**
@@ -45,13 +47,18 @@ cp .env.example .env
 
 Edite o arquivo `.env` com suas configurações:
 
-```
+```env
 DB_USER=postgres
 DB_PASSWORD=sua_senha
 DB_HOST=localhost
 DB_PORT=5432
 DB_NAME=plataforma_digital
+
+JWT_SECRET_KEY=sua-chave-secreta-super-forte-aqui
+JWT_EXPIRE_MINUTES=60
 ```
+
+**⚠️ IMPORTANTE**: Altere `JWT_SECRET_KEY` para uma chave forte e única em produção!
 
 ### 2. Backend (FastAPI)
 
@@ -121,10 +128,14 @@ plataforma_digital/
 ├── requirements.txt       # Dependências Python
 ├── .env                   # Variáveis de ambiente (criar a partir do .env.example)
 ├── .env.example           # Template de variáveis de ambiente
+├── SEGURANCA.md          # Documentação de segurança
 ├── models/               # Modelos SQLAlchemy
-│   └── auth_models.py
+│   └── auth_models.py    # Usuario, ProfissionalUbs, LoginAttempt
 ├── routes/               # Rotas da API
-│   └── auth_routes.py
+│   └── auth_routes.py    # Autenticação com JWT e rate limiting
+├── utils/                # Utilitários
+│   ├── jwt_handler.py    # Criação e verificação de JWT
+│   └── cpf_validator.py  # Validação completa de CPF
 └── frontend-react/       # Aplicação React
     ├── src/
     │   ├── components/
@@ -132,6 +143,19 @@ plataforma_digital/
     │   └── utils/
     └── package.json
 ```
+
+## Recursos de Segurança
+
+✅ **Rate Limiting** - Proteção contra força bruta e DDoS  
+✅ **JWT Tokens** - Autenticação segura com sessões  
+✅ **Login Attempt Logs** - Auditoria de tentativas de login  
+✅ **Account Lockout** - Bloqueio após 5 tentativas falhas (15 min)  
+✅ **Full CPF Validation** - Validação com dígitos verificadores  
+✅ **Password Hashing** - Bcrypt com salt  
+✅ **SQL Injection Protection** - ORM parametrizado  
+✅ **XSS Protection** - Validação de entrada  
+
+Veja [SEGURANCA.md](SEGURANCA.md) para detalhes completos.
 
 ## Funcionalidades Principais
 
@@ -160,7 +184,16 @@ plataforma_digital/
 psql -U postgres -d plataforma_digital
 ```
 
+### Ver logs de tentativas de login
+
+```sql
+SELECT * FROM login_attempts ORDER BY created_at DESC LIMIT 10;
+```
+
 ## Próximos Passos
 
 - Mapear fontes de dados e padrões de integração (ex.: CNES, e-SUS)
 - Desenhar telas iniciais para visualização de indicadores e fila de atendimentos
+- Implementar dashboard protegido com autenticação JWT
+- Adicionar refresh tokens para melhor UX
+- Configurar HTTPS para produção

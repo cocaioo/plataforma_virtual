@@ -1,8 +1,6 @@
-# ORM -> Escreve uma classe, como se fosse POO, e ele traduz para SQL
-from sqlalchemy import Column, String, Integer, Boolean, DateTime, ForeignKey, func
+from sqlalchemy import Column, String, Integer, Boolean, DateTime, ForeignKey, func, Text
 from database import Base
 
-# Criar classes/tabelas do BD
 class Usuario(Base):
     __tablename__ = "usuarios"
 
@@ -12,10 +10,11 @@ class Usuario(Base):
     senha = Column(String(255), nullable=False)
     cpf = Column(String(14), nullable=False, unique=True)
     ativo = Column(Boolean, default=True, nullable=False)
+    tentativas_login = Column(Integer, default=0, nullable=False)
+    bloqueado_ate = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
-#Gestor vai cadastrar o profissional da UBS
 class ProfissionalUbs(Base):
     __tablename__ = "profissionais"
 
@@ -27,7 +26,12 @@ class ProfissionalUbs(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
-# executa a criação dos metadados do seu banco -> cria de fato o banco de dados
-# Exemplo de uso (quando link_DB estiver preenchido):
-# if db is not None:
-#     base.metadata.create_all(db)
+class LoginAttempt(Base):
+    __tablename__ = "login_attempts"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    email = Column(String(200), nullable=False)
+    ip_address = Column(String(45), nullable=True)
+    sucesso = Column(Boolean, nullable=False)
+    motivo = Column(String(255), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
