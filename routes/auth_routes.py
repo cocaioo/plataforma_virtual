@@ -16,7 +16,8 @@ from slowapi.util import get_remote_address
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
 limiter = Limiter(key_func=get_remote_address)
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Usa pbkdf2_sha256 para evitar dependência direta do backend bcrypt
+pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 
 MAX_LOGIN_ATTEMPTS = 5
 LOCKOUT_DURATION_MINUTES = 15
