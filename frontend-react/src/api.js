@@ -1,5 +1,6 @@
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
+// Utilidades de autenticação: token JWT e usuário atual
 function getToken() {
   return localStorage.getItem("access_token");
 }
@@ -10,6 +11,29 @@ function setToken(token) {
 
 function removeToken() {
   localStorage.removeItem("access_token");
+}
+
+function setCurrentUser(user) {
+  if (!user) {
+    localStorage.removeItem("current_user");
+    return;
+  }
+  localStorage.setItem("current_user", JSON.stringify(user));
+}
+
+function getCurrentUser() {
+  const raw = localStorage.getItem("current_user");
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+function clearAuth() {
+  removeToken();
+  localStorage.removeItem("current_user");
 }
 
 async function request(path, { method = "GET", body, headers = {}, requiresAuth = false } = {}) {
@@ -35,7 +59,7 @@ async function request(path, { method = "GET", body, headers = {}, requiresAuth 
   
   if (!res.ok) {
     if (res.status === 401 && requiresAuth) {
-      removeToken();
+      clearAuth();
       window.location.href = "/";
     }
     const msg = data.detail || data.message || "Erro ao comunicar com o servidor";
@@ -51,17 +75,24 @@ export const api = {
     if (data.access_token) {
       setToken(data.access_token);
     }
+     if (data.user) {
+       // Papel básico definido exclusivamente pelo backend
+       const role = data.user.is_profissional ? "profissional" : "usuario";
+       setCurrentUser({ ...data.user, role });
+     }
     return data;
   },
   
   signUp: (payload) => request("/auth/register", { method: "POST", body: payload }),
   
   logout: () => {
-    removeToken();
+    clearAuth();
     window.location.href = "/";
   },
   
   getToken,
   setToken,
   removeToken,
+  getCurrentUser,
+  setCurrentUser,
 };

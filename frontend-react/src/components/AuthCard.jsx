@@ -17,7 +17,13 @@ export function AuthCard() {
     }
     try {
       const data = await api.login({ email: form.email, senha: form.senha });
-      setStatus({ loading: false, error: "", success: `Bem-vindo, ${data.user.nome}!` });
+      const userName = data.user?.nome || "";
+      const roleLabel = data.user?.is_profissional ? "Profissional da UBS" : "Usuário";
+      setStatus({
+        loading: false,
+        error: "",
+        success: `Bem-vindo, ${userName}! Você entrou como ${roleLabel}.`,
+      });
       setTimeout(() => {
         window.location.href = "/dashboard";
       }, 1000);
@@ -44,6 +50,10 @@ export function AuthCard() {
         {status.error && <p className="text-error">{status.error}</p>}
         {status.success && <p className="text-success">{status.success}</p>}
       </form>
+      <p className="muted" style={{ marginTop: "12px", fontSize: "13px" }}>
+        Seu perfil (Usuário ou Profissional da UBS) é definido automaticamente pelo cadastro.
+        Usuários comuns não têm acesso às áreas exclusivas de profissionais/gestores.
+      </p>
     </div>
   );
 }
