@@ -90,13 +90,13 @@ def verify_password(raw: str, hashed: str) -> bool:
 
 
 async def log_login_attempt(db: AsyncSession, email: str, ip_address: str, sucesso: bool, motivo: str = None):
-    attempt = LoginAttempt(
+    tentativa = LoginAttempt(
         email=email,
         ip_address=ip_address,
         sucesso=sucesso,
         motivo=motivo
     )
-    db.add(attempt)
+    db.add(tentativa)
     await db.commit()
 
 
@@ -131,29 +131,29 @@ async def reset_login_attempts(db: AsyncSession, user: Usuario):
 @auth_router.post("/register", response_model=UsuarioOut, status_code=status.HTTP_201_CREATED)
 @limiter.limit("5/minute")
 async def register_user(request: Request, payload: UsuarioCreate, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Usuario).filter(Usuario.email == payload.email))
-    if result.scalar_one_or_none():
+    resultado = await db.execute(select(Usuario).filter(Usuario.email == payload.email))
+    if resultado.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Email já cadastrado")
     
-    result = await db.execute(select(Usuario).filter(Usuario.cpf == payload.cpf))
-    if result.scalar_one_or_none():
+    resultado = await db.execute(select(Usuario).filter(Usuario.cpf == payload.cpf))
+    if resultado.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="CPF já cadastrado")
     
-    user = Usuario(
+    usuario = Usuario(
         nome=payload.nome,
         email=payload.email,
         senha=hash_password(payload.senha),
         cpf=payload.cpf
     )
-    db.add(user)
+    db.add(usuario)
     await db.commit()
-    await db.refresh(user)
+    await db.refresh(usuario)
     
     return UsuarioOut(
-        id=user.id,
-        nome=user.nome,
-        email=user.email,
-        cpf=user.cpf,
+        id=usuario.id,
+        nome=usuario.nome,
+        email=usuario.email,
+        cpf=usuario.cpf,
         is_profissional=False
     )
 
@@ -161,31 +161,31 @@ async def register_user(request: Request, payload: UsuarioCreate, db: AsyncSessi
 @auth_router.post("/login")
 @limiter.limit("10/minute")
 async def login_user(request: Request, payload: UsuarioLogin, db: AsyncSession = Depends(get_db)):
-    client_ip = get_remote_address(request)
+    ip_cliente = get_remote_address(request)
     
-    result = await db.execute(select(Usuario).filter(Usuario.email == payload.email))
-    user = result.scalar_one_or_none()
+    resultado = await db.execute(select(Usuario).filter(Usuario.email == payload.email))
+    usuario = resultado.scalar_one_or_none()
     
-    if not user:
-        await log_login_attempt(db, payload.email, client_ip, False, "Usuário não encontrado")
+    if not usuario:
+        await log_login_attempt(db, payload.email, ip_cliente, False, "Usurio no encontrado")
         raise HTTPException(status_code=401, detail="Email ou senha incorretos")
     
-    if await check_account_lockout(db, user):
-        tempo_restante = int((user.bloqueado_ate - datetime.utcnow()).total_seconds() / 60)
-        await log_login_attempt(db, payload.email, client_ip, False, f"Conta bloqueada ({tempo_restante} min restantes)")
+    if await check_account_lockout(db, usuario):
+        tempo_restante = int((usuario.bloqueado_ate - datetime.utcnow()).total_seconds() / 60)
+        await log_login_attempt(db, payload.email, ip_cliente, False, f"Conta bloqueada ({tempo_restante} min restantes)")
         raise HTTPException(
             status_code=403, 
             detail=f"Conta temporariamente bloqueada. Tente novamente em {tempo_restante} minutos."
         )
     
-    if not user.ativo:
-        await log_login_attempt(db, payload.email, client_ip, False, "Usuário inativo")
+    if not usuario.ativo:
+        await log_login_attempt(db, payload.email, ip_cliente, False, "Usurio inativo")
         raise HTTPException(status_code=403, detail="Usuário inativo")
     
-    if not verify_password(payload.senha, user.senha):
-        await handle_failed_login(db, user)
-        tentativas_restantes = MAX_LOGIN_ATTEMPTS - user.tentativas_login
-        await log_login_attempt(db, payload.email, client_ip, False, f"Senha incorreta ({tentativas_restantes} tentativas restantes)")
+    if not verify_password(payload.senha, usuario.senha):
+        await handle_failed_login(db, usuario)
+        tentativas_restantes = MAX_LOGIN_ATTEMPTS - usuario.tentativas_login
+        await log_login_attempt(db, payload.email, ip_cliente, False, f"Senha incorreta ({tentativas_restantes} tentativas restantes)")
         
         if tentativas_restantes <= 0:
             raise HTTPException(
@@ -195,26 +195,26 @@ async def login_user(request: Request, payload: UsuarioLogin, db: AsyncSession =
         
         raise HTTPException(status_code=401, detail="Email ou senha incorretos")
     
-    await reset_login_attempts(db, user)
+    await reset_login_attempts(db, usuario)
     
-    result = await db.execute(select(ProfissionalUbs).filter(ProfissionalUbs.usuario_id == user.id))
-    is_profissional = result.scalar_one_or_none() is not None
+    resultado = await db.execute(select(ProfissionalUbs).filter(ProfissionalUbs.usuario_id == usuario.id))
+    is_profissional = resultado.scalar_one_or_none() is not None
     
-    access_token = create_access_token(
-        data={"sub": str(user.id), "email": user.email, "is_profissional": is_profissional}
+    token_acesso = create_access_token(
+        data={"sub": str(usuario.id), "email": usuario.email, "is_profissional": is_profissional}
     )
     
-    await log_login_attempt(db, payload.email, client_ip, True, "Login bem-sucedido")
+    await log_login_attempt(db, payload.email, ip_cliente, True, "Login bem-sucedido")
     
     return {
         "message": "Login realizado com sucesso",
-        "access_token": access_token,
+        "access_token": token_acesso,
         "token_type": "bearer",
         "user": {
-            "id": user.id,
-            "nome": user.nome,
-            "email": user.email,
-            "cpf": user.cpf,
+            "id": usuario.id,
+            "nome": usuario.nome,
+            "email": usuario.email,
+            "cpf": usuario.cpf,
             "is_profissional": is_profissional
         }
     }
@@ -223,17 +223,17 @@ async def login_user(request: Request, payload: UsuarioLogin, db: AsyncSession =
 @auth_router.post("/profissional", response_model=dict, status_code=status.HTTP_201_CREATED)
 @limiter.limit("5/minute")
 async def register_profissional(request: Request, payload: ProfissionalCreate, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Usuario).filter(Usuario.id == payload.usuario_id))
-    user = result.scalar_one_or_none()
-    if not user:
+    resultado = await db.execute(select(Usuario).filter(Usuario.id == payload.usuario_id))
+    usuario = resultado.scalar_one_or_none()
+    if not usuario:
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
     
-    result = await db.execute(select(ProfissionalUbs).filter(ProfissionalUbs.usuario_id == payload.usuario_id))
-    if result.scalar_one_or_none():
+    resultado = await db.execute(select(ProfissionalUbs).filter(ProfissionalUbs.usuario_id == payload.usuario_id))
+    if resultado.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Usuário já é profissional")
     
-    result = await db.execute(select(ProfissionalUbs).filter(ProfissionalUbs.registro_profissional == payload.registro_profissional))
-    if result.scalar_one_or_none():
+    resultado = await db.execute(select(ProfissionalUbs).filter(ProfissionalUbs.registro_profissional == payload.registro_profissional))
+    if resultado.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Registro profissional já cadastrado")
     
     profissional = ProfissionalUbs(

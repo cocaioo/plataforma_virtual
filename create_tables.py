@@ -5,21 +5,21 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 
 from database import engine, Base, AsyncSessionLocal
 
-# Import models so metadata is aware of them
+# Importa os modelos para que o metadata do SQLAlchemy os conhea
 import models.auth_models  # noqa: F401
 import models.diagnostico_models  # noqa: F401
 from models.diagnostico_models import Service
 
 
 async def init_db(async_engine: AsyncEngine) -> None:
-    async with async_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    async with async_engine.begin() as conexao:
+        await conexao.run_sync(Base.metadata.create_all)
 
-    # Seed services catalog if empty
-    async with AsyncSessionLocal() as session:
-        result = await session.execute(select(Service))
-        if result.scalars().first() is None:
-            default_services = [
+    # Popula o catlogo de servios se estiver vazio
+    async with AsyncSessionLocal() as sessao:
+        resultado = await sessao.execute(select(Service))
+        if resultado.scalars().first() is None:
+            servicos_padrao = [
                 "Programa Saúde da Família",
                 "Atendimento médico",
                 "Atendimento de enfermagem",
@@ -45,9 +45,9 @@ async def init_db(async_engine: AsyncEngine) -> None:
                 "Atividades coletivas e preventivas",
                 "Grupos operativos (gestantes, tabagismo, etc.)",
             ]
-            for name in default_services:
-                session.add(Service(name=name))
-            await session.commit()
+            for nome in servicos_padrao:
+                sessao.add(Service(name=nome))
+            await sessao.commit()
 
 
 if __name__ == "__main__":

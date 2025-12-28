@@ -1,4 +1,4 @@
-# Make models a package so side-effect imports (for metadata) work.
+# Torna `models` um pacote para que imports com efeitos colaterais (metadata) funcionem.
 
 from .auth_models import Usuario, ProfissionalUbs, LoginAttempt  # noqa: F401
 from .diagnostico_models import (  # noqa: F401

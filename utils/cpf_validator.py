@@ -7,17 +7,20 @@ def validate_cpf(cpf: str) -> bool:
     if cpf == cpf[0] * 11:
         return False
     
-    def calculate_digit(cpf_partial: str, weight_start: int) -> int:
-        total = sum(int(digit) * weight for digit, weight in zip(cpf_partial, range(weight_start, 1, -1)))
-        remainder = total % 11
-        return 0 if remainder < 2 else 11 - remainder
+    def calcular_digito(cpf_parcial: str, peso_inicial: int) -> int:
+        total = sum(
+            int(digito) * peso
+            for digito, peso in zip(cpf_parcial, range(peso_inicial, 1, -1))
+        )
+        resto = total % 11
+        return 0 if resto < 2 else 11 - resto
     
-    first_digit = calculate_digit(cpf[:9], 10)
-    if first_digit != int(cpf[9]):
+    primeiro_digito = calcular_digito(cpf[:9], 10)
+    if primeiro_digito != int(cpf[9]):
         return False
     
-    second_digit = calculate_digit(cpf[:10], 11)
-    if second_digit != int(cpf[10]):
+    segundo_digito = calcular_digito(cpf[:10], 11)
+    if segundo_digito != int(cpf[10]):
         return False
     
     return True

@@ -54,20 +54,20 @@ async def _get_ubs_or_404(
     current_user: Usuario,
     db: AsyncSession,
 ) -> UBS:
-    result = await db.execute(
+    resultado = await db.execute(
         select(UBS).where(
             UBS.id == ubs_id,
             UBS.tenant_id == current_user.id,
             UBS.is_deleted.is_(False),
         )
     )
-    ubs = result.scalar_one_or_none()
+    ubs = resultado.scalar_one_or_none()
     if not ubs:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="UBS não encontrada")
     return ubs
 
 
-# ----------------------- UBS general information -----------------------
+# ----------------------- Informações gerais da UBS -----------------------
 
 
 @diagnostico_router.post("", response_model=UBSOut, status_code=status.HTTP_201_CREATED)
@@ -102,252 +102,7 @@ async def create_ubs(
 
 
 @diagnostico_router.get("", response_model=PaginatedUBS)
-async def list_ubs(
-    page: int = Query(1, ge=1),
-    page_size: int = Query(20, ge=1, le=100),
-    db: AsyncSession = Depends(get_db),
-    current_user: Usuario = Depends(get_current_active_user),
-):
-    offset = (page - 1) * page_size
-
-    total_result = await db.execute(
-        select(func.count(UBS.id)).where(
-            UBS.tenant_id == current_user.id,
-            UBS.is_deleted.is_(False),
-        )
-    )
-    total = total_result.scalar_one() or 0
-
-    result = await db.execute(
-        select(UBS)
-        .where(UBS.tenant_id == current_user.id, UBS.is_deleted.is_(False))
-        .order_by(UBS.created_at.desc())
-        .offset(offset)
-        .limit(page_size)
-    )
-    items = result.scalars().all()
-    return PaginatedUBS(items=items, total=total, page=page, page_size=page_size)
-
-
-@diagnostico_router.get("/{ubs_id}", response_model=UBSOut)
-async def get_ubs(
-    ubs_id: int,
-    db: AsyncSession = Depends(get_db),
-    current_user: Usuario = Depends(get_current_active_user),
-):
-    ubs = await _get_ubs_or_404(ubs_id, current_user, db)
-    return ubs
-
-
-@diagnostico_router.patch("/{ubs_id}", response_model=UBSOut)
-async def update_ubs(
-    ubs_id: int,
-    payload: UBSUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: Usuario = Depends(get_current_active_user),
-):
-    ubs = await _get_ubs_or_404(ubs_id, current_user, db)
-
-    update_data = payload.model_dump(exclude_unset=True)
-    for field, value in update_data.items():
-        setattr(ubs, field, value)
-
-    await db.commit()
-    await db.refresh(ubs)
-    return ubs
-
-
-@diagnostico_router.delete("/{ubs_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def soft_delete_ubs(
-    ubs_id: int,
-    db: AsyncSession = Depends(get_db),
-    current_user: Usuario = Depends(get_current_active_user),
-):
-    ubs = await _get_ubs_or_404(ubs_id, current_user, db)
-    ubs.is_deleted = True
-    await db.commit()
-    return None
-
-
-# ----------------------- Services -----------------------
-
-
-@diagnostico_router.get("/services/catalog", response_model=List[ServicesCatalogItem])
-async def get_services_catalog(
-    db: AsyncSession = Depends(get_db),
-    current_user: Usuario = Depends(get_current_active_user),  # noqa: ARG001 (forces auth)
-):
-    result = await db.execute(select(Service))
-    return result.scalars().all()
-
-
-@diagnostico_router.get("/{ubs_id}/services", response_model=UBSServicesOut)
-async def get_ubs_services(
-    ubs_id: int,
-    db: AsyncSession = Depends(get_db),
-    current_user: Usuario = Depends(get_current_active_user),
-):
-    ubs = await _get_ubs_or_404(ubs_id, current_user, db)
-
-    result = await db.execute(
-        select(Service)
-        .join(UBSService, UBSService.service_id == Service.id)
-        .where(UBSService.ubs_id == ubs.id)
-        .order_by(Service.name)
-    )
-    services = result.scalars().all()
-
-    return UBSServicesOut(services=services, outros_servicos=ubs.outros_servicos)
-
-
-@diagnostico_router.patch("/{ubs_id}/services", response_model=UBSServicesOut)
-async def update_ubs_services(
-    ubs_id: int,
-    payload: UBSServicesPayload,
-    db: AsyncSession = Depends(get_db),
-    current_user: Usuario = Depends(get_current_active_user),
-):
-    ubs = await _get_ubs_or_404(ubs_id, current_user, db)
-
-    # Clear existing links and recreate to match payload
-    await db.execute(
-        UBSService.__table__.delete().where(UBSService.ubs_id == ubs.id)
-    )
-
-    if payload.service_ids:
-        result = await db.execute(
-            select(Service).where(Service.id.in_(payload.service_ids))
-        )
-        found_services = {s.id: s for s in result.scalars().all()}
-
-        missing_ids = [sid for sid in payload.service_ids if sid not in found_services]
-        if missing_ids:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Serviços não encontrados para ids: {missing_ids}",
-            )
-
-        for sid in payload.service_ids:
-            link = UBSService(ubs_id=ubs.id, service_id=sid)
-            db.add(link)
-
-    ubs.outros_servicos = payload.outros_servicos
-
-    await db.commit()
-
-    result = await db.execute(
-        select(Service)
-        .join(UBSService, UBSService.service_id == Service.id)
-        .where(UBSService.ubs_id == ubs.id)
-        .order_by(Service.name)
-    )
-    services = result.scalars().all()
-
-    return UBSServicesOut(services=services, outros_servicos=ubs.outros_servicos)
-
-
-# ----------------------- Indicators -----------------------
-
-
-@diagnostico_router.get("/{ubs_id}/indicators", response_model=List[IndicatorOut])
-async def list_indicators(
-    ubs_id: int,
-    tipo_dado: Optional[str] = Query(None),
-    periodo: Optional[str] = Query(None, alias="periodo_referencia"),
-    db: AsyncSession = Depends(get_db),
-    current_user: Usuario = Depends(get_current_active_user),
-):
-    ubs = await _get_ubs_or_404(ubs_id, current_user, db)
-
-    stmt = select(Indicator).where(Indicator.ubs_id == ubs.id)
-    if tipo_dado:
-        stmt = stmt.where(Indicator.tipo_dado == tipo_dado)
-    if periodo:
-        stmt = stmt.where(Indicator.periodo_referencia == periodo)
-
-    result = await db.execute(stmt.order_by(Indicator.created_at.desc(), Indicator.id.desc()))
-    return result.scalars().all()
-
-
-@diagnostico_router.post("/{ubs_id}/indicators", response_model=IndicatorOut, status_code=status.HTTP_201_CREATED)
-async def create_indicator(
-    ubs_id: int,
-    payload: IndicatorCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: Usuario = Depends(get_current_active_user),
-):
-    ubs = await _get_ubs_or_404(ubs_id, current_user, db)
-
-    indicator = Indicator(
-        ubs_id=ubs.id,
-        nome_indicador=payload.nome_indicador,
-        tipo_dado=payload.tipo_dado.value,
-        grau_precisao_valor=payload.grau_precisao_valor.value,
-        valor=payload.valor,
-        periodo_referencia=payload.periodo_referencia,
-        observacoes=payload.observacoes,
-        created_by=current_user.id,
-    )
-    db.add(indicator)
-    await db.commit()
-    await db.refresh(indicator)
-    return indicator
-
-
-@diagnostico_router.get("/indicators/{indicator_id}", response_model=IndicatorOut)
-async def get_indicator(
-    indicator_id: int,
-    db: AsyncSession = Depends(get_db),
-    current_user: Usuario = Depends(get_current_active_user),
-):
-    result = await db.execute(
-        select(Indicator).join(UBS).where(
-            Indicator.id == indicator_id,
-            UBS.tenant_id == current_user.id,
-            UBS.is_deleted.is_(False),
-        )
-    )
-    indicator = result.scalar_one_or_none()
-    if not indicator:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Indicador não encontrado")
-    return indicator
-
-
-@diagnostico_router.patch("/indicators/{indicator_id}", response_model=IndicatorOut)
-async def update_indicator(
-    indicator_id: int,
-    payload: IndicatorUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: Usuario = Depends(get_current_active_user),
-):
-    result = await db.execute(
-        select(Indicator).join(UBS).where(
-            Indicator.id == indicator_id,
-            UBS.tenant_id == current_user.id,
-            UBS.is_deleted.is_(False),
-        )
-    )
-    indicator = result.scalar_one_or_none()
-    if not indicator:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Indicador não encontrado")
-
-    update_data = payload.model_dump(exclude_unset=True)
-    if "tipo_dado" in update_data and update_data["tipo_dado"] is not None:
-        update_data["tipo_dado"] = update_data["tipo_dado"].value
-    if "grau_precisao_valor" in update_data and update_data["grau_precisao_valor"] is not None:
-        update_data["grau_precisao_valor"] = update_data["grau_precisao_valor"].value
-
-    for field, value in update_data.items():
-        setattr(indicator, field, value)
-
-    indicator.updated_by = current_user.id
-
-    await db.commit()
-    await db.refresh(indicator)
-    return indicator
-
-
-# ----------------------- Professional groups -----------------------
+# ----------------------- Grupos profissionais -----------------------
 
 
 @diagnostico_router.get("/{ubs_id}/professionals", response_model=List[ProfessionalGroupOut])
@@ -358,15 +113,19 @@ async def list_professional_groups(
 ):
     ubs = await _get_ubs_or_404(ubs_id, current_user, db)
 
-    result = await db.execute(
+    resultado = await db.execute(
         select(ProfessionalGroup)
         .where(ProfessionalGroup.ubs_id == ubs.id)
         .order_by(ProfessionalGroup.cargo_funcao)
     )
-    return result.scalars().all()
+    return resultado.scalars().all()
 
 
-@diagnostico_router.post("/{ubs_id}/professionals", response_model=ProfessionalGroupOut, status_code=status.HTTP_201_CREATED)
+@diagnostico_router.post(
+    "/{ubs_id}/professionals",
+    response_model=ProfessionalGroupOut,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_professional_group(
     ubs_id: int,
     payload: ProfessionalGroupCreate,
@@ -375,7 +134,7 @@ async def create_professional_group(
 ):
     ubs = await _get_ubs_or_404(ubs_id, current_user, db)
 
-    group = ProfessionalGroup(
+    grupo = ProfessionalGroup(
         ubs_id=ubs.id,
         cargo_funcao=payload.cargo_funcao,
         quantidade=payload.quantidade,
@@ -383,10 +142,10 @@ async def create_professional_group(
         observacoes=payload.observacoes,
         created_by=current_user.id,
     )
-    db.add(group)
+    db.add(grupo)
     await db.commit()
-    await db.refresh(group)
-    return group
+    await db.refresh(grupo)
+    return grupo
 
 
 @diagnostico_router.get("/professionals/{group_id}", response_model=ProfessionalGroupOut)
@@ -395,17 +154,17 @@ async def get_professional_group(
     db: AsyncSession = Depends(get_db),
     current_user: Usuario = Depends(get_current_active_user),
 ):
-    result = await db.execute(
+    resultado = await db.execute(
         select(ProfessionalGroup).join(UBS).where(
             ProfessionalGroup.id == group_id,
             UBS.tenant_id == current_user.id,
             UBS.is_deleted.is_(False),
         )
     )
-    group = result.scalar_one_or_none()
-    if not group:
+    grupo = resultado.scalar_one_or_none()
+    if not grupo:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profissional não encontrado")
-    return group
+    return grupo
 
 
 @diagnostico_router.patch("/professionals/{group_id}", response_model=ProfessionalGroupOut)
@@ -415,29 +174,29 @@ async def update_professional_group(
     db: AsyncSession = Depends(get_db),
     current_user: Usuario = Depends(get_current_active_user),
 ):
-    result = await db.execute(
+    resultado = await db.execute(
         select(ProfessionalGroup).join(UBS).where(
             ProfessionalGroup.id == group_id,
             UBS.tenant_id == current_user.id,
             UBS.is_deleted.is_(False),
         )
     )
-    group = result.scalar_one_or_none()
-    if not group:
+    grupo = resultado.scalar_one_or_none()
+    if not grupo:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profissional não encontrado")
 
-    update_data = payload.model_dump(exclude_unset=True)
-    for field, value in update_data.items():
-        setattr(group, field, value)
+    dados_atualizacao = payload.model_dump(exclude_unset=True)
+    for campo, valor in dados_atualizacao.items():
+        setattr(grupo, campo, valor)
 
-    group.updated_by = current_user.id
+    grupo.updated_by = current_user.id
 
     await db.commit()
-    await db.refresh(group)
-    return group
+    await db.refresh(grupo)
+    return grupo
 
 
-# ----------------------- Territory profile -----------------------
+# ----------------------- Perfil do território -----------------------
 
 
 @diagnostico_router.get("/{ubs_id}/territory", response_model=TerritoryProfileOut)
@@ -448,13 +207,13 @@ async def get_territory_profile(
 ):
     ubs = await _get_ubs_or_404(ubs_id, current_user, db)
 
-    result = await db.execute(
+    resultado = await db.execute(
         select(TerritoryProfile).where(TerritoryProfile.ubs_id == ubs.id)
     )
-    profile = result.scalar_one_or_none()
-    if not profile:
+    perfil = resultado.scalar_one_or_none()
+    if not perfil:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Perfil de território não encontrado")
-    return profile
+    return perfil
 
 
 @diagnostico_router.put("/{ubs_id}/territory", response_model=TerritoryProfileOut)
@@ -466,38 +225,38 @@ async def upsert_territory_profile(
 ):
     ubs = await _get_ubs_or_404(ubs_id, current_user, db)
 
-    result = await db.execute(
+    resultado = await db.execute(
         select(TerritoryProfile).where(TerritoryProfile.ubs_id == ubs.id)
     )
-    profile = result.scalar_one_or_none()
+    perfil = resultado.scalar_one_or_none()
 
-    data = payload.model_dump(exclude_unset=True)
+    dados = payload.model_dump(exclude_unset=True)
 
-    if profile:
-        for field, value in data.items():
-            setattr(profile, field, value)
-        profile.updated_by = current_user.id
+    if perfil:
+        for campo, valor in dados.items():
+            setattr(perfil, campo, valor)
+        perfil.updated_by = current_user.id
     else:
-        if "descricao_territorio" not in data or not data["descricao_territorio"]:
+        if "descricao_territorio" not in dados or not dados["descricao_territorio"]:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Campo descricao_territorio é obrigatório",
             )
-        profile = TerritoryProfile(
+        perfil = TerritoryProfile(
             ubs_id=ubs.id,
-            descricao_territorio=data["descricao_territorio"],
-            potencialidades_territorio=data.get("potencialidades_territorio"),
-            riscos_vulnerabilidades=data.get("riscos_vulnerabilidades"),
+            descricao_territorio=dados["descricao_territorio"],
+            potencialidades_territorio=dados.get("potencialidades_territorio"),
+            riscos_vulnerabilidades=dados.get("riscos_vulnerabilidades"),
             created_by=current_user.id,
         )
-        db.add(profile)
+        db.add(perfil)
 
     await db.commit()
-    await db.refresh(profile)
-    return profile
+    await db.refresh(perfil)
+    return perfil
 
 
-# ----------------------- UBS needs -----------------------
+# ----------------------- Necessidades da UBS -----------------------
 
 
 @diagnostico_router.get("/{ubs_id}/needs", response_model=UBSNeedsOut)
@@ -508,11 +267,11 @@ async def get_ubs_needs(
 ):
     ubs = await _get_ubs_or_404(ubs_id, current_user, db)
 
-    result = await db.execute(select(UBSNeeds).where(UBSNeeds.ubs_id == ubs.id))
-    needs = result.scalar_one_or_none()
-    if not needs:
+    resultado = await db.execute(select(UBSNeeds).where(UBSNeeds.ubs_id == ubs.id))
+    necessidades = resultado.scalar_one_or_none()
+    if not necessidades:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Registro de necessidades não encontrado")
-    return needs
+    return necessidades
 
 
 @diagnostico_router.put("/{ubs_id}/needs", response_model=UBSNeedsOut)
@@ -524,82 +283,91 @@ async def upsert_ubs_needs(
 ):
     ubs = await _get_ubs_or_404(ubs_id, current_user, db)
 
-    result = await db.execute(select(UBSNeeds).where(UBSNeeds.ubs_id == ubs.id))
-    needs = result.scalar_one_or_none()
+    resultado = await db.execute(select(UBSNeeds).where(UBSNeeds.ubs_id == ubs.id))
+    necessidades = resultado.scalar_one_or_none()
 
-    data = payload.model_dump(exclude_unset=True)
+    dados = payload.model_dump(exclude_unset=True)
 
-    if needs:
-        for field, value in data.items():
-            setattr(needs, field, value)
-        needs.updated_by = current_user.id
+    if necessidades:
+        for campo, valor in dados.items():
+            setattr(necessidades, campo, valor)
+        necessidades.updated_by = current_user.id
     else:
-        if "problemas_identificados" not in data or not data["problemas_identificados"]:
+        if "problemas_identificados" not in dados or not dados["problemas_identificados"]:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Campo problemas_identificados é obrigatório",
             )
-        needs = UBSNeeds(
+        necessidades = UBSNeeds(
             ubs_id=ubs.id,
-            problemas_identificados=data["problemas_identificados"],
-            necessidades_equipamentos_insumos=data.get("necessidades_equipamentos_insumos"),
-            necessidades_especificas_acs=data.get("necessidades_especificas_acs"),
-            necessidades_infraestrutura_manutencao=data.get("necessidades_infraestrutura_manutencao"),
+            problemas_identificados=dados["problemas_identificados"],
+            necessidades_equipamentos_insumos=dados.get("necessidades_equipamentos_insumos"),
+            necessidades_especificas_acs=dados.get("necessidades_especificas_acs"),
+            necessidades_infraestrutura_manutencao=dados.get("necessidades_infraestrutura_manutencao"),
             created_by=current_user.id,
         )
-        db.add(needs)
+        db.add(necessidades)
 
     await db.commit()
-    await db.refresh(needs)
-    return needs
+    await db.refresh(necessidades)
+    return necessidades
 
 
-# ----------------------- Submission workflow -----------------------
+# ----------------------- Fluxo de envio -----------------------
 
 
 def _validate_before_submit(ubs: UBS) -> list[ErrorDetail]:
-    errors: list[ErrorDetail] = []
+    erros: list[ErrorDetail] = []
 
-    def add(field: str, msg: str, code: str = "invalid") -> None:
-        errors.append(ErrorDetail(field=field, message=msg, code=code))
+    def adicionar(campo: str, mensagem: str, codigo: str = "invalid") -> None:
+        erros.append(ErrorDetail(field=campo, message=mensagem, code=codigo))
 
-    # General info required
+    # Informao geral obrigatria
     if not ubs.nome_ubs:
-        add("nome_ubs", "Nome da UBS é obrigatório", "required")
+        adicionar("nome_ubs", "Nome da UBS é obrigatório", "required")
     if not ubs.cnes:
-        add("cnes", "CNES é obrigatório", "required")
+        adicionar("cnes", "CNES é obrigatório", "required")
     if not ubs.area_atuacao:
-        add("area_atuacao", "Área de atuação é obrigatória", "required")
+        adicionar("area_atuacao", "Área de atuação é obrigatória", "required")
 
-    for field in [
+    for campo in [
         "numero_habitantes_ativos",
         "numero_microareas",
         "numero_familias_cadastradas",
         "numero_domicilios",
     ]:
-        if getattr(ubs, field) is None:
-            add(field, "Campo numérico obrigatório para envio", "required")
-        elif getattr(ubs, field) < 0:
-            add(field, "Valor não pode ser negativo", "range")
+        if getattr(ubs, campo) is None:
+            adicionar(campo, "Campo numérico obrigatório para envio", "required")
+        elif getattr(ubs, campo) < 0:
+            adicionar(campo, "Valor não pode ser negativo", "range")
 
-    # Territory profile
+    # Perfil do território
     if not ubs.territory_profile or not ubs.territory_profile.descricao_territorio:
-        add("territory_profile.descricao_territorio", "Descrição do território é obrigatória", "required")
+        adicionar(
+            "territory_profile.descricao_territorio",
+            "Descrição do território é obrigatória",
+            "required",
+        )
 
-    # UBS needs
+    # Necessidades da UBS
     if not ubs.needs or not ubs.needs.problemas_identificados:
-        add("needs.problemas_identificados", "Problemas identificados são obrigatórios", "required")
+        adicionar(
+            "needs.problemas_identificados",
+            "Problemas identificados são obrigatórios",
+            "required",
+        )
 
-    # Simple date consistency check
+    # Checagem simples de consist
+        return perfil
     if ubs.data_inauguracao and ubs.data_ultima_reforma:
         if ubs.data_ultima_reforma < ubs.data_inauguracao:
-            add(
+            adicionar(
                 "data_ultima_reforma",
                 "Data da última reforma não pode ser anterior à data de inauguração",
                 "date_logic",
             )
 
-    return errors
+    return erros
 
 
 @diagnostico_router.post(
@@ -617,7 +385,7 @@ async def submit_diagnosis(
 ):
     ubs = await _get_ubs_or_404(ubs_id, current_user, db)
 
-    # Load related entities for validation and response
+    # Carrega entidades relacionadas para validao e resposta
     await db.refresh(
         ubs,
         attribute_names=[
@@ -629,13 +397,13 @@ async def submit_diagnosis(
         ],
     )
 
-    errors = _validate_before_submit(ubs)
-    if errors:
+    erros = _validate_before_submit(ubs)
+    if erros:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail={
                 "detail": "Falha na validação para envio do diagnóstico",
-                "errors": [e.model_dump() for e in errors],
+                "errors": [e.model_dump() for e in erros],
             },
         )
 
@@ -648,11 +416,11 @@ async def submit_diagnosis(
     await db.commit()
     await db.refresh(ubs)
 
-    # Reuse aggregation endpoint implementation
+    # Reaproveita a implementao do endpoint de agregao
     return await get_full_diagnosis(ubs_id=ubs.id, db=db, current_user=current_user)
 
 
-# ----------------------- Aggregated diagnosis read model -----------------------
+# ----------------------- Modelo agregado de leitura do diagnstico -----------------------
 
 
 @diagnostico_router.get("/{ubs_id}/diagnosis", response_model=FullDiagnosisOut)
@@ -663,8 +431,8 @@ async def get_full_diagnosis(
 ):
     ubs = await _get_ubs_or_404(ubs_id, current_user, db)
 
-    # Load relationships efficiently
-    result = await db.execute(
+    # Carrega relacionamentos de forma eficiente
+    resultado = await db.execute(
         select(UBS)
         .options(
             selectinload(UBS.services).selectinload(UBSService.service),
@@ -675,23 +443,24 @@ async def get_full_diagnosis(
         )
         .where(UBS.id == ubs.id)
     )
-    ubs_obj: UBS = result.scalar_one()
+    ubs_obj: UBS = resultado.scalar_one()
 
-    # Services
-    services_items: List[ServicesCatalogItem] = [
+    # Servios
+    itens_servicos: List[ServicesCatalogItem] = [
         ServicesCatalogItem(id=link.service.id, name=link.service.name)
         for link in sorted(ubs_obj.services, key=lambda l: l.service.name)
     ]
-    services_out = UBSServicesOut(services=services_items, outros_servicos=ubs_obj.outros_servicos)
+    saida_servicos = UBSServicesOut(services=itens_servicos, outros_servicos=ubs_obj.outros_servicos)
 
-    # Latest indicator per nome_indicador
-    indicators_sorted = sorted(
+    # 
+
+    indicadores_ordenados = sorted(
         ubs_obj.indicators,
         key=lambda i: (i.nome_indicador, i.created_at or i.id),
     )
-    latest_by_name: dict[str, Indicator] = {}
-    for ind in indicators_sorted:
-        latest_by_name[ind.nome_indicador] = ind
+    ultimo_por_nome: dict[str, Indicator] = {}
+    for ind in indicadores_ordenados:
+        ultimo_por_nome[ind.nome_indicador] = ind
 
     indicators_latest: List[IndicatorOut] = [
         IndicatorOut(
@@ -706,36 +475,36 @@ async def get_full_diagnosis(
             created_at=ind.created_at,
             updated_at=ind.updated_at,
         )
-        for ind in latest_by_name.values()
+        for ind in ultimo_por_nome.values()
     ]
 
-    # Professional groups
-    professionals_out: List[ProfessionalGroupOut] = [
+    # Grupos profissionais
+    saida_profissionais: List[ProfessionalGroupOut] = [
         ProfessionalGroupOut.model_validate(pg) for pg in ubs_obj.professional_groups
     ]
 
-    # Territory and needs
-    territory_out = (
+    # Territrio e necessidades
+    saida_territorio = (
         TerritoryProfileOut.model_validate(ubs_obj.territory_profile)
         if ubs_obj.territory_profile
         else None
     )
-    needs_out = UBSNeedsOut.model_validate(ubs_obj.needs) if ubs_obj.needs else None
+    saida_necessidades = UBSNeedsOut.model_validate(ubs_obj.needs) if ubs_obj.needs else None
 
-    submission_meta = UBSSubmissionMetadata(
+    metadados_envio = UBSSubmissionMetadata(
         status=UBSStatus(ubs_obj.status),
         submitted_at=ubs_obj.submitted_at,
         submitted_by=ubs_obj.submitted_by,
     )
 
-    ubs_out = UBSOut.model_validate(ubs_obj)
+    saida_ubs = UBSOut.model_validate(ubs_obj)
 
     return FullDiagnosisOut(
-        ubs=ubs_out,
-        services=services_out,
+        ubs=saida_ubs,
+        services=saida_servicos,
         indicators_latest=indicators_latest,
-        professional_groups=professionals_out,
-        territory_profile=territory_out,
-        needs=needs_out,
-        submission=submission_meta,
+        professional_groups=saida_profissionais,
+        territory_profile=saida_territorio,
+        needs=saida_necessidades,
+        submission=metadados_envio,
     )

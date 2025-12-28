@@ -15,26 +15,26 @@ async def get_current_user(
     token: str = Depends(oauth2_scheme),
     db: AsyncSession = Depends(get_db),
 ) -> Usuario:
-    credentials_exception = HTTPException(
+    excecao_credenciais = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Não autenticado",
         headers={"WWW-Authenticate": "Bearer"},
     )
 
-    payload = verify_token(token)
-    if not payload:
-        raise credentials_exception
+    carga_util = verify_token(token)
+    if not carga_util:
+        raise excecao_credenciais
 
-    user_id = payload.get("sub")
-    if user_id is None:
-        raise credentials_exception
+    id_usuario = carga_util.get("sub")
+    if id_usuario is None:
+        raise excecao_credenciais
 
-    result = await db.execute(select(Usuario).where(Usuario.id == int(user_id)))
-    user = result.scalar_one_or_none()
-    if not user or not user.ativo:
-        raise credentials_exception
+    resultado = await db.execute(select(Usuario).where(Usuario.id == int(id_usuario)))
+    usuario = resultado.scalar_one_or_none()
+    if not usuario or not usuario.ativo:
+        raise excecao_credenciais
 
-    return user
+    return usuario
 
 
 async def get_current_active_user(current_user: Usuario = Depends(get_current_user)) -> Usuario:
