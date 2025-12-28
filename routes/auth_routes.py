@@ -167,7 +167,7 @@ async def login_user(request: Request, payload: UsuarioLogin, db: AsyncSession =
     usuario = resultado.scalar_one_or_none()
     
     if not usuario:
-        await log_login_attempt(db, payload.email, ip_cliente, False, "Usurio no encontrado")
+        await log_login_attempt(db, payload.email, ip_cliente, False, "Usuario nao encontrado")
         raise HTTPException(status_code=401, detail="Email ou senha incorretos")
     
     if await check_account_lockout(db, usuario):
@@ -179,8 +179,8 @@ async def login_user(request: Request, payload: UsuarioLogin, db: AsyncSession =
         )
     
     if not usuario.ativo:
-        await log_login_attempt(db, payload.email, ip_cliente, False, "Usurio inativo")
-        raise HTTPException(status_code=403, detail="Usuário inativo")
+        await log_login_attempt(db, payload.email, ip_cliente, False, "Usuario inativo")
+        raise HTTPException(status_code=403, detail="Usuario inativo")
     
     if not verify_password(payload.senha, usuario.senha):
         await handle_failed_login(db, usuario)

@@ -322,7 +322,7 @@ def _validate_before_submit(ubs: UBS) -> list[ErrorDetail]:
     def adicionar(campo: str, mensagem: str, codigo: str = "invalid") -> None:
         erros.append(ErrorDetail(field=campo, message=mensagem, code=codigo))
 
-    # Informao geral obrigatria
+    # Informação geral obrigatória
     if not ubs.nome_ubs:
         adicionar("nome_ubs", "Nome da UBS é obrigatório", "required")
     if not ubs.cnes:
@@ -357,8 +357,7 @@ def _validate_before_submit(ubs: UBS) -> list[ErrorDetail]:
             "required",
         )
 
-    # Checagem simples de consist
-        return perfil
+    # Checagem simples de consistência
     if ubs.data_inauguracao and ubs.data_ultima_reforma:
         if ubs.data_ultima_reforma < ubs.data_inauguracao:
             adicionar(
@@ -385,7 +384,7 @@ async def submit_diagnosis(
 ):
     ubs = await _get_ubs_or_404(ubs_id, current_user, db)
 
-    # Carrega entidades relacionadas para validao e resposta
+    # Carrega entidades relacionadas para validação e resposta
     await db.refresh(
         ubs,
         attribute_names=[
@@ -416,11 +415,11 @@ async def submit_diagnosis(
     await db.commit()
     await db.refresh(ubs)
 
-    # Reaproveita a implementao do endpoint de agregao
+    # Reaproveita a implementação do endpoint de agregação
     return await get_full_diagnosis(ubs_id=ubs.id, db=db, current_user=current_user)
 
 
-# ----------------------- Modelo agregado de leitura do diagnstico -----------------------
+# ----------------------- Modelo agregado de leitura do diagnóstico -----------------------
 
 
 @diagnostico_router.get("/{ubs_id}/diagnosis", response_model=FullDiagnosisOut)
@@ -445,14 +444,14 @@ async def get_full_diagnosis(
     )
     ubs_obj: UBS = resultado.scalar_one()
 
-    # Servios
+    # Serviços
     itens_servicos: List[ServicesCatalogItem] = [
         ServicesCatalogItem(id=link.service.id, name=link.service.name)
         for link in sorted(ubs_obj.services, key=lambda l: l.service.name)
     ]
     saida_servicos = UBSServicesOut(services=itens_servicos, outros_servicos=ubs_obj.outros_servicos)
 
-    # 
+    # Indicadores (último valor por nome)
 
     indicadores_ordenados = sorted(
         ubs_obj.indicators,
@@ -483,7 +482,7 @@ async def get_full_diagnosis(
         ProfessionalGroupOut.model_validate(pg) for pg in ubs_obj.professional_groups
     ]
 
-    # Territrio e necessidades
+    # Território e necessidades
     saida_territorio = (
         TerritoryProfileOut.model_validate(ubs_obj.territory_profile)
         if ubs_obj.territory_profile
