@@ -20,9 +20,11 @@ limiter = Limiter(key_func=get_remote_address)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    #Startup
     logger.info("Inicializando aplicação")
     yield
-
+    
+    #Shutdown
     try:
         logger.info("Encerrando engine do banco de dados...")
         await engine.dispose()
@@ -30,10 +32,11 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Erro ao encerrar engine do banco de dados: {e}")
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(lifespan=lifespan) #Inicializa a aplicação do FastAPI
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
+#Permite o front-end chamar a API do backend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
@@ -42,11 +45,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/health")
+#Rota para verificar SAÚDE da API (verificar se o banco está conectado e a API rodando)
+@app.get("/health") #Rate limite de 10 requisições por minuto
 @limiter.limit("10/minute")
 async def health_check(request: Request, db: AsyncSession = Depends(get_db)):
     try:
-        await db.execute("SELECT 1")
+        await db.execute("SELECT 1") #Ping no banco
         return {"status": "ok", "database": "connected"}
     except Exception as e:
         return {"status": "error", "database": str(e)}
@@ -54,5 +58,6 @@ async def health_check(request: Request, db: AsyncSession = Depends(get_db)):
 from routes.auth_routes import auth_router
 from routes.diagnostico_routes import diagnostico_router
 
+#Incluindo no Router as rotas de autenticação e diagnóstico
 app.include_router(auth_router)
 app.include_router(diagnostico_router)
