@@ -68,3 +68,6 @@ logs/
 
 # Docker volumes
 pgdata/
+
+# Uploads (anexos)
+uploads/

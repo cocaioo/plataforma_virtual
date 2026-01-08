@@ -1,25 +1,69 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { api } from "../api";
 
 // Tela intermediária para gestão de relatórios situacionais (rascunhos e finalizados)
 // Nesta versão, usamos dados apenas em memória, apenas para navegação e visão geral.
 export function RelatoriosSituacionais() {
   const [filtroStatus, setFiltroStatus] = useState("todos");
 
-  const [relatorios, setRelatorios] = useState([
-    {
-      id: 1,
-      nomeUbs: "ESF 18 – Adalto Pereira Saraçayo",
-      atualizadoEm: "2024-11-10",
-      status: "rascunho",
-    },
-    {
-      id: 2,
-      nomeUbs: "UBS Centro",
-      atualizadoEm: "2024-11-05",
-      status: "finalizado",
-    },
-  ]);
+  const [carregando, setCarregando] = useState(false);
+  const [erro, setErro] = useState("");
+  const [relatorios, setRelatorios] = useState([]);
+
+  const obterStatusBackend = (statusTela) => {
+    if (statusTela === "rascunho") return "DRAFT";
+    if (statusTela === "finalizado") return "SUBMITTED";
+    return null;
+  };
+
+  const mensagemErroAmigavel = (err, contexto) => {
+    if (!err) return `Erro ao ${contexto}`;
+
+    if (err.type === "NETWORK_ERROR") {
+      return "Não foi possível conectar ao servidor. Verifique se o backend está rodando em http://localhost:8000 e se o CORS está liberado.";
+    }
+
+    const msg = err.message || "";
+    if (msg.includes("HTTP 401")) {
+      return "Sessão expirada. Faça login novamente.";
+    }
+
+    return `Erro ao ${contexto}: ${msg || "tente novamente"}`;
+  };
+
+  const carregarRelatorios = async (status) => {
+    setCarregando(true);
+    setErro("");
+    try {
+      const resposta = await api.listReports({ status });
+      const items = resposta.items || [];
+      const normalizados = items.map((r) => {
+        const atualizadoEm = r.updated_at || r.created_at || "";
+        const statusNormalizado = r.status === "SUBMITTED" ? "finalizado" : "rascunho";
+        return {
+          id: r.id,
+          nomeUbs: r.nome_ubs,
+          atualizadoEm,
+          status: statusNormalizado,
+          statusBackend: r.status,
+          nomeRelatorio: r.nome_relatorio,
+        };
+      });
+      setRelatorios(normalizados);
+    } catch (e) {
+      console.error("Erro ao listar relatórios:", e);
+      setErro(mensagemErroAmigavel(e, "carregar relatórios"));
+    } finally {
+      setCarregando(false);
+    }
+  };
+
+  useEffect(() => {
+    const statusBackend = obterStatusBackend(filtroStatus);
+    carregarRelatorios(statusBackend);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtroStatus]);
 
   const relatoriosFiltrados = useMemo(() => {
     if (filtroStatus === "todos") return relatorios;
@@ -37,7 +81,35 @@ export function RelatoriosSituacionais() {
       "Tem certeza que deseja excluir este relatório? Essa ação não poderá ser desfeita."
     );
     if (!confirmarExclusao) return;
-    setRelatorios((anterior) => anterior.filter((relatorio) => relatorio.id !== id));
+    (async () => {
+      try {
+        await api.deleteReport(id);
+        setRelatorios((anterior) => anterior.filter((relatorio) => relatorio.id !== id));
+      } catch (e) {
+        console.error("Erro ao excluir relatório:", e);
+        window.alert(mensagemErroAmigavel(e, "excluir relatório"));
+      }
+    })();
+  };
+
+  const lidarComExportacaoPdf = async (id, nomeRelatorio) => {
+    try {
+      const { blob, contentDisposition } = await api.exportReportPdf(id);
+      const match = /filename="?([^";]+)"?/i.exec(contentDisposition);
+      const nomeArquivo = match?.[1] || (nomeRelatorio ? `${nomeRelatorio}.pdf` : `relatorio_${id}.pdf`);
+
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = nomeArquivo;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error("Erro ao exportar PDF:", e);
+      window.alert(mensagemErroAmigavel(e, "exportar PDF"));
+    }
   };
 
   return (
@@ -45,10 +117,10 @@ export function RelatoriosSituacionais() {
       <section className="hero">
         <div>
           <p className="eyebrow">Relatórios situacionais</p>
-          <h1>Gerenciar diagnósticos da UBS</h1>
+          <h1>Gerenciar relatórios da UBS</h1>
           <p className="muted">
             Use esta tela como um painel intermediário para visualizar diagnósticos em rascunho ou já
-            finalizados. Nesta versão, os dados são apenas exemplos locais.
+            finalizados.
           </p>
         </div>
         <div className="hero-actions">
@@ -81,7 +153,22 @@ export function RelatoriosSituacionais() {
           </div>
         </div>
 
-        {relatoriosFiltrados.length === 0 ? (
+        {erro ? (
+          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+            <p className="muted" style={{ margin: 0 }}>
+              {erro}
+            </p>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => carregarRelatorios(obterStatusBackend(filtroStatus))}
+            >
+              Tentar novamente
+            </button>
+          </div>
+        ) : carregando ? (
+          <p className="muted">Carregando relatórios...</p>
+        ) : relatoriosFiltrados.length === 0 ? (
           <p className="muted">Nenhum relatório encontrado para o filtro selecionado.</p>
         ) : (
           <table className="table" style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -103,15 +190,13 @@ export function RelatoriosSituacionais() {
                   </td>
                   <td style={{ padding: "8px", textAlign: "right" }}>
                     <div style={{ display: "inline-flex", gap: 8 }}>
-                      {r.status === "finalizado" ? (
-                        <button className="btn btn-secondary" type="button" disabled>
-                          Visualização (em breve)
-                        </button>
-                      ) : (
-                        <Link className="btn btn-primary" to="/diagnostico">
-                          Continuar preenchendo
-                        </Link>
-                      )}
+                      <button
+                        className="btn btn-secondary"
+                        type="button"
+                        onClick={() => lidarComExportacaoPdf(r.id, r.nomeRelatorio || r.nomeUbs)}
+                      >
+                        Exportar PDF
+                      </button>
                       <button
                         type="button"
                         className="btn btn-secondary"

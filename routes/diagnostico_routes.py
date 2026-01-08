@@ -1,6 +1,10 @@
 from typing import List, Optional
+from pathlib import Path
+import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status, UploadFile, File, Form
+from fastapi.responses import Response as FastAPIResponse
+from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
@@ -14,6 +18,7 @@ from models.diagnostico_models import (
     ProfessionalGroup,
     TerritoryProfile,
     UBSNeeds,
+    UBSAttachment,
 )
 from models.auth_models import Usuario
 from schemas.diagnostico_schemas import (
@@ -36,6 +41,7 @@ from schemas.diagnostico_schemas import (
     UBSNeedsCreate,
     UBSNeedsUpdate,
     UBSNeedsOut,
+    UBSAttachmentOut,
     UBSStatus,
     FullDiagnosisOut,
     UBSSubmissionMetadata,
@@ -44,9 +50,25 @@ from schemas.diagnostico_schemas import (
     UBSSubmitRequest,
 )
 from utils.deps import get_current_active_user
+from services.reporting.simple_situational_report_pdf import (
+    generate_situational_report_pdf_simple,
+)
 
 
 diagnostico_router = APIRouter(prefix="/ubs", tags=["diagnostico"])
+
+_UPLOADS_BASE_DIR = Path(__file__).resolve().parents[1] / "uploads"
+
+
+def _sanitize_filename(name: str) -> str:
+    allowed = []
+    for ch in (name or ""):
+        if ch.isalnum() or ch in ("-", "_", ".", " "):
+            allowed.append(ch)
+        else:
+            allowed.append("_")
+    cleaned = "".join(allowed).strip().replace(" ", "_")
+    return cleaned or "arquivo"
 
 
 async def _get_ubs_or_404(
@@ -93,6 +115,14 @@ async def create_ubs(
         descritivos_gerais=payload.descritivos_gerais,
         observacoes_gerais=payload.observacoes_gerais,
         outros_servicos=payload.outros_servicos,
+
+        periodo_referencia=payload.periodo_referencia,
+        identificacao_equipe=payload.identificacao_equipe,
+        responsavel_nome=payload.responsavel_nome,
+        responsavel_cargo=payload.responsavel_cargo,
+        responsavel_contato=payload.responsavel_contato,
+        fluxo_agenda_acesso=payload.fluxo_agenda_acesso,
+
         status=UBSStatus.DRAFT.value,
     )
     db.add(ubs)
@@ -101,7 +131,80 @@ async def create_ubs(
     return ubs
 
 
+@diagnostico_router.patch("/{ubs_id}", response_model=UBSOut)
+async def update_ubs(
+    ubs_id: int,
+    payload: UBSUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(get_current_active_user),
+):
+    ubs = await _get_ubs_or_404(ubs_id, current_user, db)
+
+    dados_atualizacao = payload.model_dump(exclude_unset=True)
+    for campo, valor in dados_atualizacao.items():
+        setattr(ubs, campo, valor)
+
+    await db.commit()
+    await db.refresh(ubs)
+    return ubs
+
+
 @diagnostico_router.get("", response_model=PaginatedUBS)
+async def list_ubs_reports(
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(get_current_active_user),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    status_filter: Optional[UBSStatus] = Query(None, alias="status"),
+):
+    """Lista relatórios (diagnósticos UBS) do usuário autenticado.
+
+    Observação: no frontend, isso substitui mocks na tela de "Relatórios Situacionais".
+    """
+
+    base_stmt = select(UBS).where(
+        UBS.tenant_id == current_user.id,
+        UBS.is_deleted.is_(False),
+    )
+    if status_filter is not None:
+        base_stmt = base_stmt.where(UBS.status == status_filter.value)
+
+    count_stmt = select(func.count(UBS.id)).where(
+        UBS.tenant_id == current_user.id,
+        UBS.is_deleted.is_(False),
+    )
+    if status_filter is not None:
+        count_stmt = count_stmt.where(UBS.status == status_filter.value)
+    total = (await db.execute(count_stmt)).scalar_one()
+
+    ordering = func.coalesce(UBS.updated_at, UBS.created_at).desc()
+    resultado = await db.execute(
+        base_stmt.order_by(ordering)
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+    )
+    items = [UBSOut.model_validate(ubs) for ubs in resultado.scalars().all()]
+
+    return PaginatedUBS(items=items, total=total, page=page, page_size=page_size)
+
+
+@diagnostico_router.delete("/{ubs_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_ubs_report(
+    ubs_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(get_current_active_user),
+):
+    """Soft-delete do relatório.
+
+    Mantém o registro no banco para auditoria, mas remove da listagem do usuário.
+    """
+
+    ubs = await _get_ubs_or_404(ubs_id, current_user, db)
+    ubs.is_deleted = True
+    await db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
 # ----------------------- Grupos profissionais -----------------------
 
 
@@ -439,6 +542,7 @@ async def get_full_diagnosis(
             selectinload(UBS.professional_groups),
             selectinload(UBS.territory_profile),
             selectinload(UBS.needs),
+            selectinload(UBS.attachments),
         )
         .where(UBS.id == ubs.id)
     )
@@ -498,6 +602,10 @@ async def get_full_diagnosis(
 
     saida_ubs = UBSOut.model_validate(ubs_obj)
 
+    saida_anexos: List[UBSAttachmentOut] = [
+        UBSAttachmentOut.model_validate(a) for a in (ubs_obj.attachments or [])
+    ]
+
     return FullDiagnosisOut(
         ubs=saida_ubs,
         services=saida_servicos,
@@ -505,5 +613,197 @@ async def get_full_diagnosis(
         professional_groups=saida_profissionais,
         territory_profile=saida_territorio,
         needs=saida_necessidades,
+        attachments=saida_anexos,
         submission=metadados_envio,
     )
+
+
+# ----------------------- Anexos -----------------------
+
+
+@diagnostico_router.get("/{ubs_id}/attachments", response_model=List[UBSAttachmentOut])
+async def list_ubs_attachments(
+    ubs_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(get_current_active_user),
+):
+    ubs = await _get_ubs_or_404(ubs_id, current_user, db)
+    resultado = await db.execute(
+        select(UBSAttachment)
+        .where(UBSAttachment.ubs_id == ubs.id)
+        .order_by(UBSAttachment.created_at.desc())
+    )
+    return resultado.scalars().all()
+
+
+@diagnostico_router.post(
+    "/{ubs_id}/attachments",
+    response_model=List[UBSAttachmentOut],
+    status_code=status.HTTP_201_CREATED,
+)
+async def upload_ubs_attachments(
+    ubs_id: int,
+    files: List[UploadFile] = File(...),
+    section: str = Form("PROBLEMAS"),
+    description: Optional[str] = Form(None),
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(get_current_active_user),
+):
+    ubs = await _get_ubs_or_404(ubs_id, current_user, db)
+
+    if not files:
+        raise HTTPException(status_code=400, detail="Nenhum arquivo enviado")
+
+    target_dir = _UPLOADS_BASE_DIR / f"ubs_{ubs.id}"
+    target_dir.mkdir(parents=True, exist_ok=True)
+
+    created: List[UBSAttachment] = []
+    for f in files:
+        content = await f.read()
+        size_bytes = len(content)
+        if size_bytes <= 0:
+            continue
+
+        # Limite simples (10MB por arquivo)
+        if size_bytes > 10 * 1024 * 1024:
+            raise HTTPException(status_code=413, detail=f"Arquivo muito grande: {f.filename}")
+
+        original = _sanitize_filename(f.filename or "arquivo")
+        suffix = Path(original).suffix
+        stored_name = f"{uuid.uuid4().hex}{suffix}"
+        stored_path = target_dir / stored_name
+        stored_path.write_bytes(content)
+
+        att = UBSAttachment(
+            ubs_id=ubs.id,
+            original_filename=original,
+            content_type=f.content_type,
+            size_bytes=size_bytes,
+            storage_path=str(stored_path.relative_to(_UPLOADS_BASE_DIR)),
+            section=section,
+            description=description,
+        )
+        db.add(att)
+        created.append(att)
+
+    if not created:
+        raise HTTPException(status_code=400, detail="Nenhum arquivo válido enviado")
+
+    await db.commit()
+    for att in created:
+        await db.refresh(att)
+    return created
+
+
+async def _get_attachment_or_404(
+    attachment_id: int,
+    current_user: Usuario,
+    db: AsyncSession,
+) -> UBSAttachment:
+    resultado = await db.execute(
+        select(UBSAttachment)
+        .join(UBS)
+        .where(
+            UBSAttachment.id == attachment_id,
+            UBS.tenant_id == current_user.id,
+            UBS.is_deleted.is_(False),
+        )
+    )
+    att = resultado.scalar_one_or_none()
+    if not att:
+        raise HTTPException(status_code=404, detail="Anexo não encontrado")
+    return att
+
+
+@diagnostico_router.get("/attachments/{attachment_id}/download")
+async def download_ubs_attachment(
+    attachment_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(get_current_active_user),
+):
+    att = await _get_attachment_or_404(attachment_id, current_user, db)
+    file_path = _UPLOADS_BASE_DIR / att.storage_path
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Arquivo não encontrado no servidor")
+
+    return FileResponse(
+        path=str(file_path),
+        media_type=att.content_type or "application/octet-stream",
+        filename=att.original_filename,
+    )
+
+
+@diagnostico_router.delete("/attachments/{attachment_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_ubs_attachment(
+    attachment_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(get_current_active_user),
+):
+    att = await _get_attachment_or_404(attachment_id, current_user, db)
+    file_path = _UPLOADS_BASE_DIR / att.storage_path
+
+    await db.delete(att)
+    await db.commit()
+
+    try:
+        if file_path.exists():
+            file_path.unlink()
+    except Exception:
+        pass
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# ----------------------- Exportação (PDF/LaTeX) -----------------------
+
+
+@diagnostico_router.get("/{ubs_id}/export/pdf")
+async def export_situational_report_pdf(
+    ubs_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(get_current_active_user),
+):
+    """Exporta o relatório situacional em PDF.
+
+    Gera o PDF a partir do diagnóstico agregado ("/diagnosis") e compila via LaTeX.
+    """
+
+    diagnosis = await get_full_diagnosis(ubs_id=ubs_id, db=db, current_user=current_user)
+
+    # Busca anexos diretamente (inclui storage_path) apenas para geração do PDF
+    attachments_stmt = (
+        select(UBSAttachment)
+        .join(UBS)
+        .where(
+            UBSAttachment.ubs_id == ubs_id,
+            UBS.tenant_id == current_user.id,
+            UBS.is_deleted.is_(False),
+        )
+        .order_by(UBSAttachment.created_at.asc())
+    )
+    attachments = (await db.execute(attachments_stmt)).scalars().all()
+    attachments_for_pdf = [
+        {
+            "original_filename": a.original_filename,
+            "content_type": a.content_type,
+            "storage_path": a.storage_path,
+            "section": a.section,
+            "description": a.description,
+        }
+        for a in attachments
+    ]
+    try:
+        pdf_bytes, filename_base = generate_situational_report_pdf_simple(
+            diagnosis,
+            municipality="Município",
+            reference_period=(diagnosis.ubs.periodo_referencia or ""),
+            attachments=attachments_for_pdf,
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail="Erro ao gerar PDF") from exc
+
+    headers = {
+        "Content-Disposition": f'attachment; filename="{filename_base}.pdf"',
+        "X-Report-Engine": "reportlab",
+    }
+    return FastAPIResponse(content=pdf_bytes, media_type="application/pdf", headers=headers)

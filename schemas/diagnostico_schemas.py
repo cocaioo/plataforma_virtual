@@ -44,6 +44,14 @@ class UBSBase(BaseModel):
 
     outros_servicos: Optional[str]
 
+    # Metadados do relatório situacional
+    periodo_referencia: Optional[str] = Field(None, max_length=50)
+    identificacao_equipe: Optional[str] = Field(None, max_length=100)
+    responsavel_nome: Optional[str] = Field(None, max_length=255)
+    responsavel_cargo: Optional[str] = Field(None, max_length=255)
+    responsavel_contato: Optional[str] = Field(None, max_length=255)
+    fluxo_agenda_acesso: Optional[str]
+
     class Config:
         from_attributes = True
 
@@ -65,6 +73,20 @@ class UBSOut(UBSBase):
     created_at: Optional[datetime]
     updated_at: Optional[datetime]
     submitted_at: Optional[datetime]
+
+
+class UBSAttachmentOut(BaseModel):
+    id: int
+    ubs_id: int
+    original_filename: str
+    content_type: Optional[str]
+    size_bytes: int
+    section: Optional[str] = None
+    description: Optional[str] = None
+    created_at: Optional[datetime]
+
+    class Config:
+        from_attributes = True
 
 
 class ServicesCatalogItem(BaseModel):
@@ -215,6 +237,7 @@ class FullDiagnosisOut(BaseModel):
     professional_groups: List[ProfessionalGroupOut]
     territory_profile: Optional[TerritoryProfileOut]
     needs: Optional[UBSNeedsOut]
+    attachments: List[UBSAttachmentOut] = Field(default_factory=list)
     submission: UBSSubmissionMetadata
 
 

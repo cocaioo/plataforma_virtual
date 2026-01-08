@@ -1,4 +1,5 @@
 const BASE_API = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+console.log("[API] Inicializado com BASE_API:", BASE_API);
 
 // Utilidades de autenticação: token JWT e usuário atual
 function getToken() {
@@ -36,37 +37,194 @@ function clearAuth() {
   localStorage.removeItem("current_user");
 }
 
-async function request(path, { method = "GET", body, headers = {}, requiresAuth = false } = {}) {
-  const cabecalhosRequisicao = {
-    "Content-Type": "application/json",
-    ...headers,
+async function request(path, options = {}) {
+  const url = `${BASE_API}${path}`;
+  const method = options.method || "GET";
+
+  const fetchOptions = {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    },
   };
 
-  if (requiresAuth) {
-    const tokenAcesso = getToken();
-    if (tokenAcesso) {
-      cabecalhosRequisicao["Authorization"] = `Bearer ${tokenAcesso}`;
+  if (options.body) {
+    fetchOptions.body =
+      typeof options.body === "string" ? options.body : JSON.stringify(options.body);
+  }
+
+  if (options.requiresAuth) {
+    const token = getToken();
+    if (token) {
+      fetchOptions.headers.Authorization = `Bearer ${token.trim()}`;
     }
   }
 
-  const resposta = await fetch(`${BASE_API}${path}`, {
-    method,
-    headers: cabecalhosRequisicao,
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  
-  const dados = await resposta.json().catch(() => ({}));
-  
-  if (!resposta.ok) {
-    if (resposta.status === 401 && requiresAuth) {
-      clearAuth();
-      window.location.href = "/";
+  console.log(`[API] ↗ ${method} ${url}`);
+
+  try {
+    const response = await fetch(url, fetchOptions);
+    console.log(`[API] ↙ ${method} ${url} → ${response.status}`);
+
+    if (!response.ok) {
+      if (response.status === 401 && options.requiresAuth) {
+        clearAuth();
+        window.location.href = "/";
+      }
+
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch {
+        errorData = { error: response.statusText };
+      }
+
+      throw new Error(
+        `HTTP ${response.status}: ${errorData.detail || errorData.error || response.statusText}`
+      );
     }
-    const mensagem = dados.detail || dados.message || "Erro ao comunicar com o servidor";
-    throw new Error(mensagem);
+
+    const data = await response.json().catch(() => ({}));
+    console.log("[API] ✓ Dados recebidos:", data);
+    return data;
+  } catch (error) {
+    // Erros de rede/CORS costumam aparecer como TypeError: Failed to fetch
+    if (error instanceof TypeError && `${error.message}`.toLowerCase().includes("fetch")) {
+      console.error("[API ERROR] NetworkError:", error);
+      const networkError = new Error("Não foi possível conectar ao servidor");
+      networkError.type = "NETWORK_ERROR";
+      throw networkError;
+    }
+    console.error(`[API ERROR] ${method} ${url}:`, error);
+    throw error;
   }
-  
-  return dados;
+}
+
+async function requestBlob(path, options = {}) {
+  const url = `${BASE_API}${path}`;
+  const method = options.method || "GET";
+
+  const fetchOptions = {
+    method,
+    headers: {
+      ...(options.headers || {}),
+    },
+  };
+
+  if (options.requiresAuth) {
+    const token = getToken();
+    if (token) {
+      fetchOptions.headers.Authorization = `Bearer ${token.trim()}`;
+    }
+  }
+
+  console.log(`[API] ↗ ${method} ${url} (blob)`);
+
+  try {
+    const response = await fetch(url, fetchOptions);
+    console.log(`[API] ↙ ${method} ${url} → ${response.status} (blob)`);
+
+    if (!response.ok) {
+      if (response.status === 401 && options.requiresAuth) {
+        clearAuth();
+        window.location.href = "/";
+      }
+
+      let message = response.statusText;
+      try {
+        const errorData = await response.json();
+        message = errorData.detail || errorData.error || message;
+      } catch {
+        const text = await response.text().catch(() => "");
+        if (text) message = text;
+      }
+
+      throw new Error(`HTTP ${response.status}: ${message}`);
+    }
+
+    const blob = await response.blob();
+    const contentDisposition = response.headers.get("content-disposition") || "";
+    return { blob, contentDisposition };
+  } catch (error) {
+    if (error instanceof TypeError && `${error.message}`.toLowerCase().includes("fetch")) {
+      console.error("[API ERROR] NetworkError (blob):", error);
+      const networkError = new Error("Não foi possível conectar ao servidor");
+      networkError.type = "NETWORK_ERROR";
+      throw networkError;
+    }
+    console.error(`[API ERROR] ${method} ${url} (blob):`, error);
+    throw error;
+  }
+}
+
+async function requestFormData(path, options = {}) {
+  const url = `${BASE_API}${path}`;
+  const method = options.method || "POST";
+
+  const fetchOptions = {
+    method,
+    headers: {
+      ...(options.headers || {}),
+    },
+    body: options.body, // FormData
+  };
+
+  if (options.requiresAuth) {
+    const token = getToken();
+    if (token) {
+      fetchOptions.headers.Authorization = `Bearer ${token.trim()}`;
+    }
+  }
+
+  console.log(`[API] ↗ ${method} ${url} (form-data)`);
+
+  try {
+    const response = await fetch(url, fetchOptions);
+    console.log(`[API] ↙ ${method} ${url} → ${response.status} (form-data)`);
+
+    if (!response.ok) {
+      if (response.status === 401 && options.requiresAuth) {
+        clearAuth();
+        window.location.href = "/";
+      }
+
+      let message = response.statusText;
+      try {
+        const errorData = await response.json();
+        message = errorData.detail || errorData.error || message;
+      } catch {
+        const text = await response.text().catch(() => "");
+        if (text) message = text;
+      }
+
+      throw new Error(`HTTP ${response.status}: ${message}`);
+    }
+
+    const data = await response.json().catch(() => ({}));
+    console.log("[API] ✓ Dados recebidos (form-data):", data);
+    return data;
+  } catch (error) {
+    if (error instanceof TypeError && `${error.message}`.toLowerCase().includes("fetch")) {
+      console.error("[API ERROR] NetworkError (form-data):", error);
+      const networkError = new Error("Não foi possível conectar ao servidor");
+      networkError.type = "NETWORK_ERROR";
+      throw networkError;
+    }
+    console.error(`[API ERROR] ${method} ${url} (form-data):`, error);
+    throw error;
+  }
+}
+
+function downloadBlob(blob, filename = "download") {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
 
 export const api = {
@@ -95,4 +253,47 @@ export const api = {
   removeToken,
   getCurrentUser,
   setCurrentUser,
+
+  // Relatórios situacionais (UBS)
+  listReports: ({ status } = {}) => {
+    const params = new URLSearchParams();
+    if (status) params.set("status", status);
+    const query = params.toString();
+    return request(`/ubs${query ? `?${query}` : ""}`, { requiresAuth: true });
+  },
+  deleteReport: (ubsId) => request(`/ubs/${ubsId}`, { method: "DELETE", requiresAuth: true }),
+  exportReportPdf: (ubsId) => requestBlob(`/ubs/${ubsId}/export/pdf`, { requiresAuth: true }),
+
+  // Diagnóstico (formulário)
+  createUbsDraft: (payload) => request("/ubs", { method: "POST", body: payload, requiresAuth: true }),
+  updateUbs: (ubsId, payload) =>
+    request(`/ubs/${ubsId}`, { method: "PATCH", body: payload, requiresAuth: true }),
+  upsertTerritory: (ubsId, payload) =>
+    request(`/ubs/${ubsId}/territory`, { method: "PUT", body: payload, requiresAuth: true }),
+  upsertNeeds: (ubsId, payload) =>
+    request(`/ubs/${ubsId}/needs`, { method: "PUT", body: payload, requiresAuth: true }),
+  submitDiagnosis: (ubsId, payload = { confirm: true }) =>
+    request(`/ubs/${ubsId}/submit`, { method: "POST", body: payload, requiresAuth: true }),
+
+  // Anexos
+  listAttachments: (ubsId) => request(`/ubs/${ubsId}/attachments`, { requiresAuth: true }),
+  uploadAttachments: (ubsId, files = [], { section = "PROBLEMAS", description = "" } = {}) => {
+    const form = new FormData();
+    for (const f of files) {
+      form.append("files", f);
+    }
+    form.append("section", section);
+    if (description) form.append("description", description);
+    return requestFormData(`/ubs/${ubsId}/attachments`, {
+      method: "POST",
+      body: form,
+      requiresAuth: true,
+    });
+  },
+  deleteAttachment: (attachmentId) =>
+    request(`/ubs/attachments/${attachmentId}`, { method: "DELETE", requiresAuth: true }),
+  downloadAttachment: async (attachmentId, filename) => {
+    const { blob } = await requestBlob(`/ubs/attachments/${attachmentId}/download`, { requiresAuth: true });
+    downloadBlob(blob, filename || `anexo-${attachmentId}`);
+  },
 };
