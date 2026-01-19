@@ -5,13 +5,21 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-DATABASE_USER = os.getenv("DB_USER")
-DATABASE_PASSWORD = os.getenv("DB_PASSWORD")
-DATABASE_HOST = os.getenv("DB_HOST")
-DATABASE_PORT = os.getenv("DB_PORT")
-DATABASE_NAME = os.getenv("DB_NAME")
+DATABASE_URL = os.getenv("DATABASE_URL")
 
-DATABASE_URL = f"postgresql+psycopg://{DATABASE_USER}:{DATABASE_PASSWORD}@{DATABASE_HOST}:{DATABASE_PORT}/{DATABASE_NAME}"
+# Em produção (Render), a DATABASE_URL é fornecida diretamente.
+# O código abaixo adapta a URL para o dialeto do SQLAlchemy e mantém
+# a configuração original para desenvolvimento local.
+if DATABASE_URL:
+    if DATABASE_URL.startswith("postgres://"):
+        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)
+else:
+    DATABASE_USER = os.getenv("DB_USER")
+    DATABASE_PASSWORD = os.getenv("DB_PASSWORD")
+    DATABASE_HOST = os.getenv("DB_HOST")
+    DATABASE_PORT = os.getenv("DB_PORT")
+    DATABASE_NAME = os.getenv("DB_NAME")
+    DATABASE_URL = f"postgresql+psycopg://{DATABASE_USER}:{DATABASE_PASSWORD}@{DATABASE_HOST}:{DATABASE_PORT}/{DATABASE_NAME}"
 
 #Criando a engine
 #Engine é um objeto do SQLAlchemy usado
