@@ -9,6 +9,8 @@ from slowapi.errors import RateLimitExceeded
 import logging
 import sys
 import asyncio
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 if sys.platform == 'win32':
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
@@ -39,13 +41,23 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 #Permite o front-end chamar a API do backend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173", "https://plataforma-virtual.onrender.com"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-#Rota para verificar SAÚDE da API (verificar se o banco está conectado e a API rodando)
+from routes.auth_routes import auth_router
+from routes.diagnostico_routes import diagnostico_router
+
+#Incluindo no Router as rotas de autenticação e diagnóstico
+app.include_router(auth_router)
+app.include_router(diagnostico_router)
+
+# Monta o diretório de assets estáticos do frontend
+app.mount("/assets", StaticFiles(directory="frontend-react/dist/assets"), name="assets")
+
+# Rota para verificar SAÚDE da API (verificar se o banco está conectado e a API rodando)
 @app.get("/health") #Rate limite de 10 requisições por minuto
 @limiter.limit("10/minute")
 async def health_check(request: Request, db: AsyncSession = Depends(get_db)):
@@ -55,9 +67,7 @@ async def health_check(request: Request, db: AsyncSession = Depends(get_db)):
     except Exception as e:
         return {"status": "error", "database": str(e)}
 
-from routes.auth_routes import auth_router
-from routes.diagnostico_routes import diagnostico_router
-
-#Incluindo no Router as rotas de autenticação e diagnóstico
-app.include_router(auth_router)
-app.include_router(diagnostico_router)
+# Rota catch-all para servir o index.html do React para qualquer outra rota
+@app.get("/{catchall:path}", response_class=FileResponse)
+async def serve_react_app(catchall: str):
+    return "frontend-react/dist/index.html"
