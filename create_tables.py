@@ -1,17 +1,23 @@
 import asyncio
+import sys
+
+# FIX obrigatório para Windows + psycopg3 async
+if sys.platform.startswith("win"):
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from database import engine, Base, AsyncSessionLocal
 
-# Importa os modelos para que o metadata do SQLAlchemy os conheça
+# Importa os modelos para registrar no metadata
 import models.auth_models  # noqa: F401
 import models.diagnostico_models  # noqa: F401
 from models.diagnostico_models import Service
 
 
 async def init_db(async_engine: AsyncEngine) -> None:
+    # Cria todas as tabelas
     async with async_engine.begin() as conexao:
         await conexao.run_sync(Base.metadata.create_all)
 
@@ -45,9 +51,14 @@ async def init_db(async_engine: AsyncEngine) -> None:
                 "Atividades coletivas e preventivas",
                 "Grupos operativos (gestantes, tabagismo, etc.)",
             ]
+
             for nome in servicos_padrao:
                 sessao.add(Service(name=nome))
+
             await sessao.commit()
+            print("✔ Serviços padrão inseridos com sucesso.")
+        else:
+            print("ℹ Serviços já existentes. Nada a inserir.")
 
 
 if __name__ == "__main__":
