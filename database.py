@@ -8,11 +8,13 @@ load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 # Em produção (Render), a DATABASE_URL é fornecida diretamente.
-# O código abaixo adapta a URL para o dialeto do SQLAlchemy e mantém
-# a configuração original para desenvolvimento local.
-if DATABASE_URL:
-    if DATABASE_URL.startswith("postgres://"):
-        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)
+    # O código abaixo adapta a URL para o dialeto do SQLAlchemy e mantém
+    # a configuração original para desenvolvimento local.
+    if "+psycopg" not in DATABASE_URL: # Verifica se o driver já não está presente
+        if DATABASE_URL.startswith("postgres://"):
+            DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)
+        elif DATABASE_URL.startswith("postgresql://"):
+            DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
 else:
     DATABASE_USER = os.getenv("DB_USER")
     DATABASE_PASSWORD = os.getenv("DB_PASSWORD")
