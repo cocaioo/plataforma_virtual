@@ -24,20 +24,33 @@ import models.diagnostico_models  # noqa: F401,E402
 target_metadata = Base.metadata
 
 
-def _build_database_url() -> str:
+def get_database_url() -> str:
+    # Prioriza a variável DATABASE_URL, comum em serviços de hospedagem como o Render.
+    url = os.getenv("DATABASE_URL")
+    if url:
+        # Garante que a URL é compatível com o driver síncrono do psycopg.
+        # Alembic roda de forma síncrona.
+        if url.startswith("postgres://"):
+            return url.replace("postgres://", "postgresql+psycopg://", 1)
+        if url.startswith("postgresql://") and "+psycopg" not in url:
+            return url.replace("postgresql://", "postgresql+psycopg://", 1)
+        return url
+
+    # Fallback para o método antigo de montar a URL a partir de partes (para desenvolvimento local)
     user = os.getenv("DB_USER")
     password = os.getenv("DB_PASSWORD")
     host = os.getenv("DB_HOST")
     port = os.getenv("DB_PORT")
     name = os.getenv("DB_NAME")
 
-    # Usamos psycopg v3 no modo síncrono para o Alembic.
-    # (o app usa async: postgresql+psycopg:// em engine async)
+    if not all([user, password, host, port, name]):
+        raise ValueError("Database connection details are missing.")
+
     return f"postgresql+psycopg://{user}:{password}@{host}:{port}/{name}"
 
 
 def run_migrations_offline() -> None:
-    url = _build_database_url()
+    url = get_database_url()
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -52,7 +65,7 @@ def run_migrations_offline() -> None:
 
 def run_migrations_online() -> None:
     configuration = config.get_section(config.config_ini_section) or {}
-    configuration["sqlalchemy.url"] = _build_database_url()
+    configuration["sqlalchemy.url"] = get_database_url()
 
     connectable = engine_from_config(
         configuration,
