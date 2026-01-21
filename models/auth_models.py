@@ -21,7 +21,7 @@ class ProfissionalUbs(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     usuario_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
     cargo = Column(String(100), nullable=False)
-    registro_profissional = Column(String(50), unique=True, nullable=False)
+    registro_professional = Column(String(50), unique=True, nullable=False)
     ativo = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
