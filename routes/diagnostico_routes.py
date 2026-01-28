@@ -49,7 +49,7 @@ from schemas.diagnostico_schemas import (
     ErrorDetail,
     UBSSubmitRequest,
 )
-from utils.deps import get_current_active_user
+from utils.deps import get_current_professional_user
 from services.reporting.simple_situational_report_pdf import (
     generate_situational_report_pdf_simple,
 )
@@ -79,7 +79,6 @@ async def _get_ubs_or_404(
     resultado = await db.execute(
         select(UBS).where(
             UBS.id == ubs_id,
-            UBS.tenant_id == current_user.id,
             UBS.is_deleted.is_(False),
         )
     )
@@ -96,10 +95,10 @@ async def _get_ubs_or_404(
 async def create_ubs(
     payload: UBSCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: Usuario = Depends(get_current_active_user),
+    current_user: Usuario = Depends(get_current_professional_user),
 ):
     ubs = UBS(
-        tenant_id=current_user.id,
+        tenant_id=1,
         owner_user_id=current_user.id,
         nome_relatorio=payload.nome_relatorio,
         nome_ubs=payload.nome_ubs,
@@ -136,7 +135,7 @@ async def update_ubs(
     ubs_id: int,
     payload: UBSUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: Usuario = Depends(get_current_active_user),
+    current_user: Usuario = Depends(get_current_professional_user),
 ):
     ubs = await _get_ubs_or_404(ubs_id, current_user, db)
 
@@ -152,7 +151,7 @@ async def update_ubs(
 @diagnostico_router.get("", response_model=PaginatedUBS)
 async def list_ubs_reports(
     db: AsyncSession = Depends(get_db),
-    current_user: Usuario = Depends(get_current_active_user),
+    current_user: Usuario = Depends(get_current_professional_user),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     status_filter: Optional[UBSStatus] = Query(None, alias="status"),
@@ -162,17 +161,11 @@ async def list_ubs_reports(
     Observação: no frontend, isso substitui mocks na tela de "Relatórios Situacionais".
     """
 
-    base_stmt = select(UBS).where(
-        UBS.tenant_id == current_user.id,
-        UBS.is_deleted.is_(False),
-    )
+    base_stmt = select(UBS).where(UBS.is_deleted.is_(False))
     if status_filter is not None:
         base_stmt = base_stmt.where(UBS.status == status_filter.value)
 
-    count_stmt = select(func.count(UBS.id)).where(
-        UBS.tenant_id == current_user.id,
-        UBS.is_deleted.is_(False),
-    )
+    count_stmt = select(func.count(UBS.id)).where(UBS.is_deleted.is_(False))
     if status_filter is not None:
         count_stmt = count_stmt.where(UBS.status == status_filter.value)
     total = (await db.execute(count_stmt)).scalar_one()
@@ -192,7 +185,7 @@ async def list_ubs_reports(
 async def delete_ubs_report(
     ubs_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: Usuario = Depends(get_current_active_user),
+    current_user: Usuario = Depends(get_current_professional_user),
 ):
     """Soft-delete do relatório.
 
@@ -212,7 +205,7 @@ async def delete_ubs_report(
 async def list_professional_groups(
     ubs_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: Usuario = Depends(get_current_active_user),
+    current_user: Usuario = Depends(get_current_professional_user),
 ):
     ubs = await _get_ubs_or_404(ubs_id, current_user, db)
 
@@ -233,7 +226,7 @@ async def create_professional_group(
     ubs_id: int,
     payload: ProfessionalGroupCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: Usuario = Depends(get_current_active_user),
+    current_user: Usuario = Depends(get_current_professional_user),
 ):
     ubs = await _get_ubs_or_404(ubs_id, current_user, db)
 
@@ -255,12 +248,11 @@ async def create_professional_group(
 async def get_professional_group(
     group_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: Usuario = Depends(get_current_active_user),
+    current_user: Usuario = Depends(get_current_professional_user),
 ):
     resultado = await db.execute(
         select(ProfessionalGroup).join(UBS).where(
             ProfessionalGroup.id == group_id,
-            UBS.tenant_id == current_user.id,
             UBS.is_deleted.is_(False),
         )
     )
@@ -275,12 +267,11 @@ async def update_professional_group(
     group_id: int,
     payload: ProfessionalGroupUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: Usuario = Depends(get_current_active_user),
+    current_user: Usuario = Depends(get_current_professional_user),
 ):
     resultado = await db.execute(
         select(ProfessionalGroup).join(UBS).where(
             ProfessionalGroup.id == group_id,
-            UBS.tenant_id == current_user.id,
             UBS.is_deleted.is_(False),
         )
     )
@@ -306,7 +297,7 @@ async def update_professional_group(
 async def get_territory_profile(
     ubs_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: Usuario = Depends(get_current_active_user),
+    current_user: Usuario = Depends(get_current_professional_user),
 ):
     ubs = await _get_ubs_or_404(ubs_id, current_user, db)
 
@@ -324,7 +315,7 @@ async def upsert_territory_profile(
     ubs_id: int,
     payload: TerritoryProfileCreate | TerritoryProfileUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: Usuario = Depends(get_current_active_user),
+    current_user: Usuario = Depends(get_current_professional_user),
 ):
     ubs = await _get_ubs_or_404(ubs_id, current_user, db)
 
@@ -366,7 +357,7 @@ async def upsert_territory_profile(
 async def get_ubs_needs(
     ubs_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: Usuario = Depends(get_current_active_user),
+    current_user: Usuario = Depends(get_current_professional_user),
 ):
     ubs = await _get_ubs_or_404(ubs_id, current_user, db)
 
@@ -382,7 +373,7 @@ async def upsert_ubs_needs(
     ubs_id: int,
     payload: UBSNeedsCreate | UBSNeedsUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: Usuario = Depends(get_current_active_user),
+    current_user: Usuario = Depends(get_current_professional_user),
 ):
     ubs = await _get_ubs_or_404(ubs_id, current_user, db)
 
@@ -483,7 +474,7 @@ async def submit_diagnosis(
     ubs_id: int,
     payload: UBSSubmitRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: Usuario = Depends(get_current_active_user),
+    current_user: Usuario = Depends(get_current_professional_user),
 ):
     ubs = await _get_ubs_or_404(ubs_id, current_user, db)
 
@@ -529,7 +520,7 @@ async def submit_diagnosis(
 async def get_full_diagnosis(
     ubs_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: Usuario = Depends(get_current_active_user),
+    current_user: Usuario = Depends(get_current_professional_user),
 ):
     ubs = await _get_ubs_or_404(ubs_id, current_user, db)
 
@@ -625,7 +616,7 @@ async def get_full_diagnosis(
 async def list_ubs_attachments(
     ubs_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: Usuario = Depends(get_current_active_user),
+    current_user: Usuario = Depends(get_current_professional_user),
 ):
     ubs = await _get_ubs_or_404(ubs_id, current_user, db)
     resultado = await db.execute(
@@ -647,7 +638,7 @@ async def upload_ubs_attachments(
     section: str = Form("PROBLEMAS"),
     description: Optional[str] = Form(None),
     db: AsyncSession = Depends(get_db),
-    current_user: Usuario = Depends(get_current_active_user),
+    current_user: Usuario = Depends(get_current_professional_user),
 ):
     ubs = await _get_ubs_or_404(ubs_id, current_user, db)
 
@@ -705,7 +696,6 @@ async def _get_attachment_or_404(
         .join(UBS)
         .where(
             UBSAttachment.id == attachment_id,
-            UBS.tenant_id == current_user.id,
             UBS.is_deleted.is_(False),
         )
     )
@@ -719,7 +709,7 @@ async def _get_attachment_or_404(
 async def download_ubs_attachment(
     attachment_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: Usuario = Depends(get_current_active_user),
+    current_user: Usuario = Depends(get_current_professional_user),
 ):
     att = await _get_attachment_or_404(attachment_id, current_user, db)
     file_path = _UPLOADS_BASE_DIR / att.storage_path
@@ -737,7 +727,7 @@ async def download_ubs_attachment(
 async def delete_ubs_attachment(
     attachment_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: Usuario = Depends(get_current_active_user),
+    current_user: Usuario = Depends(get_current_professional_user),
 ):
     att = await _get_attachment_or_404(attachment_id, current_user, db)
     file_path = _UPLOADS_BASE_DIR / att.storage_path
@@ -761,7 +751,7 @@ async def delete_ubs_attachment(
 async def export_situational_report_pdf(
     ubs_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: Usuario = Depends(get_current_active_user),
+    current_user: Usuario = Depends(get_current_professional_user),
 ):
     """Exporta o relatório situacional em PDF.
 
@@ -776,7 +766,6 @@ async def export_situational_report_pdf(
         .join(UBS)
         .where(
             UBSAttachment.ubs_id == ubs_id,
-            UBS.tenant_id == current_user.id,
             UBS.is_deleted.is_(False),
         )
         .order_by(UBSAttachment.created_at.asc())

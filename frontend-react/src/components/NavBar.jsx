@@ -5,6 +5,7 @@ export function NavBar() {
   const location = useLocation();
   const tokenAcesso = api.getToken();
   const usuarioAtual = api.getCurrentUser();
+  const role = `${usuarioAtual?.role || ""}`.toLowerCase();
 
   const estaEmPaginaDeAuth = location.pathname === "/" || location.pathname === "/register";
 
@@ -21,7 +22,10 @@ export function NavBar() {
         {tokenAcesso && (
           <>
             <Link to="/dashboard">Dashboard</Link>
-            <Link to="/diagnostico">Novo relatório situacional</Link>
+            {(usuarioAtual?.is_profissional || role === "gestor") && (
+              <Link to="/diagnostico">Novo relatório situacional</Link>
+            )}
+            {role === "gestor" && <Link to="/gestor/solicitacoes">Solicitações</Link>}
             <button
               type="button"
               className="btn btn-secondary"
@@ -32,7 +36,7 @@ export function NavBar() {
             </button>
             {usuarioAtual && (
               <span className="muted" style={{ marginLeft: "8px", fontSize: "13px" }}>
-                {usuarioAtual.is_profissional ? "Profissional" : "Usuário"}
+                {role === "gestor" ? "Gestor" : usuarioAtual.is_profissional ? "Profissional" : "Usuário"}
               </span>
             )}
           </>

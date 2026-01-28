@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from database import get_db
-from models.auth_models import Usuario
+from models.auth_models import Usuario, ProfissionalUbs
 from utils.jwt_handler import verify_token
 
 
@@ -40,4 +40,33 @@ async def get_current_user(
 async def get_current_active_user(current_user: Usuario = Depends(get_current_user)) -> Usuario:
     if not current_user.ativo:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Usuário inativo")
+    return current_user
+
+
+async def get_current_professional_user(
+    current_user: Usuario = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+) -> Usuario:
+    role = (current_user.role or "USER").upper()
+    if role in ("PROFISSIONAL", "GESTOR"):
+        return current_user
+
+    # Compatibilidade: se existir registro ativo em profissionais, também permite
+    resultado = await db.execute(
+        select(ProfissionalUbs).where(
+            ProfissionalUbs.usuario_id == current_user.id,
+            ProfissionalUbs.ativo.is_(True),
+        )
+    )
+    if resultado.scalar_one_or_none() is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acesso restrito a profissionais")
+    return current_user
+
+
+async def get_current_gestor_user(
+    current_user: Usuario = Depends(get_current_professional_user),
+) -> Usuario:
+    role = (current_user.role or "USER").upper()
+    if role != "GESTOR":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acesso restrito ao gestor")
     return current_user

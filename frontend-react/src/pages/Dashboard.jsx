@@ -1,15 +1,36 @@
 import { api } from "../api";
 import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
 
 // Menu de funcionalidades após login.
 // Por enquanto, sempre mostramos a visão completa de gestor
 // para qualquer usuário autenticado (mais simples para testar a UI).
 export function Dashboard() {
+  const [carregandoUsuario, setCarregandoUsuario] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        await api.me();
+      } finally {
+        setCarregandoUsuario(false);
+      }
+    })();
+  }, []);
+
   const usuarioAtual = api.getCurrentUser();
-  const rotuloPapel = "Gestor da UBS";
+  const papel = (usuarioAtual?.role || (usuarioAtual?.is_profissional ? "profissional" : "usuario")).toLowerCase();
+  const rotuloPapel =
+    papel === "gestor" ? "Gestor da UBS" : papel === "profissional" ? "Profissional da UBS" : "Usuário";
 
   // Distribuição simples de funcionalidades com base no dashboard_ideal.md
   const itensComuns = [
+    {
+      title: "Solicitar acesso profissional",
+      desc: "Enviar sua solicitação para avaliação do gestor da UBS.",
+      to: "/solicitacao-profissional",
+      allowedFor: ["usuario"],
+    },
     {
       title: "Novo relatório situacional",
       desc: "Preencher o formulário de diagnóstico para criar um relatório situacional do zero.",
@@ -57,8 +78,15 @@ export function Dashboard() {
     },
   ];
 
-  // Exibe todos os itens (visão de gestor), independentemente do papel salvo.
-  const itens = [...itensComuns, ...extrasGestor];
+  const allowed = (item) => {
+    if (!item.allowedFor) return true;
+    if (item.allowedFor.includes(papel)) return true;
+    // Gestor herda permissões de profissional
+    if (papel === "gestor" && item.allowedFor.includes("profissional")) return true;
+    return false;
+  };
+
+  const itens = [...itensComuns, ...extrasGestor].filter(allowed);
 
   return (
     <main className="page">
@@ -67,9 +95,9 @@ export function Dashboard() {
           <p className="eyebrow">Bem-vindo à plataforma UBS</p>
           <h1>Menu principal</h1>
           <p className="muted">
-            Você está autenticado como <strong>{rotuloPapel}</strong>. Nesta versão de testes, todas as
-            funcionalidades do gestor estão visíveis para qualquer usuário autenticado.
+            Você está autenticado como <strong>{rotuloPapel}</strong>.
           </p>
+          {carregandoUsuario && <p className="muted">Atualizando permissões…</p>}
         </div>
       </section>
 

@@ -1,6 +1,6 @@
 # Torna `models` um pacote para que imports com efeitos colaterais (metadata) funcionem.
 
-from .auth_models import Usuario, ProfissionalUbs, LoginAttempt  # noqa: F401
+from .auth_models import Usuario, ProfissionalUbs, LoginAttempt, ProfessionalInvite, ProfessionalRequest  # noqa: F401
 from .diagnostico_models import (  # noqa: F401
     UBS,
     Service,
