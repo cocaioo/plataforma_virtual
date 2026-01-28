@@ -10,7 +10,6 @@ export function Register() {
     cpf: "",
     senha: "",
     confirmarSenha: "",
-    invite_code: "",
     cargo: "",
     registro_profissional: "",
   });
@@ -28,10 +27,6 @@ export function Register() {
     }
 
     if (tipoConta === "profissional") {
-      if (!formulario.invite_code?.trim()) {
-        setEstado({ ...estado, erro: "Informe o código de convite", sucesso: "" });
-        return;
-      }
       if (!formulario.cargo?.trim()) {
         setEstado({ ...estado, erro: "Informe o cargo", sucesso: "" });
         return;
@@ -53,14 +48,17 @@ export function Register() {
 
       if (tipoConta === "profissional") {
         await api.login({ email: formulario.email, senha: formulario.senha });
-        await api.claimProfessional({
-          invite_code: formulario.invite_code,
+        await api.createProfessionalRequest({
           cargo: formulario.cargo,
           registro_profissional: formulario.registro_profissional,
         });
-        setEstado({ carregando: false, erro: "", sucesso: "Cadastro profissional ativado!" });
+        setEstado({
+          carregando: false,
+          erro: "",
+          sucesso: "Solicitação enviada! Aguarde a aprovação do gestor da UBS.",
+        });
         setTimeout(() => {
-          window.location.href = "/dashboard";
+          window.location.href = "/solicitacao-profissional";
         }, 1200);
         return;
       }
@@ -85,7 +83,7 @@ export function Register() {
             Tipo de conta
             <select value={tipoConta} onChange={(e) => setTipoConta(e.target.value)}>
               <option value="usuario">Usuário</option>
-              <option value="profissional">Profissional da UBS (com convite)</option>
+              <option value="profissional">Profissional da UBS</option>
             </select>
           </label>
 
@@ -118,10 +116,9 @@ export function Register() {
 
           {tipoConta === "profissional" && (
             <>
-              <label>
-                Código de convite
-                <input name="invite_code" value={formulario.invite_code} onChange={aoAlterar} required />
-              </label>
+              <p className="muted" style={{ marginTop: "-6px", marginBottom: "8px" }}>
+                Você criará uma conta normal e enviará uma solicitação para o gestor aprovar.
+              </p>
               <label>
                 Cargo
                 <input name="cargo" value={formulario.cargo} onChange={aoAlterar} required />

@@ -4,6 +4,7 @@ import { api } from "../api";
 export function GestorSolicitacoes() {
   const [estado, setEstado] = useState({ carregando: true, erro: "" });
   const [lista, setLista] = useState([]);
+  const [roleSelecionado, setRoleSelecionado] = useState({});
 
   const usuarioAtual = api.getCurrentUser();
   const papel = `${usuarioAtual?.role || ""}`.toLowerCase();
@@ -33,10 +34,11 @@ export function GestorSolicitacoes() {
   const pendentes = useMemo(() => lista.filter((x) => `${x.status}`.toUpperCase() === "PENDING"), [lista]);
 
   async function aprovar(id) {
+    const role = roleSelecionado[id] || "PROFISSIONAL";
     if (!confirm("Aprovar esta solicitação?")) return;
     setEstado((e) => ({ ...e, carregando: true, erro: "" }));
     try {
-      await api.approveProfessionalRequest(id);
+      await api.approveProfessionalRequest(id, { role });
       await carregar();
     } catch (err) {
       setEstado({ carregando: false, erro: err.message });
@@ -80,6 +82,12 @@ export function GestorSolicitacoes() {
             <article className="card" key={s.id}>
               <h3>Solicitação #{s.id}</h3>
               <p className="muted" style={{ marginTop: "8px" }}>
+                Solicitante: <strong>{s.user?.nome || "(sem nome)"}</strong>
+              </p>
+              <p className="muted" style={{ marginTop: "8px" }}>
+                Email: <strong>{s.user?.email || "(sem email)"}</strong>
+              </p>
+              <p className="muted" style={{ marginTop: "8px" }}>
                 Usuário ID: <strong>{s.user_id}</strong>
               </p>
               <p className="muted" style={{ marginTop: "8px" }}>
@@ -88,6 +96,17 @@ export function GestorSolicitacoes() {
               <p className="muted" style={{ marginTop: "8px" }}>
                 Registro: <strong>{s.registro_profissional}</strong>
               </p>
+              <label style={{ display: "block", marginTop: "12px" }}>
+                Aprovar como
+                <select
+                  value={roleSelecionado[s.id] || "PROFISSIONAL"}
+                  onChange={(e) => setRoleSelecionado((m) => ({ ...m, [s.id]: e.target.value }))}
+                  style={{ marginTop: "6px" }}
+                >
+                  <option value="PROFISSIONAL">Profissional da UBS</option>
+                  <option value="GESTOR">Gestor</option>
+                </select>
+              </label>
               <div style={{ display: "flex", gap: "8px", marginTop: "14px" }}>
                 <button className="btn btn-primary" type="button" onClick={() => aprovar(s.id)}>
                   Aprovar

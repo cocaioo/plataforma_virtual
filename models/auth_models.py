@@ -39,18 +39,6 @@ class LoginAttempt(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
-class ProfessionalInvite(Base):
-    __tablename__ = "professional_invites"
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    code_hash = Column(String(128), nullable=False, unique=True)
-    expires_at = Column(DateTime(timezone=True), nullable=False)
-    used_at = Column(DateTime(timezone=True), nullable=True)
-    used_by_user_id = Column(Integer, ForeignKey("usuarios.id"), nullable=True)
-    created_by_user_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-
-
 class ProfessionalRequest(Base):
     __tablename__ = "professional_requests"
 

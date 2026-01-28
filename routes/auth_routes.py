@@ -1,17 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from pydantic import BaseModel, EmailStr, Field, field_validator
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
 import re
-import secrets
-import hashlib
-import hmac
-import os
 
 from database import get_db
-from models.auth_models import Usuario, ProfissionalUbs, LoginAttempt, ProfessionalInvite, ProfessionalRequest
+from models.auth_models import Usuario, ProfissionalUbs, LoginAttempt, ProfessionalRequest
 from utils.jwt_handler import create_access_token
 from utils.cpf_validator import validate_cpf
 from utils.deps import get_current_active_user, get_current_gestor_user
@@ -110,21 +106,6 @@ class ProfissionalCreate(BaseModel):
     registro_profissional: str
 
 
-class InviteCreate(BaseModel):
-    expires_in_days: int = Field(7, ge=1, le=30)
-
-
-class InviteOut(BaseModel):
-    code: str
-    expires_at: datetime
-
-
-class ClaimProfessional(BaseModel):
-    invite_code: str = Field(..., min_length=6, max_length=128)
-    cargo: str = Field(..., min_length=2, max_length=100)
-    registro_profissional: str = Field(..., min_length=3, max_length=50)
-
-
 class ProfessionalRequestCreate(BaseModel):
     cargo: str = Field(..., min_length=2, max_length=100)
     registro_profissional: str = Field(..., min_length=3, max_length=50)
@@ -145,8 +126,30 @@ class ProfessionalRequestOut(BaseModel):
         from_attributes = True
 
 
+class UserSummaryOut(BaseModel):
+    id: int
+    nome: str
+    email: EmailStr
+
+
+class ProfessionalRequestWithUserOut(ProfessionalRequestOut):
+    user: UserSummaryOut
+
+
 class ProfessionalRequestReview(BaseModel):
     rejection_reason: str | None = Field(None, max_length=255)
+
+
+class ProfessionalRequestApprove(BaseModel):
+    role: str = Field(..., description="PROFISSIONAL ou GESTOR")
+
+    @field_validator("role")
+    @classmethod
+    def validate_role(cls, v: str):
+        role = (v or "").upper().strip()
+        if role not in ("PROFISSIONAL", "GESTOR"):
+            raise ValueError("role deve ser PROFISSIONAL ou GESTOR")
+        return role
 
 
 def hash_password(raw: str) -> str:
@@ -155,29 +158,6 @@ def hash_password(raw: str) -> str:
 
 def verify_password(raw: str, hashed: str) -> bool:
     return pwd_context.verify(raw, hashed)
-
-
-INVITE_HMAC_KEY = os.getenv("INVITE_HMAC_KEY", "change-me-in-production")
-
-
-def _normalize_invite_code(code: str) -> str:
-    return "".join((code or "").strip().upper().split())
-
-
-def _hash_invite_code(code: str) -> str:
-    normalized = _normalize_invite_code(code)
-    return hmac.new(
-        INVITE_HMAC_KEY.encode("utf-8"),
-        normalized.encode("utf-8"),
-        hashlib.sha256,
-    ).hexdigest()
-
-
-def _generate_invite_code() -> str:
-    raw = secrets.token_urlsafe(12)
-    cleaned = re.sub(r"[^A-Za-z0-9]", "", raw).upper()
-    cleaned = cleaned[:12]
-    return f"UBS-{cleaned[0:4]}-{cleaned[4:8]}-{cleaned[8:12]}"
 
 
 async def log_login_attempt(db: AsyncSession, email: str, ip_address: str, sucesso: bool, motivo: str = None):
@@ -319,104 +299,6 @@ async def login_user(request: Request, payload: UsuarioLogin, db: AsyncSession =
     }
 
 
-@auth_router.post("/invites", response_model=InviteOut, status_code=status.HTTP_201_CREATED)
-@limiter.limit("10/minute")
-async def create_invite(
-    request: Request,
-    payload: InviteCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: Usuario = Depends(get_current_gestor_user),
-):
-    code = _generate_invite_code()
-    code_hash = _hash_invite_code(code)
-    expires_at = datetime.utcnow() + timedelta(days=payload.expires_in_days)
-
-    convite = ProfessionalInvite(
-        code_hash=code_hash,
-        expires_at=expires_at,
-        created_by_user_id=current_user.id,
-    )
-    db.add(convite)
-    await db.commit()
-
-    return InviteOut(code=code, expires_at=expires_at)
-
-
-@auth_router.post("/profissional/claim", response_model=dict, status_code=status.HTTP_201_CREATED)
-@limiter.limit("5/minute")
-async def claim_professional(
-    request: Request,
-    payload: ClaimProfessional,
-    db: AsyncSession = Depends(get_db),
-    current_user: Usuario = Depends(get_current_active_user),
-):
-    role = (current_user.role or "USER").upper()
-    if role in ("PROFISSIONAL", "GESTOR"):
-        raise HTTPException(status_code=400, detail="Usuário já é profissional")
-
-    # Evita duplicidade (compat)
-    resultado = await db.execute(select(ProfissionalUbs).where(ProfissionalUbs.usuario_id == current_user.id))
-    if resultado.scalar_one_or_none() is not None:
-        current_user.role = "PROFISSIONAL"
-        await db.commit()
-        raise HTTPException(status_code=400, detail="Usuário já é profissional")
-
-    invite_hash = _hash_invite_code(payload.invite_code)
-    resultado = await db.execute(select(ProfessionalInvite).where(ProfessionalInvite.code_hash == invite_hash))
-    convite = resultado.scalar_one_or_none()
-    if not convite:
-        raise HTTPException(status_code=400, detail="Convite inválido")
-    if convite.used_at is not None:
-        raise HTTPException(status_code=400, detail="Convite já utilizado")
-    if convite.expires_at <= datetime.utcnow():
-        raise HTTPException(status_code=400, detail="Convite expirado")
-
-    resultado = await db.execute(
-        select(ProfissionalUbs).where(ProfissionalUbs.registro_profissional == payload.registro_profissional)
-    )
-    if resultado.scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="Registro profissional já cadastrado")
-
-    profissional = ProfissionalUbs(
-        usuario_id=current_user.id,
-        cargo=payload.cargo,
-        registro_profissional=payload.registro_profissional,
-    )
-    db.add(profissional)
-
-    convite.used_at = datetime.utcnow()
-    convite.used_by_user_id = current_user.id
-    current_user.role = "PROFISSIONAL"
-
-    await db.commit()
-    await db.refresh(profissional)
-
-    # Emite token já com role atualizado (evita usuário ter que relogar)
-    token_acesso = create_access_token(
-        data={"sub": str(current_user.id), "email": current_user.email, "is_profissional": True, "role": "PROFISSIONAL"}
-    )
-
-    return {
-        "message": "Conta profissional ativada com sucesso",
-        "access_token": token_acesso,
-        "token_type": "bearer",
-        "user": {
-            "id": current_user.id,
-            "nome": current_user.nome,
-            "email": current_user.email,
-            "cpf": current_user.cpf,
-            "is_profissional": True,
-            "role": "PROFISSIONAL",
-        },
-        "profissional": {
-            "id": profissional.id,
-            "usuario_id": profissional.usuario_id,
-            "cargo": profissional.cargo,
-            "registro_profissional": profissional.registro_profissional,
-        },
-    }
-
-
 @auth_router.post("/professional-requests", response_model=ProfessionalRequestOut, status_code=status.HTTP_201_CREATED)
 @limiter.limit("5/minute")
 async def create_professional_request(
@@ -496,22 +378,59 @@ async def get_my_professional_request(
     return solicitacao
 
 
-@auth_router.get("/professional-requests", response_model=list[ProfessionalRequestOut])
+@auth_router.get("/professional-requests", response_model=list[ProfessionalRequestWithUserOut])
 async def list_professional_requests(
     status_filter: str | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: Usuario = Depends(get_current_gestor_user),
 ):
-    stmt = select(ProfessionalRequest).order_by(ProfessionalRequest.id.desc())
+    stmt = (
+        select(ProfessionalRequest, Usuario)
+        .join(Usuario, Usuario.id == ProfessionalRequest.user_id)
+        .order_by(ProfessionalRequest.id.desc())
+    )
     if status_filter:
         stmt = stmt.where(ProfessionalRequest.status == status_filter.upper())
     resultado = await db.execute(stmt)
-    return resultado.scalars().all()
+    itens: list[dict] = []
+    for solicitacao, usuario in resultado.all():
+        itens.append(
+            {
+                "id": solicitacao.id,
+                "user_id": solicitacao.user_id,
+                "cargo": solicitacao.cargo,
+                "registro_profissional": solicitacao.registro_profissional,
+                "status": solicitacao.status,
+                "rejection_reason": solicitacao.rejection_reason,
+                "submitted_at": solicitacao.submitted_at,
+                "reviewed_at": solicitacao.reviewed_at,
+                "reviewed_by_user_id": solicitacao.reviewed_by_user_id,
+                "user": {
+                    "id": usuario.id,
+                    "nome": usuario.nome,
+                    "email": usuario.email,
+                },
+            }
+        )
+    return itens
+
+
+@auth_router.get("/professional-requests/pending-count", response_model=dict)
+async def pending_professional_requests_count(
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(get_current_gestor_user),
+):
+    resultado = await db.execute(
+        select(func.count(ProfessionalRequest.id)).where(ProfessionalRequest.status == "PENDING")
+    )
+    count = int(resultado.scalar_one() or 0)
+    return {"count": count}
 
 
 @auth_router.post("/professional-requests/{request_id}/approve", response_model=dict)
 async def approve_professional_request(
     request_id: int,
+    payload: ProfessionalRequestApprove,
     db: AsyncSession = Depends(get_db),
     current_user: Usuario = Depends(get_current_gestor_user),
 ):
@@ -539,14 +458,14 @@ async def approve_professional_request(
         )
         db.add(profissional)
 
-    usuario.role = "PROFISSIONAL"
+    usuario.role = payload.role
     solicitacao.status = "APPROVED"
     solicitacao.reviewed_at = datetime.utcnow()
     solicitacao.reviewed_by_user_id = current_user.id
     solicitacao.rejection_reason = None
 
     await db.commit()
-    return {"message": "Solicitação aprovada"}
+    return {"message": "Solicitação aprovada", "role": usuario.role}
 
 
 @auth_router.post("/professional-requests/{request_id}/reject", response_model=dict)
