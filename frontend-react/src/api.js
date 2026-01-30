@@ -39,6 +39,14 @@ function clearAuth() {
   localStorage.removeItem("current_user");
 }
 
+function normalizeRole(rawRole, isProfissional) {
+  const role = `${rawRole || ""}`.toLowerCase();
+  if (role === "gestor") return "gestor";
+  if (role === "profissional") return "profissional";
+  if (role === "user" || role === "usuario") return "usuario";
+  return isProfissional ? "profissional" : "usuario";
+}
+
 async function request(path, options = {}) {
   const url = `${BASE_API}${path}`;
   const method = options.method || "GET";
@@ -235,15 +243,52 @@ export const api = {
     if (dados.access_token) {
       setToken(dados.access_token);
     }
-     if (dados.user) {
-       // Papel básico definido exclusivamente pelo backend
-       const papel = dados.user.is_profissional ? "profissional" : "usuario";
-       setCurrentUser({ ...dados.user, role: papel });
-     }
+    if (dados.user) {
+      const papel = normalizeRole(dados.user.role, !!dados.user.is_profissional);
+      setCurrentUser({ ...dados.user, role: papel, is_profissional: !!dados.user.is_profissional });
+    }
     return dados;
   },
   
   signUp: (payload) => request("/auth/register", { method: "POST", body: payload }),
+
+  me: async () => {
+    const user = await request("/auth/me", { requiresAuth: true });
+    if (user) {
+      const papel = normalizeRole(user.role, !!user.is_profissional);
+      setCurrentUser({ ...user, role: papel, is_profissional: !!user.is_profissional });
+    }
+    return user;
+  },
+
+  // Solicitação de acesso profissional
+  createProfessionalRequest: (payload) =>
+    request("/auth/professional-requests", { method: "POST", body: payload, requiresAuth: true }),
+  getMyProfessionalRequest: () => request("/auth/professional-requests/me", { requiresAuth: true }),
+
+  // Gestor: listar/aprovar/rejeitar
+  listProfessionalRequests: ({ status } = {}) => {
+    const params = new URLSearchParams();
+    if (status) params.set("status_filter", status);
+    const query = params.toString();
+    return request(`/auth/professional-requests${query ? `?${query}` : ""}`, { requiresAuth: true });
+  },
+  getPendingProfessionalRequestsCount: async () => {
+    const dados = await request("/auth/professional-requests/pending-count", { requiresAuth: true });
+    return Number(dados?.count || 0);
+  },
+  approveProfessionalRequest: (id, payload) =>
+    request(`/auth/professional-requests/${id}/approve`, {
+      method: "POST",
+      body: payload,
+      requiresAuth: true,
+    }),
+  rejectProfessionalRequest: (id, payload) =>
+    request(`/auth/professional-requests/${id}/reject`, {
+      method: "POST",
+      body: payload,
+      requiresAuth: true,
+    }),
   
   logout: () => {
     clearAuth();

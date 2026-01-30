@@ -3,12 +3,15 @@ import { api } from "../api";
 import { validarCadastro } from "../utils/validation";
 
 export function Register() {
+  const [tipoConta, setTipoConta] = useState("usuario");
   const [formulario, setFormulario] = useState({
     nome: "",
     email: "",
     cpf: "",
     senha: "",
     confirmarSenha: "",
+    cargo: "",
+    registro_profissional: "",
   });
   const [estado, setEstado] = useState({ carregando: false, erro: "", sucesso: "" });
 
@@ -22,6 +25,18 @@ export function Register() {
       setEstado({ ...estado, erro: Object.values(erros)[0], sucesso: "" });
       return;
     }
+
+    if (tipoConta === "profissional") {
+      if (!formulario.cargo?.trim()) {
+        setEstado({ ...estado, erro: "Informe o cargo", sucesso: "" });
+        return;
+      }
+      if (!formulario.registro_profissional?.trim()) {
+        setEstado({ ...estado, erro: "Informe o registro profissional", sucesso: "" });
+        return;
+      }
+    }
+
     try {
       setEstado({ carregando: true, erro: "", sucesso: "" });
       await api.signUp({
@@ -30,6 +45,24 @@ export function Register() {
         cpf: formulario.cpf,
         senha: formulario.senha,
       });
+
+      if (tipoConta === "profissional") {
+        await api.login({ email: formulario.email, senha: formulario.senha });
+        await api.createProfessionalRequest({
+          cargo: formulario.cargo,
+          registro_profissional: formulario.registro_profissional,
+        });
+        setEstado({
+          carregando: false,
+          erro: "",
+          sucesso: "Solicitação enviada! Aguarde a aprovação do gestor da UBS.",
+        });
+        setTimeout(() => {
+          window.location.href = "/solicitacao-profissional";
+        }, 1200);
+        return;
+      }
+
       setEstado({ carregando: false, erro: "", sucesso: "Cadastro concluído! Você já pode fazer login." });
       setTimeout(() => {
         window.location.href = "/";
@@ -46,47 +79,90 @@ export function Register() {
         <p className="muted" style={{ marginBottom: '32px' }}>Preencha os dados abaixo para acessar a plataforma.</p>
 
         <form className="form" onSubmit={lidarComCadastro}>
-        <label>
-          Nome completo
-          <input name="nome" value={formulario.nome} onChange={aoAlterar} required />
-        </label>
-        <label>
-          Email
-          <input name="email" type="email" value={formulario.email} onChange={aoAlterar} required />
-        </label>
-        <label>
-          CPF
-          <input name="cpf" value={formulario.cpf} onChange={aoAlterar} required />
-        </label>
-        <label>
-          Senha (mínimo 8 caracteres, 1 maiúscula, 1 minúscula, 1 número)
-          <input name="senha" type="password" value={formulario.senha} onChange={aoAlterar} required />
-        </label>
-        <label>
-          Confirmar senha
-          <input name="confirmarSenha" type="password" value={formulario.confirmarSenha} onChange={aoAlterar} required />
-        </label>
+          <label>
+            Tipo de conta
+            <select value={tipoConta} onChange={(e) => setTipoConta(e.target.value)}>
+              <option value="usuario">Usuário</option>
+              <option value="profissional">Profissional da UBS</option>
+            </select>
+          </label>
 
-        <button className="btn btn-primary" type="submit" disabled={estado.carregando}>
-          {estado.carregando ? (
+          <label>
+            Nome completo
+            <input name="nome" value={formulario.nome} onChange={aoAlterar} required />
+          </label>
+          <label>
+            Email
+            <input name="email" type="email" value={formulario.email} onChange={aoAlterar} required />
+          </label>
+          <label>
+            CPF
+            <input name="cpf" value={formulario.cpf} onChange={aoAlterar} required />
+          </label>
+          <label>
+            Senha (mínimo 8 caracteres, 1 maiúscula, 1 minúscula, 1 número)
+            <input name="senha" type="password" value={formulario.senha} onChange={aoAlterar} required />
+          </label>
+          <label>
+            Confirmar senha
+            <input
+              name="confirmarSenha"
+              type="password"
+              value={formulario.confirmarSenha}
+              onChange={aoAlterar}
+              required
+            />
+          </label>
+
+          {tipoConta === "profissional" && (
             <>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="spin">
-                <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
-              </svg>
-              Criando conta...
-            </>
-          ) : (
-            <>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                <circle cx="8.5" cy="7" r="4"/>
-                <line x1="20" y1="8" x2="20" y2="14"/>
-                <line x1="23" y1="11" x2="17" y2="11"/>
-              </svg>
-              Criar conta
+              <p className="muted" style={{ marginTop: "-6px", marginBottom: "8px" }}>
+                Você criará uma conta normal e enviará uma solicitação para o gestor aprovar.
+              </p>
+              <label>
+                Cargo
+                <input name="cargo" value={formulario.cargo} onChange={aoAlterar} required />
+              </label>
+              <label>
+                Registro profissional
+                <input
+                  name="registro_profissional"
+                  value={formulario.registro_profissional}
+                  onChange={aoAlterar}
+                  required
+                />
+              </label>
             </>
           )}
-        </button>
+
+          <button className="btn btn-primary" type="submit" disabled={estado.carregando}>
+            {estado.carregando ? (
+              <>
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  className="spin"
+                >
+                  <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                </svg>
+                Criando conta...
+              </>
+            ) : (
+              <>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                  <circle cx="8.5" cy="7" r="4" />
+                  <line x1="20" y1="8" x2="20" y2="14" />
+                  <line x1="23" y1="11" x2="17" y2="11" />
+                </svg>
+                Criar conta
+              </>
+            )}
+          </button>
 
           {estado.erro && <p className="text-error">❌ {estado.erro}</p>}
           {estado.sucesso && <p className="text-success">✅ {estado.sucesso}</p>}

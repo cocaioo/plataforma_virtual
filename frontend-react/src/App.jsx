@@ -5,6 +5,8 @@ import { Register } from "./pages/Register.jsx";
 import { DiagnosticoUBS } from "./pages/DiagnosticoUBS.jsx";
 import { Dashboard } from "./pages/Dashboard.jsx";
 import { RelatoriosSituacionais } from "./pages/RelatoriosSituacionais.jsx";
+import { SolicitacaoProfissional } from "./pages/SolicitacaoProfissional.jsx";
+import { GestorSolicitacoes } from "./pages/GestorSolicitacoes.jsx";
 import { api } from "./api";
 
 function RequerAutenticacao({ children }) {
@@ -12,6 +14,24 @@ function RequerAutenticacao({ children }) {
   if (!tokenAcesso) {
     return <Navigate to="/" replace />;
   }
+  return children;
+}
+
+function RequerProfissional({ children }) {
+  const tokenAcesso = api.getToken();
+  const usuarioAtual = api.getCurrentUser();
+  if (!tokenAcesso) return <Navigate to="/" replace />;
+  const role = `${usuarioAtual?.role || ""}`.toLowerCase();
+  if (!usuarioAtual?.is_profissional && role !== "gestor") return <Navigate to="/dashboard" replace />;
+  return children;
+}
+
+function RequerGestor({ children }) {
+  const tokenAcesso = api.getToken();
+  const usuarioAtual = api.getCurrentUser();
+  if (!tokenAcesso) return <Navigate to="/" replace />;
+  const role = `${usuarioAtual?.role || ""}`.toLowerCase();
+  if (role !== "gestor") return <Navigate to="/dashboard" replace />;
   return children;
 }
 
@@ -31,19 +51,35 @@ export default function App() {
           }
         />
         <Route
-          path="/relatorios"
+          path="/solicitacao-profissional"
           element={
             <RequerAutenticacao>
-              <RelatoriosSituacionais />
+              <SolicitacaoProfissional />
             </RequerAutenticacao>
+          }
+        />
+        <Route
+          path="/gestor/solicitacoes"
+          element={
+            <RequerGestor>
+              <GestorSolicitacoes />
+            </RequerGestor>
+          }
+        />
+        <Route
+          path="/relatorios"
+          element={
+            <RequerProfissional>
+              <RelatoriosSituacionais />
+            </RequerProfissional>
           }
         />
         <Route
           path="/diagnostico"
           element={
-            <RequerAutenticacao>
+            <RequerProfissional>
               <DiagnosticoUBS />
-            </RequerAutenticacao>
+            </RequerProfissional>
           }
         />
       </Routes>

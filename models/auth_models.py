@@ -9,6 +9,8 @@ class Usuario(Base):
     email = Column(String(200), nullable=False, unique=True)
     senha = Column(String(255), nullable=False)
     cpf = Column(String(14), nullable=False, unique=True)
+    # USER | PROFISSIONAL | GESTOR
+    role = Column(String(20), nullable=False, default="USER")
     ativo = Column(Boolean, default=True, nullable=False)
     tentativas_login = Column(Integer, default=0, nullable=False)
     bloqueado_ate = Column(DateTime(timezone=True), nullable=True)
@@ -35,3 +37,17 @@ class LoginAttempt(Base):
     sucesso = Column(Boolean, nullable=False)
     motivo = Column(String(255), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class ProfessionalRequest(Base):
+    __tablename__ = "professional_requests"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False, unique=True)
+    cargo = Column(String(100), nullable=False)
+    registro_profissional = Column(String(50), nullable=False, unique=True)
+    status = Column(String(20), nullable=False, default="PENDING")  # PENDING | APPROVED | REJECTED
+    rejection_reason = Column(String(255), nullable=True)
+    submitted_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    reviewed_at = Column(DateTime(timezone=True), nullable=True)
+    reviewed_by_user_id = Column(Integer, ForeignKey("usuarios.id"), nullable=True)
