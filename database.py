@@ -48,16 +48,20 @@ DATABASE_URL = _normalize_database_url(DATABASE_URL)
 #Engine é um objeto do SQLAlchemy usado
 #para gerenciar e configurar conexões entre
 #o BD e a aplicação
-engine = create_async_engine(
-    DATABASE_URL,
-    echo=False,
-    future=True,
-    # Args de pool abaixo são mais relevantes para Postgres; para SQLite mantemos simples.
-    pool_pre_ping=not DATABASE_URL.startswith("sqlite"),
-    pool_size=5 if not DATABASE_URL.startswith("sqlite") else None,
-    max_overflow=10 if not DATABASE_URL.startswith("sqlite") else None,
-    pool_recycle=3600 if not DATABASE_URL.startswith("sqlite") else None,
-)
+engine_kwargs = {
+    "echo": False,
+    "future": True,
+}
+
+if not DATABASE_URL.startswith("sqlite"):
+    engine_kwargs.update({
+        "pool_pre_ping": True,
+        "pool_size": 5,
+        "max_overflow": 10,
+        "pool_recycle": 3600,
+    })
+
+engine = create_async_engine(DATABASE_URL, **engine_kwargs)
 
 #Fábrica de sessõe
 AsyncSessionLocal = sessionmaker(
