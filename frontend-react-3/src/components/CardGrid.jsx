@@ -13,12 +13,6 @@ import {
 const CardGrid = () => {
   const cards = [
     {
-      title: 'Novo relatório situacional',
-      to: '/diagnostico-ubs',
-      icon: DocumentPlusIcon,
-      inDevelopment: false,
-    },
-    {
       title: 'Gerenciar relatórios situacionais',
       to: '/relatorios-situacionais',
       icon: ClipboardDocumentListIcon,

@@ -13,6 +13,7 @@ const Login = () => {
     try {
       const response = await axios.post('/api/auth/login', { email, senha: password });
       localStorage.setItem('token', response.data.access_token);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
       navigate('/dashboard');
     } catch (err) {
       setError('Email ou senha incorretos');
