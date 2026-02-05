@@ -1,124 +1,123 @@
-import { useEffect, useMemo, useState } from "react";
-import { api } from "../api";
 
-export function GestorSolicitacoes() {
-  const [estado, setEstado] = useState({ carregando: true, erro: "" });
-  const [lista, setLista] = useState([]);
-  const [roleSelecionado, setRoleSelecionado] = useState({});
+import React, { useState, useEffect } from 'react';
 
-  const usuarioAtual = api.getCurrentUser();
-  const papel = `${usuarioAtual?.role || ""}`.toLowerCase();
-
-  async function carregar() {
-    setEstado({ carregando: true, erro: "" });
-    try {
-      await api.me();
-      const user = api.getCurrentUser();
-      if (`${user?.role || ""}`.toLowerCase() !== "gestor") {
-        window.location.href = "/dashboard";
-        return;
-      }
-
-      const dados = await api.listProfessionalRequests({ status: "PENDING" });
-      setLista(dados || []);
-      setEstado({ carregando: false, erro: "" });
-    } catch (err) {
-      setEstado({ carregando: false, erro: err.message });
-    }
-  }
+const GestorSolicitacoes = () => {
+  const [solicitacoes, setSolicitacoes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    carregar();
+    // MOCK: Substituir com chamada de API real para /api/auth/professional-requests
+    const mockSolicitacoes = [
+      {
+        id: 1,
+        user: { nome: 'Carlos Andrade', email: 'carlos@example.com' },
+        cargo: 'Enfermeiro Chefe',
+        registro_professional: 'COREN-SP 123456',
+        status: 'PENDING',
+        submitted_at: '2024-07-28T10:00:00Z',
+      },
+      {
+        id: 2,
+        user: { nome: 'Ana Beatriz', email: 'ana.b@example.com' },
+        cargo: 'Médico da Família',
+        registro_profissional: 'CRM-SP 654321',
+        status: 'PENDING',
+        submitted_at: '2024-07-27T15:30:00Z',
+      },
+       {
+        id: 3,
+        user: { nome: 'Juliana Lima', email: 'juliana.lima@example.com' },
+        cargo: 'Agente Comunitário de Saúde',
+        registro_profissional: 'ACS-SP 98765',
+        status: 'PENDING',
+        submitted_at: '2024-07-29T09:15:00Z',
+      },
+    ];
+    setSolicitacoes(mockSolicitacoes);
+    setLoading(false);
   }, []);
 
-  const pendentes = useMemo(() => lista.filter((x) => `${x.status}`.toUpperCase() === "PENDING"), [lista]);
+  const handleApprove = (id) => {
+    alert(`Aprovar solicitação ${id}`);
+    // Lógica para aprovar
+  };
 
-  async function aprovar(id) {
-    const role = roleSelecionado[id] || "PROFISSIONAL";
-    if (!confirm("Aprovar esta solicitação?")) return;
-    setEstado((e) => ({ ...e, carregando: true, erro: "" }));
-    try {
-      await api.approveProfessionalRequest(id, { role });
-      await carregar();
-    } catch (err) {
-      setEstado({ carregando: false, erro: err.message });
+  const handleReject = (id) => {
+    const motivo = prompt('Qual o motivo da rejeição?');
+    if (motivo) {
+      alert(`Rejeitar solicitação ${id} com motivo: ${motivo}`);
+      // Lógica para rejeitar
     }
-  }
+  };
 
-  async function rejeitar(id) {
-    const motivo = prompt("Motivo da reprovação (obrigatório):");
-    if (!motivo || !motivo.trim()) return;
-    setEstado((e) => ({ ...e, carregando: true, erro: "" }));
-    try {
-      await api.rejectProfessionalRequest(id, { rejection_reason: motivo.trim() });
-      await carregar();
-    } catch (err) {
-      setEstado({ carregando: false, erro: err.message });
-    }
-  }
+  if (loading) return <p>Carregando solicitações...</p>;
+  if (error) return <p>Erro ao carregar: {error}</p>;
 
   return (
-    <main className="page">
-      <section className="hero">
-        <div>
-          <p className="eyebrow">Gestão</p>
-          <h1>Solicitações profissionais</h1>
-          <p className="muted">Aprove ou rejeite solicitações pendentes.</p>
-          {papel && <p className="muted">Logado como: <strong>{papel}</strong></p>}
-        </div>
-      </section>
+    <div className="container mx-auto p-8">
+      <h1 className="text-3xl font-bold mb-6 text-gray-800">Gestão de Solicitações Profissionais</h1>
 
-      {estado.erro && <p className="text-error">❌ {estado.erro}</p>}
-
-      {estado.carregando ? (
-        <p className="muted">Carregando…</p>
-      ) : pendentes.length === 0 ? (
-        <div className="card" style={{ padding: "16px" }}>
-          <p style={{ margin: 0 }}>Nenhuma solicitação pendente.</p>
-        </div>
-      ) : (
-        <section className="card-grid">
-          {pendentes.map((s) => (
-            <article className="card" key={s.id}>
-              <h3>Solicitação #{s.id}</h3>
-              <p className="muted" style={{ marginTop: "8px" }}>
-                Solicitante: <strong>{s.user?.nome || "(sem nome)"}</strong>
-              </p>
-              <p className="muted" style={{ marginTop: "8px" }}>
-                Email: <strong>{s.user?.email || "(sem email)"}</strong>
-              </p>
-              <p className="muted" style={{ marginTop: "8px" }}>
-                Usuário ID: <strong>{s.user_id}</strong>
-              </p>
-              <p className="muted" style={{ marginTop: "8px" }}>
-                Cargo: <strong>{s.cargo}</strong>
-              </p>
-              <p className="muted" style={{ marginTop: "8px" }}>
-                Registro: <strong>{s.registro_profissional}</strong>
-              </p>
-              <label style={{ display: "block", marginTop: "12px" }}>
-                Aprovar como
-                <select
-                  value={roleSelecionado[s.id] || "PROFISSIONAL"}
-                  onChange={(e) => setRoleSelecionado((m) => ({ ...m, [s.id]: e.target.value }))}
-                  style={{ marginTop: "6px" }}
-                >
-                  <option value="PROFISSIONAL">Profissional da UBS</option>
-                  <option value="GESTOR">Gestor</option>
-                </select>
-              </label>
-              <div style={{ display: "flex", gap: "8px", marginTop: "14px" }}>
-                <button className="btn btn-primary" type="button" onClick={() => aprovar(s.id)}>
-                  Aprovar
-                </button>
-                <button className="btn btn-secondary" type="button" onClick={() => rejeitar(s.id)}>
-                  Rejeitar
-                </button>
-              </div>
-            </article>
-          ))}
-        </section>
-      )}
-    </main>
+      <div className="bg-white shadow-md rounded-lg overflow-hidden">
+        <table className="min-w-full leading-normal">
+          <thead>
+            <tr>
+              <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                Usuário
+              </th>
+              <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                Cargo Solicitado
+              </th>
+              <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                Registro
+              </th>
+              <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                Data Envio
+              </th>
+              <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                Ações
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {solicitacoes.map((sol) => (
+              <tr key={sol.id}>
+                <td className="px-5 py-4 border-b border-gray-200 bg-white text-sm">
+                  <p className="text-gray-900 whitespace-no-wrap">{sol.user.nome}</p>
+                  <p className="text-gray-600 whitespace-no-wrap">{sol.user.email}</p>
+                </td>
+                <td className="px-5 py-4 border-b border-gray-200 bg-white text-sm">
+                  <p className="text-gray-900 whitespace-no-wrap">{sol.cargo}</p>
+                </td>
+                <td className="px-5 py-4 border-b border-gray-200 bg-white text-sm">
+                  <p className="text-gray-900 whitespace-no-wrap">{sol.registro_profissional}</p>
+                </td>
+                 <td className="px-5 py-4 border-b border-gray-200 bg-white text-sm">
+                  <p className="text-gray-900 whitespace-no-wrap">
+                    {new Date(sol.submitted_at).toLocaleDateString('pt-BR')}
+                  </p>
+                </td>
+                <td className="px-5 py-4 border-b border-gray-200 bg-white text-sm text-center">
+                   <button
+                    onClick={() => handleApprove(sol.id)}
+                    className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full mr-2"
+                  >
+                    Aprovar
+                  </button>
+                  <button
+                    onClick={() => handleReject(sol.id)}
+                    className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-full"
+                  >
+                    Rejeitar
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
-}
+};
+
+export default GestorSolicitacoes;

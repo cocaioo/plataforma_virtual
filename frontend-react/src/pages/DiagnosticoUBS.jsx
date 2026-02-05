@@ -1,1147 +1,448 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { api } from "../api";
-
-// Página do formulário "Diagnóstico Situacional da UBS"
-export function DiagnosticoUBS() {
-  const [ubsId, setUbsId] = useState(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const [attachments, setAttachments] = useState([]);
-  const [selectedFiles, setSelectedFiles] = useState([]);
-  const [isUploading, setIsUploading] = useState(false);
-  const [attachmentSection, setAttachmentSection] = useState("PROBLEMAS");
-  const [attachmentDescription, setAttachmentDescription] = useState("");
-
-  const [form, setForm] = useState({
-    nome_relatorio: "",
-    periodo_referencia: "",
-    identificacao_equipe: "",
-    responsavel_nome: "",
-    responsavel_cargo: "",
-    responsavel_contato: "",
-    nome_ubs: "",
-    cnes: "",
-    area_atuacao: "",
-    numero_habitantes_ativos: "",
-    numero_microareas: "",
-    numero_familias_cadastradas: "",
-    numero_domicilios: "",
-    domicilios_rurais: "",
-    data_inauguracao: "",
-    data_ultima_reforma: "",
-    gestao_modelo_atencao: "",
-    descritivos_gerais: "",
-    observacoes_gerais: "",
-    fluxo_agenda_acesso: "",
-    outros_servicos: "",
-  });
-
-  const [territory, setTerritory] = useState({
-    descricao_territorio: "",
-    potencialidades_territorio: "",
-    riscos_vulnerabilidades: "",
-  });
-
-  const [needs, setNeeds] = useState({
-    problemas_identificados: "",
-    necessidades_equipamentos_insumos: "",
-    necessidades_especificas_acs: "",
-    necessidades_infraestrutura_manutencao: "",
-  });
-
-  const toIntOrNull = (value) => {
-    if (value === "" || value === null || value === undefined) return null;
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : null;
-  };
-
-  const ubsPayload = useMemo(
-    () => ({
-      nome_relatorio: form.nome_relatorio || null,
-      periodo_referencia: form.periodo_referencia || null,
-      identificacao_equipe: form.identificacao_equipe || null,
-      responsavel_nome: form.responsavel_nome || null,
-      responsavel_cargo: form.responsavel_cargo || null,
-      responsavel_contato: form.responsavel_contato || null,
-      fluxo_agenda_acesso: form.fluxo_agenda_acesso || null,
-      nome_ubs: form.nome_ubs,
-      cnes: form.cnes,
-      area_atuacao: form.area_atuacao,
-      numero_habitantes_ativos: toIntOrNull(form.numero_habitantes_ativos),
-      numero_microareas: toIntOrNull(form.numero_microareas),
-      numero_familias_cadastradas: toIntOrNull(form.numero_familias_cadastradas),
-      numero_domicilios: toIntOrNull(form.numero_domicilios),
-      domicilios_rurais: toIntOrNull(form.domicilios_rurais),
-      data_inauguracao: form.data_inauguracao || null,
-      data_ultima_reforma: form.data_ultima_reforma || null,
-      descritivos_gerais: form.descritivos_gerais || null,
-      observacoes_gerais: form.observacoes_gerais || null,
-      outros_servicos: form.outros_servicos || null,
-    }),
-    [form]
-  );
-
-  async function refreshAttachments(id = ubsId) {
-    if (!id) return;
-    try {
-      const list = await api.listAttachments(id);
-      setAttachments(Array.isArray(list) ? list : []);
-    } catch {
-      // silencioso (não bloqueia o usuário)
-    }
-  }
-
-  useEffect(() => {
-    if (!ubsId) return;
-    refreshAttachments(ubsId);
-  }, [ubsId]);
-
-  async function handleUploadSelectedFiles(id = ubsId) {
-    if (!id) {
-      window.alert("Salve o rascunho antes de enviar anexos.");
-      return;
-    }
-    if (!selectedFiles || selectedFiles.length === 0) return;
-    if (isUploading || isSaving || isSubmitting) return;
-    setIsUploading(true);
-    try {
-      await api.uploadAttachments(id, selectedFiles, {
-        section: attachmentSection,
-        description: attachmentDescription,
-      });
-      setSelectedFiles([]);
-      setAttachmentDescription("");
-      await refreshAttachments(id);
-      window.alert("Anexo(s) enviados com sucesso.");
-    } catch (err) {
-      window.alert(err?.message || "Erro ao enviar anexos");
-    } finally {
-      setIsUploading(false);
-    }
-  }
-
-  async function handleSaveDraft() {
-    if (isSaving || isSubmitting) return;
-    setIsSaving(true);
-    try {
-      let id = ubsId;
-      if (!id) {
-        // Backend exige esses campos na criação do rascunho
-        if (!ubsPayload.nome_ubs || !ubsPayload.cnes || !ubsPayload.area_atuacao) {
-          window.alert("Preencha Nome da UBS, CNES e Área de atuação para salvar o rascunho.");
-          return;
-        }
-        const created = await api.createUbsDraft(ubsPayload);
-        id = created.id;
-        setUbsId(id);
-      } else {
-        await api.updateUbs(id, ubsPayload);
-      }
-
-      // Se o usuário já selecionou anexos, envia depois que o rascunho existe
-      if (selectedFiles?.length) {
-        await api.uploadAttachments(id, selectedFiles, {
-          section: attachmentSection,
-          description: attachmentDescription,
-        });
-        setSelectedFiles([]);
-        setAttachmentDescription("");
-        await refreshAttachments(id);
-      }
-
-      if (territory.descricao_territorio?.trim()) {
-        await api.upsertTerritory(id, {
-          descricao_territorio: territory.descricao_territorio,
-          potencialidades_territorio: territory.potencialidades_territorio || null,
-          riscos_vulnerabilidades: territory.riscos_vulnerabilidades || null,
-        });
-      }
-
-      if (needs.problemas_identificados?.trim()) {
-        await api.upsertNeeds(id, {
-          problemas_identificados: needs.problemas_identificados,
-          necessidades_equipamentos_insumos: needs.necessidades_equipamentos_insumos || null,
-          necessidades_especificas_acs: needs.necessidades_especificas_acs || null,
-          necessidades_infraestrutura_manutencao: needs.necessidades_infraestrutura_manutencao || null,
-        });
-      }
-
-      window.alert(`Rascunho salvo${id ? ` (ID ${id})` : ""}.`);
-    } catch (err) {
-      window.alert(err?.message || "Erro ao salvar rascunho");
-    } finally {
-      setIsSaving(false);
-    }
-  }
-
-  async function handleSubmit() {
-    if (isSubmitting || isSaving) return;
-    setIsSubmitting(true);
-    try {
-      // Pré-validação mínima para evitar 400 do backend
-      if (!territory.descricao_territorio?.trim()) {
-        window.alert("Preencha a Descrição do território antes de enviar.");
-        return;
-      }
-      if (!needs.problemas_identificados?.trim()) {
-        window.alert("Preencha os Problemas identificados antes de enviar.");
-        return;
-      }
-
-      // Garante que o rascunho existe e está atualizado
-      if (!ubsId) {
-        if (!ubsPayload.nome_ubs || !ubsPayload.cnes || !ubsPayload.area_atuacao) {
-          window.alert("Preencha Nome da UBS, CNES e Área de atuação antes de enviar.");
-          return;
-        }
-        const created = await api.createUbsDraft(ubsPayload);
-        setUbsId(created.id);
-
-        if (selectedFiles?.length) {
-          await api.uploadAttachments(created.id, selectedFiles, {
-            section: attachmentSection,
-            description: attachmentDescription,
-          });
-          setSelectedFiles([]);
-          setAttachmentDescription("");
-          await refreshAttachments(created.id);
-        }
-
-        await api.upsertTerritory(created.id, {
-          descricao_territorio: territory.descricao_territorio,
-          potencialidades_territorio: territory.potencialidades_territorio || null,
-          riscos_vulnerabilidades: territory.riscos_vulnerabilidades || null,
-        });
-        await api.upsertNeeds(created.id, {
-          problemas_identificados: needs.problemas_identificados,
-          necessidades_equipamentos_insumos: needs.necessidades_equipamentos_insumos || null,
-          necessidades_especificas_acs: needs.necessidades_especificas_acs || null,
-          necessidades_infraestrutura_manutencao: needs.necessidades_infraestrutura_manutencao || null,
-        });
-        await api.submitDiagnosis(created.id);
-      } else {
-        await api.updateUbs(ubsId, ubsPayload);
-
-        if (selectedFiles?.length) {
-          await api.uploadAttachments(ubsId, selectedFiles, {
-            section: attachmentSection,
-            description: attachmentDescription,
-          });
-          setSelectedFiles([]);
-          setAttachmentDescription("");
-          await refreshAttachments(ubsId);
-        }
-
-        await api.upsertTerritory(ubsId, {
-          descricao_territorio: territory.descricao_territorio,
-          potencialidades_territorio: territory.potencialidades_territorio || null,
-          riscos_vulnerabilidades: territory.riscos_vulnerabilidades || null,
-        });
-        await api.upsertNeeds(ubsId, {
-          problemas_identificados: needs.problemas_identificados,
-          necessidades_equipamentos_insumos: needs.necessidades_equipamentos_insumos || null,
-          necessidades_especificas_acs: needs.necessidades_especificas_acs || null,
-          necessidades_infraestrutura_manutencao: needs.necessidades_infraestrutura_manutencao || null,
-        });
-        await api.submitDiagnosis(ubsId);
-      }
-
-      window.alert("Diagnóstico enviado com sucesso.");
-    } catch (err) {
-      window.alert(err?.message || "Erro ao enviar diagnóstico");
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
-
-  return (
-    <main className="diagnostico-page">
-      <section className="diagnostico-card" aria-label="Formulário de diagnóstico situacional da UBS">
-        {/* Faixa de cabeçalho */}
-        <header className="diagnostico-header">
-          <div className="diagnostico-header-content">
-            <h1>Diagnóstico Situacional da UBS</h1>
-            <p>
-              Formulário para registro de dados do relatório situacional da Unidade Básica de Saúde
-            </p>
-          </div>
-        </header>
-
-        {/* Campo de nome do relatório */}
-        <section className="form-section">
-          <div className="form-section-header">
-            <h2>Identificação do relatório</h2>
-            <p className="section-subtitle">
-              Defina um nome para este relatório situacional, para facilitar a identificação na lista de
-              rascunhos e relatórios finalizados.
-            </p>
-          </div>
-
-          <div className="form-field full-width">
-            <label className="field-label">
-              Nome do relatório<span className="required">*</span>
-            </label>
-            <input
-              type="text"
-              className="field-input"
-              placeholder="Ex: Diagnóstico Situacional UBS Adalto Pereira Saraçayo - 2025"
-              value={form.nome_relatorio}
-              onChange={(e) => setForm((prev) => ({ ...prev, nome_relatorio: e.target.value }))}
-            />
-          </div>
-        </section>
-
-        {/* Metadados do relatório */}
-        <section className="form-section">
-          <div className="form-section-header">
-            <h2>Metadados do relatório</h2>
-            <p className="section-subtitle">
-              Campos para refletir o cabeçalho do relatório (período, equipe e responsável).
-            </p>
-          </div>
-
-          <div className="field-grid field-grid-3">
-            <div className="form-field">
-              <label className="field-label">Período de referência (mês/ano)</label>
-              <input
-                type="text"
-                className="field-input"
-                placeholder="Ex: Março/2025"
-                value={form.periodo_referencia}
-                onChange={(e) => setForm((prev) => ({ ...prev, periodo_referencia: e.target.value }))}
-              />
-            </div>
-
-            <div className="form-field">
-              <label className="field-label">Identificação da equipe (ESF nº)</label>
-              <input
-                type="text"
-                className="field-input"
-                placeholder="Ex: ESF 41"
-                value={form.identificacao_equipe}
-                onChange={(e) => setForm((prev) => ({ ...prev, identificacao_equipe: e.target.value }))}
-              />
-            </div>
-
-            <div className="form-field">
-              <label className="field-label">Responsável (nome)</label>
-              <input
-                type="text"
-                className="field-input"
-                placeholder="Ex: Maria da Silva"
-                value={form.responsavel_nome}
-                onChange={(e) => setForm((prev) => ({ ...prev, responsavel_nome: e.target.value }))}
-              />
-            </div>
-          </div>
-
-          <div className="field-grid field-grid-3">
-            <div className="form-field">
-              <label className="field-label">Responsável (cargo)</label>
-              <input
-                type="text"
-                className="field-input"
-                placeholder="Ex: Enfermeira / Gerente"
-                value={form.responsavel_cargo}
-                onChange={(e) => setForm((prev) => ({ ...prev, responsavel_cargo: e.target.value }))}
-              />
-            </div>
-
-            <div className="form-field">
-              <label className="field-label">Responsável (contato)</label>
-              <input
-                type="text"
-                className="field-input"
-                placeholder="Ex: telefone/email"
-                value={form.responsavel_contato}
-                onChange={(e) => setForm((prev) => ({ ...prev, responsavel_contato: e.target.value }))}
-              />
-            </div>
-          </div>
-        </section>
-
-        {/* Fluxo/agenda/acesso */}
-        <section className="form-section">
-          <div className="form-section-header">
-            <h2>Fluxo, agenda e acesso</h2>
-          </div>
-
-          <div className="form-field full-width">
-            <label className="field-label">Fluxo/agenda/acesso</label>
-            <textarea
-              className="field-input textarea"
-              rows={4}
-              placeholder="Descreva como funciona acolhimento, agendamento, demanda espontânea, gargalos, acesso a exames/encaminhamentos, etc."
-              value={form.fluxo_agenda_acesso}
-              onChange={(e) => setForm((prev) => ({ ...prev, fluxo_agenda_acesso: e.target.value }))}
-            />
-          </div>
-        </section>
-
-        {/* Anexos */}
-        <section className="form-section">
-          <div className="form-section-header">
-            <h2>Anexos</h2>
-            <p className="section-subtitle">Envie fotos/arquivos relacionados (ex.: registros fotográficos).</p>
-          </div>
-
-          <div className="form-field full-width">
-            <label className="field-label">Selecionar arquivo(s)</label>
-            <input
-              type="file"
-              className="field-input"
-              multiple
-              onChange={(e) => setSelectedFiles(Array.from(e.target.files || []))}
-            />
-
-            <div className="field-grid field-grid-3" style={{ marginTop: 12 }}>
-              <div className="form-field">
-                <label className="field-label">Seção do PDF</label>
-                <select
-                  className="field-input"
-                  value={attachmentSection}
-                  onChange={(e) => setAttachmentSection(e.target.value)}
-                >
-                  <option value="PROBLEMAS">Problemas identificados</option>
-                  <option value="NEC_EQUIP_INSUMOS">Necessidades (equipamentos e insumos)</option>
-                  <option value="NEC_INFRA">Necessidades (infraestrutura e manutenção)</option>
-                  <option value="NEC_ACS">Necessidades (ACS)</option>
-                  <option value="TERRITORIO">Território</option>
-                  <option value="POTENCIALIDADES">Potencialidades</option>
-                  <option value="RISCOS">Riscos e vulnerabilidades</option>
-                  <option value="GERAL">Identificação</option>
-                </select>
-              </div>
-              <div className="form-field field-span-2">
-                <label className="field-label">Legenda/descrição (opcional)</label>
-                <input
-                  type="text"
-                  className="field-input"
-                  placeholder="Ex: Foto da janela quebrada / sala sem ventilação"
-                  value={attachmentDescription}
-                  onChange={(e) => setAttachmentDescription(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="subpanel-actions" style={{ marginTop: 12 }}>
-              <button
-                type="button"
-                className="btn btn-outline"
-                disabled={!ubsId || isUploading || isSaving || isSubmitting || !selectedFiles.length}
-                onClick={() => handleUploadSelectedFiles(ubsId)}
-              >
-                {isUploading ? "Enviando..." : "Enviar anexos"}
-              </button>
-              <button
-                type="button"
-                className="btn btn-outline"
-                disabled={!ubsId}
-                onClick={() => refreshAttachments(ubsId)}
-              >
-                Atualizar lista
-              </button>
-            </div>
-          </div>
-
-          <div className="subpanel" style={{ marginTop: 12 }}>
-            <div className="subpanel-header">
-              <h3>Anexos enviados</h3>
-              <p className="section-subtitle small">
-                {ubsId ? "Itens associados ao rascunho." : "Salve o rascunho para habilitar anexos."}
-              </p>
-            </div>
-
-            {attachments.length === 0 ? (
-              <div className="indicator-row">
-                <div className="indicator-main">
-                  <div className="indicator-title">Nenhum anexo</div>
-                </div>
-              </div>
-            ) : (
-              <div className="indicator-list">
-                {attachments.map((a) => (
-                  <div key={a.id} className="indicator-row">
-                    <div className="indicator-main">
-                      <div className="indicator-title">{a.original_filename}</div>
-                      <div className="indicator-meta">
-                        {(a.section || "-")} • {a.content_type || "-"} • {a.size_bytes || 0} bytes
-                        {a.description ? ` • ${a.description}` : ""}
-                      </div>
-                    </div>
-                    <div className="indicator-actions">
-                      <button
-                        type="button"
-                        className="link-button subtle"
-                        onClick={() => api.downloadAttachment(a.id, a.original_filename)}
-                      >
-                        Baixar
-                      </button>
-                      <button
-                        type="button"
-                        className="link-button subtle"
-                        onClick={async () => {
-                          if (!window.confirm("Excluir este anexo?")) return;
-                          try {
-                            await api.deleteAttachment(a.id);
-                            await refreshAttachments(ubsId);
-                          } catch (err) {
-                            window.alert(err?.message || "Erro ao excluir anexo");
-                          }
-                        }}
-                      >
-                        Excluir
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </section>
-
-        {/* SEÇÃO 1 – Informações gerais da UBS */}
-        <section className="form-section">
-          <div className="form-section-header">
-            <h2>Informações gerais da UBS</h2>
-          </div>
-
-          {/* Linha 1 */}
-          <div className="field-grid field-grid-3">
-            <div className="form-field">
-              <label className="field-label">
-                Nome da UBS<span className="required">*</span>
-              </label>
-              <input
-                type="text"
-                className="field-input"
-                placeholder="ESF 18 – Adalto Pereira Saraçayo"
-                value={form.nome_ubs}
-                onChange={(e) => setForm((prev) => ({ ...prev, nome_ubs: e.target.value }))}
-              />
-            </div>
-
-            <div className="form-field">
-              <label className="field-label">
-                CNES<span className="required">*</span>
-              </label>
-              <input
-                type="text"
-                className="field-input"
-                placeholder="0000000"
-                value={form.cnes}
-                onChange={(e) => setForm((prev) => ({ ...prev, cnes: e.target.value }))}
-              />
-            </div>
-
-            <div className="form-field field-span-2-lg">
-              <label className="field-label">
-                Área de atuação (bairros/localidades)<span className="required">*</span>
-              </label>
-              <input
-                type="text"
-                className="field-input"
-                placeholder="Ex: Alto São Pedro, Nova Alvorada, Centro"
-                value={form.area_atuacao}
-                onChange={(e) => setForm((prev) => ({ ...prev, area_atuacao: e.target.value }))}
-              />
-            </div>
-          </div>
-
-          {/* Linha 2 */}
-          <div className="field-grid field-grid-5 compact-row">
-            <div className="form-field">
-              <label className="field-label">
-                Número de habitantes ativos<span className="required">*</span>
-              </label>
-              <input
-                type="number"
-                className="field-input"
-                placeholder="Ex: 4.800"
-                value={form.numero_habitantes_ativos}
-                onChange={(e) =>
-                  setForm((prev) => ({ ...prev, numero_habitantes_ativos: e.target.value }))
-                }
-              />
-            </div>
-            <div className="form-field">
-              <label className="field-label">
-                Número de microáreas<span className="required">*</span>
-              </label>
-              <input
-                type="number"
-                className="field-input"
-                placeholder="Ex: 8"
-                value={form.numero_microareas}
-                onChange={(e) => setForm((prev) => ({ ...prev, numero_microareas: e.target.value }))}
-              />
-            </div>
-            <div className="form-field">
-              <label className="field-label">
-                Número de famílias cadastradas<span className="required">*</span>
-              </label>
-              <input
-                type="number"
-                className="field-input"
-                placeholder="Ex: 1.000"
-                value={form.numero_familias_cadastradas}
-                onChange={(e) =>
-                  setForm((prev) => ({ ...prev, numero_familias_cadastradas: e.target.value }))
-                }
-              />
-            </div>
-            <div className="form-field">
-              <label className="field-label">
-                Número de domicílios<span className="required">*</span>
-              </label>
-              <input
-                type="number"
-                className="field-input"
-                placeholder="Ex: 2.000"
-                value={form.numero_domicilios}
-                onChange={(e) => setForm((prev) => ({ ...prev, numero_domicilios: e.target.value }))}
-              />
-            </div>
-            <div className="form-field">
-              <label className="field-label">Domicílios rurais</label>
-              <input
-                type="number"
-                className="field-input"
-                placeholder="Ex: 15"
-                value={form.domicilios_rurais}
-                onChange={(e) => setForm((prev) => ({ ...prev, domicilios_rurais: e.target.value }))}
-              />
-            </div>
-          </div>
-
-          {/* Linha 3 */}
-          <div className="field-grid field-grid-3">
-            <div className="form-field">
-              <label className="field-label">Data de inauguração</label>
-              <div className="date-input-wrapper">
-                <input
-                  type="date"
-                  className="field-input"
-                  placeholder="dd/mm/aaaa"
-                  value={form.data_inauguracao}
-                  onChange={(e) => setForm((prev) => ({ ...prev, data_inauguracao: e.target.value }))}
-                />
-                <span className="date-icon" aria-hidden="true">
-	                  📅
-                </span>
-              </div>
-            </div>
-            <div className="form-field">
-              <label className="field-label">Data da última reforma</label>
-              <div className="date-input-wrapper">
-                <input
-                  type="date"
-                  className="field-input"
-                  placeholder="dd/mm/aaaa"
-                  value={form.data_ultima_reforma}
-                  onChange={(e) =>
-                    setForm((prev) => ({ ...prev, data_ultima_reforma: e.target.value }))
-                  }
-                />
-                <span className="date-icon" aria-hidden="true">
-	                  📅
-                </span>
-              </div>
-            </div>
-            <div className="form-field">
-              <label className="field-label">Gestão / modelo de atenção</label>
-              <input
-                type="text"
-                className="field-input"
-                placeholder="Ex: ESF, UBS tradicional, mista"
-                value={form.gestao_modelo_atencao}
-                onChange={(e) =>
-                  setForm((prev) => ({ ...prev, gestao_modelo_atencao: e.target.value }))
-                }
-              />
-            </div>
-          </div>
-
-          {/* Linha 4 */}
-          <div className="form-field full-width">
-            <label className="field-label">Descritivos gerais</label>
-            <textarea
-              className="field-input textarea"
-              rows={3}
-              placeholder="Perfil de referência – por exemplo, população prioritária, localização estratégica, etc."
-              value={form.descritivos_gerais}
-              onChange={(e) => setForm((prev) => ({ ...prev, descritivos_gerais: e.target.value }))}
-            />
-          </div>
-
-          {/* Linha 5 */}
-          <div className="form-field full-width">
-            <label className="field-label">Observações gerais</label>
-            <textarea
-              className="field-input textarea"
-              rows={4}
-              placeholder="Informações adicionais sobre a UBS, histórico, mudanças recentes na área de abrangência, projetos em andamento…"
-              value={form.observacoes_gerais}
-              onChange={(e) => setForm((prev) => ({ ...prev, observacoes_gerais: e.target.value }))}
-            />
-          </div>
-        </section>
-
-        {/* SEÇÃO 2 – Serviços oferecidos pela UBS */}
-        <section className="form-section">
-          <div className="form-section-header">
-            <h2>Serviços oferecidos pela UBS</h2>
-            <p className="section-subtitle">
-              Marque os serviços que a UBS oferece diretamente à população.
-            </p>
-          </div>
-
-          <div className="services-grid">
-            {[
-              "Programa Saúde da Família",
-              "Atendimento médico",
-              "Atendimento de enfermagem",
-              "Atendimento odontológico",
-              "Atendimento de urgência / acolhimento",
-              "Procedimentos (curativos, inalação, etc.)",
-              "Sala de vacina",
-              "Saúde da criança",
-              "Saúde da mulher",
-              "Saúde do homem",
-              "Saúde do idoso",
-              "Planejamento familiar",
-              "Pré-natal",
-              "Puericultura",
-              "Atendimento a condições crônicas (hipertensão, diabetes, etc.)",
-              "Programa Saúde na Escola (PSE)",
-              "Saúde mental",
-              "Atendimento multiprofissional (NASF ou equivalente)",
-              "Testes rápidos de IST",
-              "Vigilância epidemiológica",
-              "Vigilância em saúde ambiental",
-              "Visitas domiciliares",
-              "Atividades coletivas e preventivas",
-              "Grupos operativos (gestantes, tabagismo, etc.)",
-            ].map((servico) => (
-              <label key={servico} className="service-option">
-                <input type="checkbox" />
-                <span>{servico}</span>
-              </label>
-            ))}
-          </div>
-
-          <div className="form-field full-width" style={{ marginTop: 20 }}>
-            <label className="field-label">Outros serviços (especificar)</label>
-            <input
-              type="text"
-              className="field-input"
-              placeholder="Descreva outros serviços ofertados não listados acima…"
-              value={form.outros_servicos}
-              onChange={(e) => setForm((prev) => ({ ...prev, outros_servicos: e.target.value }))}
-            />
-          </div>
-        </section>
-
-        {/* SEÇÃO 3 – Indicadores epidemiológicos */}
-        <section className="form-section">
-          <div className="form-section-header">
-            <h2>Indicadores epidemiológicos</h2>
-            <p className="section-subtitle">
-              Preencha ou atualize os principais indicadores epidemiológicos da UBS. Todos os indicadores devem
-              ser numéricos. Informe também o período de referência.
-            </p>
-          </div>
-
-          <button type="button" className="link-button">
-            Ver todos os indicadores cadastrados
-          </button>
-
-          <div className="indicator-list">
-            <div className="indicator-row">
-              <div className="indicator-main">
-                <div className="indicator-title">Hipertensos cadastrados</div>
-                <div className="indicator-meta">
-                  Último valor: 325 – Período: 2023 Q1 – Fonte: Prontuário eletrônico
-                </div>
-              </div>
-              <div className="indicator-actions">
-                <span className="pill-badge">Tipo: Número absoluto</span>
-                <button type="button" className="link-button subtle">
-                  Editar
-                </button>
-              </div>
-            </div>
-
-            <div className="indicator-row">
-              <div className="indicator-main">
-                <div className="indicator-title">Diabéticos cadastrados</div>
-                <div className="indicator-meta">
-                  Último valor: 180 – Período: 2023 Q1 – Fonte: Prontuário eletrônico
-                </div>
-              </div>
-              <div className="indicator-actions">
-                <span className="pill-badge">Tipo: Número absoluto</span>
-                <button type="button" className="link-button subtle">
-                  Editar
-                </button>
-              </div>
-            </div>
-
-            <div className="indicator-row">
-              <div className="indicator-main">
-                <div className="indicator-title">Gestantes acompanhadas</div>
-                <div className="indicator-meta">
-                  Último valor: 42 – Período: 2023 Q1 – Fonte: e-SUS APS
-                </div>
-              </div>
-              <div className="indicator-actions">
-                <span className="pill-badge">Tipo: Taxa por 1.000 hab.</span>
-                <button type="button" className="link-button subtle">
-                  Editar
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div className="subpanel">
-            <div className="subpanel-header">
-              <h3>Adicionar ou atualizar indicador</h3>
-              <p className="section-subtitle small">
-                Preencha os campos abaixo para cadastrar um novo indicador ou atualizar o valor de um indicador
-                existente.
-              </p>
-            </div>
-
-            <div className="field-grid field-grid-4">
-              <div className="form-field field-span-2">
-                <label className="field-label">
-                  Nome do indicador<span className="required">*</span>
-                </label>
-                <input type="text" className="field-input" placeholder="Ex: Taxa de internação por AVC" />
-              </div>
-
-              <div className="form-field">
-                <label className="field-label">
-                  Tipo de dado<span className="required">*</span>
-                </label>
-                <select className="field-input">
-                  <option value="">Selecionar</option>
-                  <option value="absoluto">Número absoluto</option>
-                  <option value="taxa">Taxa (%)</option>
-                  <option value="taxa1000">Taxa por 1.000 hab.</option>
-                </select>
-              </div>
-
-              <div className="form-field">
-                <label className="field-label">
-                  Grau de precisão do valor<span className="required">*</span>
-                </label>
-                <select className="field-input">
-                  <option value="">Selecionar</option>
-                  <option value="unidade">Unidade</option>
-                  <option value="uma-casa">Uma casa decimal</option>
-                  <option value="duas-casas">Duas casas decimais</option>
-                </select>
-              </div>
-
-              <div className="form-field">
-                <label className="field-label">
-                  Valor<span className="required">*</span>
-                </label>
-                <input type="number" className="field-input" placeholder="Ex: 570 ou 79,5" />
-              </div>
-
-              <div className="form-field">
-                <label className="field-label">
-                  Período de referência<span className="required">*</span>
-                </label>
-                <input
-                  type="text"
-                  className="field-input"
-                  placeholder="Ex: 2023, 1º trimestre de 2023, Março/2023"
-                />
-              </div>
-            </div>
-
-            <div className="form-field full-width" style={{ marginTop: 16 }}>
-              <label className="field-label">Observações (opcional)</label>
-              <textarea
-                className="field-input textarea"
-                rows={3}
-                placeholder="Informe fonte dos dados (e-SUS, SIAB, planilha própria, etc.), critérios de cálculo, estimativas utilizadas, comentários sobre mudanças bruscas de valor…"
-              />
-            </div>
-
-            <div className="subpanel-actions">
-              <button type="button" className="btn btn-outline">
-                Limpar
-              </button>
-              <button type="button" className="btn btn-primary">
-                Salvar indicador
-              </button>
-            </div>
-          </div>
-        </section>
-
-        {/* SEÇÃO 4 – Profissionais da equipe */}
-        <section className="form-section">
-          <div className="form-section-header">
-            <h2>Profissionais da equipe</h2>
-            <p className="section-subtitle">
-              Consulte os profissionais já cadastrados e atualize conforme a composição da equipe da UBS.
-            </p>
-          </div>
-
-          <div className="professional-list">
-            <div className="professional-row">
-              <div className="professional-main">
-                <div className="professional-title">Agente Comunitário de Saúde (ACS)</div>
-                <div className="professional-meta">Inclui ACS vinculados às microáreas da UBS.</div>
-              </div>
-              <div className="professional-actions">
-                <span className="professional-qty">Quantidade: 8</span>
-                <button type="button" className="link-button subtle">
-                  Editar
-                </button>
-              </div>
-            </div>
-
-            <div className="professional-row">
-              <div className="professional-main">
-                <div className="professional-title">Enfermeiro da Família</div>
-                <div className="professional-meta">
-                  Profissional responsável pela coordenação da equipe.
-                </div>
-              </div>
-              <div className="professional-actions">
-                <span className="professional-qty">Quantidade: 1</span>
-                <button type="button" className="link-button subtle">
-                  Editar
-                </button>
-              </div>
-            </div>
-
-            <div className="professional-row">
-              <div className="professional-main">
-                <div className="professional-title">Médico da Estratégia de Saúde da Família</div>
-                <div className="professional-meta">Profissional de referência para a população adstrita.</div>
-              </div>
-              <div className="professional-actions">
-                <span className="professional-qty">Quantidade: 1</span>
-                <button type="button" className="link-button subtle">
-                  Editar
-                </button>
-              </div>
-            </div>
-
-            <div className="professional-row">
-              <div className="professional-main">
-                <div className="professional-title">Equipe de Referência (outros profissionais)</div>
-                <div className="professional-meta">
-                  Inclui outros profissionais vinculados à UBS (psicólogo, assistente social, farmacêutico, etc.).
-                </div>
-              </div>
-              <div className="professional-actions">
-                <span className="professional-qty">Quantidade: 4</span>
-                <button type="button" className="link-button subtle">
-                  Editar
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <button type="button" className="link-button" style={{ marginTop: 12 }}>
-            Ver todos os profissionais cadastrados
-          </button>
-
-          <div className="subpanel" style={{ marginTop: 24 }}>
-            <div className="subpanel-header">
-              <h3>Adicionar ou atualizar profissional</h3>
-              <p className="section-subtitle small">
-                Informe o cargo/função, a quantidade de profissionais e o tipo de vínculo para adicionar um novo
-                registro ou atualizar um já existente.
-              </p>
-            </div>
-
-            <div className="field-grid field-grid-3">
-              <div className="form-field field-span-2">
-                <label className="field-label">
-                  Cargo / função<span className="required">*</span>
-                </label>
-                <input
-                  type="text"
-                  className="field-input"
-                  placeholder="Enfermeiro da Família, ACS, Técnico de Enfermagem, Farmacêutico, Psicólogo…"
-                />
-              </div>
-
-              <div className="form-field">
-                <label className="field-label">
-                  Quantidade<span className="required">*</span>
-                </label>
-                <input type="number" className="field-input" placeholder="Ex: 2" />
-              </div>
-
-              <div className="form-field">
-                <label className="field-label">
-                  Tipo de vínculo<span className="required">*</span>
-                </label>
-                <select className="field-input">
-                  <option value="">Selecionar</option>
-                  <option value="concursado">Concursado</option>
-                  <option value="contratado">Contratado</option>
-                  <option value="residencia">Residência</option>
-                  <option value="estagiario">Estagiário</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="form-field full-width" style={{ marginTop: 16 }}>
-              <label className="field-label">Observações (opcional)</label>
-              <textarea
-                className="field-input textarea"
-                rows={3}
-                placeholder="Informe categoria profissional, carga horária, se há programa de residência, se o profissional atende em mais de uma unidade, etc."
-              />
-            </div>
-
-            <div className="subpanel-actions">
-              <button type="button" className="btn btn-outline">
-                Limpar
-              </button>
-              <button type="button" className="btn btn-primary">
-                Salvar profissional
-              </button>
-            </div>
-          </div>
-        </section>
-
-        {/* SEÇÃO 5 – Território e determinantes sociais */}
-        <section className="form-section">
-          <div className="form-section-header">
-            <h2>Território e determinantes sociais</h2>
-          </div>
-
-          <div className="form-field full-width">
-            <label className="field-label">
-              Descrição do território<span className="required">*</span>
-            </label>
-            <textarea
-              className="field-input textarea"
-              rows={4}
-              placeholder="Descreva as principais características do território: perfil socioeconômico da população, presença de áreas urbanas e rurais, infraestrutura urbana (iluminação, pavimentação, saneamento), equipamentos sociais (escolas, CRAS, associações), áreas de risco, etc."
-              value={territory.descricao_territorio}
-              onChange={(e) =>
-                setTerritory((prev) => ({ ...prev, descricao_territorio: e.target.value }))
-              }
-            />
-          </div>
-
-          <div className="form-field full-width">
-            <label className="field-label">Potencialidades do território</label>
-            <textarea
-              className="field-input textarea"
-              rows={4}
-              placeholder="Registre parcerias existentes, lideranças comunitárias ativas, grupos organizados, empresas locais, programas sociais, projetos culturais, iniciativas de segurança, equipamentos de lazer, entre outros fatores positivos…"
-              value={territory.potencialidades_territorio}
-              onChange={(e) =>
-                setTerritory((prev) => ({ ...prev, potencialidades_territorio: e.target.value }))
-              }
-            />
-          </div>
-
-          <div className="form-field full-width">
-            <label className="field-label">Riscos e vulnerabilidades</label>
-            <textarea
-              className="field-input textarea"
-              rows={4}
-              placeholder="Informe situações de vulnerabilidade: áreas sujeitas a alagamentos, regiões com maior incidência de violência ou assaltos, terrenos baldios, pontos de descarte irregular de lixo, ausência de abastecimento de água, esgoto ou coleta regular, ocorrência de trabalho infantil, violência doméstica, população em situação de rua, doenças negligenciadas, etc."
-              value={territory.riscos_vulnerabilidades}
-              onChange={(e) =>
-                setTerritory((prev) => ({ ...prev, riscos_vulnerabilidades: e.target.value }))
-              }
-            />
-          </div>
-        </section>
-
-        {/* SEÇÃO 6 – Problemas e necessidades da UBS */}
-        <section className="form-section">
-          <div className="form-section-header">
-            <h2>Problemas e necessidades da UBS</h2>
-          </div>
-
-          <div className="form-field full-width">
-            <label className="field-label">
-              Problemas identificados<span className="required">*</span>
-            </label>
-            <textarea
-              className="field-input textarea"
-              rows={4}
-              placeholder="Descreva de forma detalhada os principais problemas identificados na UBS: deficiência ou má adequação do espaço físico (salas pequenas, falta de ventilação, barreiras arquitetônicas para pessoas com deficiência), sobrecarga de atendimentos, filas prolongadas, dificuldade de agendamento, ausência de protocolos definidos, alta rotatividade de profissionais, falta de integração entre equipes, fragilidade no acolhimento, dificuldades para realizar busca ativa, problemas de comunicação com a população, entre outros pontos críticos…"
-              value={needs.problemas_identificados}
-              onChange={(e) => setNeeds((prev) => ({ ...prev, problemas_identificados: e.target.value }))}
-            />
-          </div>
-
-          <div className="form-field full-width">
-            <label className="field-label">Necessidades de equipamentos e insumos</label>
-            <textarea
-              className="field-input textarea"
-              rows={4}
-              placeholder="Liste os equipamentos, mobiliários e insumos necessários para o adequado funcionamento da unidade: computadores e impressoras, acesso à internet, cadeiras adequadas para sala de espera, mesas e armários, balanças, esfigmomanômetros, oxímetros, materiais para atendimento odontológico, materiais de limpeza, EPIs, kits de curativo, medicamentos essenciais, testes rápidos, etc."
-              value={needs.necessidades_equipamentos_insumos}
-              onChange={(e) =>
-                setNeeds((prev) => ({ ...prev, necessidades_equipamentos_insumos: e.target.value }))
-              }
-            />
-          </div>
-
-          <div className="form-field full-width">
-            <label className="field-label">Necessidades específicas dos ACS</label>
-            <textarea
-              className="field-input textarea"
-              rows={4}
-              placeholder="Registre necessidades identificadas para o trabalho dos Agentes Comunitários de Saúde: EPIs (máscaras, luvas, protetor solar, capa de chuva), materiais de campo (pranchetas, fichas, tablets ou smartphones), uniforme, crachá, boné, mochila, bicicleta ou outro meio de transporte, capacitações específicas, suporte para registro e envio de informações, entre outras."
-              value={needs.necessidades_especificas_acs}
-              onChange={(e) => setNeeds((prev) => ({ ...prev, necessidades_especificas_acs: e.target.value }))}
-            />
-          </div>
-
-          <div className="form-field full-width">
-            <label className="field-label">Necessidades de infraestrutura e manutenção</label>
-            <textarea
-              className="field-input textarea"
-              rows={4}
-              placeholder="Descreva necessidades relacionadas à estrutura física e manutenção da UBS: reforma de telhado, substituição de portas e janelas, melhorias na acessibilidade (rampas, corrimãos, piso tátil), adequação elétrica e hidráulica, melhoria da ventilação ou climatização, ampliação de salas, pintura, paisagismo, poda de árvores no entorno, iluminação externa, sinalização interna, adequação de depósito de resíduos, entre outras."
-              value={needs.necessidades_infraestrutura_manutencao}
-              onChange={(e) =>
-                setNeeds((prev) => ({ ...prev, necessidades_infraestrutura_manutencao: e.target.value }))
-              }
-            />
-          </div>
-        </section>
-
-        {/* Barra de ações inferior */}
-        <div className="bottom-action-bar">
-          <button
-            type="button"
-            className="btn btn-outline"
-            onClick={handleSaveDraft}
-            disabled={isSaving || isSubmitting}
-          >
-            Salvar rascunho
-          </button>
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={handleSubmit}
-            disabled={isSaving || isSubmitting}
-          >
-            Enviar diagnóstico
-          </button>
+import { useState, useEffect, useCallback } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import axios from 'axios';
+import { useDebounce } from '../hooks/useDebounce';
+
+// --- Componentes Reutilizáveis ---
+
+const SectionCard = ({ title, children }) => (
+    <div className="bg-white shadow-md rounded-lg mb-8">
+        <div className="bg-gray-50 border-b border-gray-200 px-6 py-4 rounded-t-lg">
+            <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
         </div>
-      </section>
-    </main>
-  );
+        <div className="p-6">
+            {children}
+        </div>
+    </div>
+);
+
+const InputField = ({ label, name, value, onChange, type = 'text', helpText, ...props }) => (
+    <div className="mb-4">
+        <label htmlFor={name} className="block text-sm font-medium text-gray-700">{label}</label>
+        <input
+            type={type}
+            name={name}
+            id={name}
+            value={value || ''}
+            onChange={onChange}
+            className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            {...props}
+        />
+        {helpText && <p className="mt-2 text-xs text-gray-500">{helpText}</p>}
+    </div>
+);
+
+const TextAreaField = ({ label, name, value, onChange, helpText, ...props }) => (
+    <div className="mb-4">
+        <label htmlFor={name} className="block text-sm font-medium text-gray-700">{label}</label>
+        <textarea
+            name={name}
+            id={name}
+            value={value || ''}
+            onChange={onChange}
+            rows={5}
+            className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            {...props}
+        />
+        {helpText && <p className="mt-2 text-xs text-gray-500">{helpText}</p>}
+    </div>
+);
+
+// --- SEÇÕES COM LÓGICA PRÓPRIA ---
+
+const NeedsSection = ({ ubsId, initialData }) => {
+    const [data, setData] = useState(initialData || {});
+    const [status, setStatus] = useState('idle');
+
+    useEffect(() => { if(initialData) setData(initialData); }, [initialData]);
+
+    const handleSave = async () => {
+        setStatus('saving');
+        try {
+            await axios.put(`/api/ubs/${ubsId}/needs`, data, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            setStatus('success'); setTimeout(() => setStatus('idle'), 2000);
+        } catch(err) { setStatus('error'); }
+    }
+
+    return (
+        <SectionCard title="Problemas e Necessidades da UBS">
+            <div className="space-y-6">
+                <TextAreaField label="Problemas Identificados" name="problemas_identificados" value={data.problemas_identificados} onChange={e => setData(p => ({...p, [e.target.name]: e.target.value}))} required helpText="Descreva os principais problemas da UBS: espaço físico, sobrecarga, filas, agendamento, etc."/>
+                <TextAreaField label="Necessidades de Equipamentos e Insumos" name="necessidades_equipamentos_insumos" value={data.necessidades_equipamentos_insumos} onChange={e => setData(p => ({...p, [e.target.name]: e.target.value}))} />
+                <TextAreaField label="Necessidades de Infraestrutura e Manutenção" name="necessidades_infraestrutura_manutencao" value={data.necessidades_infraestrutura_manutencao} onChange={e => setData(p => ({...p, [e.target.name]: e.target.value}))} />
+                <TextAreaField label="Necessidades Específicas dos ACS" name="necessidades_especificas_acs" value={data.necessidades_especificas_acs} onChange={e => setData(p => ({...p, [e.target.name]: e.target.value}))} />
+                
+                <div className="text-right">
+                    <button onClick={handleSave} disabled={status === 'saving'} className={`font-bold py-2 px-4 rounded-md shadow-sm text-white ${status === 'error' ? 'bg-red-600' : 'bg-blue-600 hover:bg-blue-700'}`}>
+                        {status === 'saving' ? 'Salvando...' : (status === 'success' ? 'Salvo!' : 'Salvar Seção')}
+                    </button>
+                </div>
+            </div>
+        </SectionCard>
+    );
 }
+
+const TerritorySection = ({ ubsId, initialData }) => {
+    const [data, setData] = useState(initialData || {});
+    const [status, setStatus] = useState('idle');
+
+    useEffect(() => { if(initialData) setData(initialData); }, [initialData]);
+
+    const handleSave = async () => {
+        setStatus('saving');
+        try {
+            await axios.put(`/api/ubs/${ubsId}/territory`, data, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            setStatus('success'); setTimeout(() => setStatus('idle'), 2000);
+        } catch(err) { setStatus('error'); }
+    }
+
+    return (
+        <SectionCard title="Território e Determinantes Sociais">
+            <div className="space-y-6">
+                 <TextAreaField label="Descrição do Território" name="descricao_territorio" value={data.descricao_territorio} onChange={e => setData(p => ({...p, [e.target.name]: e.target.value}))} required helpText="Inclua características geográficas, demográficas, sociais e econômicas." />
+                 <TextAreaField label="Potencialidades do Território" name="potencialidades_territorio" value={data.potencialidades_territorio} onChange={e => setData(p => ({...p, [e.target.name]: e.target.value}))} helpText="Descreva os pontos fortes da comunidade, como redes de apoio, equipamentos sociais, etc." />
+                 <TextAreaField label="Riscos e Vulnerabilidades" name="riscos_vulnerabilidades" value={data.riscos_vulnerabilidades} onChange={e => setData(p => ({...p, [e.target.name]: e.target.value}))} helpText="Mapeie áreas de risco, violência, saneamento precário, etc."/>
+                <div className="text-right">
+                    <button onClick={handleSave} disabled={status === 'saving'} className={`font-bold py-2 px-4 rounded-md shadow-sm text-white ${status === 'error' ? 'bg-red-600' : 'bg-blue-600 hover:bg-blue-700'}`}>
+                        {status === 'saving' ? 'Salvando...' : (status === 'success' ? 'Salvo!' : 'Salvar Seção')}
+                    </button>
+                </div>
+            </div>
+        </SectionCard>
+    );
+}
+
+const ProfessionalsSection = ({ ubsId, initialData, onUpdate }) => {
+    const [formData, setFormData] = useState({ cargo_funcao: '', quantidade: 1, tipo_vinculo: '' });
+    
+    const handleAdd = async (e) => {
+        e.preventDefault();
+        try {
+            await axios.post(`/api/ubs/${ubsId}/professionals`, formData, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
+            setFormData({ cargo_funcao: '', quantidade: 1, tipo_vinculo: '' }); 
+            onUpdate(); 
+        } catch(err) { alert("Erro ao adicionar profissional."); }
+    }
+
+    return (
+        <SectionCard title="Profissionais da Equipe">
+            <form onSubmit={handleAdd} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end p-4 border rounded-md bg-gray-50 mb-6">
+                <InputField label="Cargo/Função" name="cargo_funcao" value={formData.cargo_funcao} onChange={e => setFormData(p => ({...p, cargo_funcao: e.target.value}))} required/>
+                <InputField label="Quantidade" name="quantidade" type="number" value={formData.quantidade} onChange={e => setFormData(p => ({...p, quantidade: e.target.value}))} required/>
+                <InputField label="Vínculo" name="tipo_vinculo" value={formData.tipo_vinculo} onChange={e => setFormData(p => ({...p, tipo_vinculo: e.target.value}))} required placeholder="Ex: Estatutário"/>
+                <button type="submit" className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-3 rounded-md shadow-sm h-fit mb-4">+ Adicionar</button>
+            </form>
+            
+            <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                        <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cargo</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantidade</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vínculo</th>
+                        </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                        {initialData && initialData.map(prof => (
+                            <tr key={prof.id}>
+                                <td className="px-6 py-4 whitespace-nowrap">{prof.cargo_funcao}</td>
+                                <td className="px-6 py-4 whitespace-nowrap">{prof.quantidade}</td>
+                                <td className="px-6 py-4 whitespace-nowrap">{prof.tipo_vinculo}</td>
+                            </tr>
+                        ))}
+                        {(!initialData || initialData.length === 0) && <tr><td colSpan="3" className="text-center py-4 text-gray-500">Nenhum profissional adicionado.</td></tr>}
+                    </tbody>
+                </table>
+            </div>
+        </SectionCard>
+    );
+}
+
+const AttachmentsSection = ({ ubsId, initialData, onUpdate }) => {
+    const [file, setFile] = useState(null);
+    const [description, setDescription] = useState('');
+    const [section, setSection] = useState('GERAL');
+    const [isUploading, setIsUploading] = useState(false);
+
+    const handleUpload = async (e) => {
+        e.preventDefault();
+        if (!file) { alert("Selecione um arquivo."); return; }
+        
+        setIsUploading(true);
+        const formData = new FormData();
+        formData.append('files', file);
+        formData.append('description', description);
+        formData.append('section', section);
+        
+        try {
+            await axios.post(`/api/ubs/${ubsId}/attachments`, formData, { 
+                headers: { 'Content-Type': 'multipart/form-data', Authorization: `Bearer ${localStorage.getItem('token')}` } 
+            });
+            setFile(null); setDescription('');
+            onUpdate(); 
+        } catch(err) { alert("Erro ao enviar anexo."); }
+        finally { setIsUploading(false); }
+    }
+
+    return (
+        <SectionCard title="Anexos">
+             <form onSubmit={handleUpload} className="p-4 border rounded-md bg-gray-50 mb-6 space-y-4">
+                <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700">Arquivo</label>
+                    <input type="file" onChange={e => setFile(e.target.files[0])} className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/>
+                </div>
+                <InputField label="Descrição" value={description} onChange={e => setDescription(e.target.value)} placeholder="Ex: Planta da UBS"/>
+                <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700">Seção do Relatório</label>
+                    <select 
+                        value={section} 
+                        onChange={e => setSection(e.target.value)}
+                        className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    >
+                        <option value="GERAL">Geral / Identificação</option>
+                        <option value="PROBLEMAS">Problemas Identificados</option>
+                        <option value="TERRITORIO">Território</option>
+                        <option value="EQUIPAMENTOS">Equipamentos e Insumos</option>
+                        <option value="INFRAESTRUTURA">Infraestrutura</option>
+                    </select>
+                </div>
+                <button type="submit" disabled={isUploading} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-3 rounded-md shadow-sm disabled:opacity-50">
+                    {isUploading ? 'Enviando...' : '+ Adicionar Anexo'}
+                </button>
+             </form>
+             
+             <ul className="divide-y divide-gray-200">
+                 {initialData && initialData.map(att => (
+                     <li key={att.id} className="py-3 flex justify-between items-center">
+                         <div className="text-sm">
+                             <span className="font-medium text-gray-900">{att.original_filename}</span>
+                             <span className="text-gray-500 ml-2">({att.description || 'Sem descrição'}) - {att.section}</span>
+                         </div>
+                         <a 
+                             href={`/api/ubs/attachments/${att.id}/download`} 
+                             target="_blank" 
+                             rel="noopener noreferrer"
+                             className="text-indigo-600 hover:text-indigo-900 text-sm font-medium"
+                         >
+                             Baixar
+                         </a>
+                     </li>
+                 ))}
+                 {(!initialData || initialData.length === 0) && <li className="text-center py-4 text-gray-500">Nenhum anexo.</li>}
+             </ul>
+        </SectionCard>
+    );
+}
+
+// --- Página Principal ---
+
+const DiagnosticoUBS = () => {
+    const { id } = useParams();
+    const [reportData, setReportData] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+    const [saveStatus, setSaveStatus] = useState('Salvo');
+    
+    // Using a separate state for general data to avoid issues with nested objects in debounce
+    const [generalData, setGeneralData] = useState(null);
+    
+    const debouncedGeneralData = useDebounce(generalData, 2000); 
+    const getToken = () => localStorage.getItem('token');
+
+    const fetchData = useCallback(async () => {
+        if (!id) return;
+        setLoading(true);
+        try {
+            const response = await axios.get(`/api/ubs/${id}/diagnosis`, {
+                headers: { Authorization: `Bearer ${getToken()}` }
+            });
+            const fullData = {
+                ...response.data.ubs,
+                professionals: response.data.professional_groups,
+                territory: response.data.territory_profile,
+                needs: response.data.needs,
+                attachments: response.data.attachments
+            };
+            setReportData(fullData);
+            
+            setGeneralData({
+                nome_relatorio: fullData.nome_relatorio,
+                periodo_referencia: fullData.periodo_referencia,
+                responsavel_nome: fullData.responsavel_nome,
+                responsavel_cargo: fullData.responsavel_cargo,
+                responsavel_contato: fullData.responsavel_contato,
+                identificacao_equipe: fullData.identificacao_equipe,
+                nome_ubs: fullData.nome_ubs,
+                cnes: fullData.cnes,
+                area_atuacao: fullData.area_atuacao,
+                data_inauguracao: fullData.data_inauguracao,
+                data_ultima_reforma: fullData.data_ultima_reforma,
+                numero_habitantes_ativos: fullData.numero_habitantes_ativos,
+                numero_familias_cadastradas: fullData.numero_familias_cadastradas,
+                numero_microareas: fullData.numero_microareas,
+                numero_domicilios: fullData.numero_domicilios,
+                domicilios_rurais: fullData.domicilios_rurais,
+                
+                // Novos campos adicionados
+                fluxo_agenda_acesso: fullData.fluxo_agenda_acesso,
+                descritivos_gerais: fullData.descritivos_gerais,
+                observacoes_gerais: fullData.observacoes_gerais,
+                outros_servicos: fullData.outros_servicos,
+                
+                isDirty: false 
+            });
+
+        } catch (err) {
+            console.error(err);
+            setError('Falha ao carregar os dados do relatório.');
+        } finally {
+            setLoading(false);
+        }
+    }, [id]);
+
+    useEffect(() => { fetchData(); }, [fetchData]);
+
+    useEffect(() => {
+        if (debouncedGeneralData && !loading && debouncedGeneralData.isDirty) {
+            const updateData = async () => {
+                setSaveStatus('Salvando...');
+                try {
+                    const { isDirty, ...payload } = debouncedGeneralData;
+                    await axios.patch(`/api/ubs/${id}`, payload, { headers: { Authorization: `Bearer ${getToken()}` } });
+                    setSaveStatus('Salvo');
+                    setGeneralData(prev => ({...prev, isDirty: false})); 
+                } catch (err) {
+                    console.error(err);
+                    setSaveStatus('Erro ao salvar');
+                }
+            };
+            updateData();
+        }
+    }, [debouncedGeneralData, id, loading]);
+
+    const handleAutoSaveChange = (e) => {
+        const { name, value, type, checked } = e.target;
+        const val = type === 'checkbox' ? checked : value;
+        setGeneralData(prev => ({ ...prev, [name]: val, isDirty: true }));
+    };
+
+    const forceRefresh = () => fetchData();
+
+    if (loading) return <div className="text-center p-10">Carregando diagnóstico...</div>;
+    if (error) return <div className="bg-red-100 text-red-700 p-4 rounded-md text-center mt-10">{error}</div>;
+    if (!reportData || !generalData) return null;
+
+    return (
+        <div className="bg-gray-50 min-h-screen">
+            <div className="container mx-auto p-4 sm:p-8">
+                <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
+                    <div>
+                        <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Diagnóstico Situacional da UBS</h1>
+                        <p className="text-gray-600">{generalData.nome_relatorio || generalData.nome_ubs}</p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                        <span className={`text-sm italic font-medium hidden md:inline ${saveStatus === 'Erro ao salvar' ? 'text-red-500' : 'text-gray-500'}`}>
+                            {saveStatus}
+                        </span>
+                        <Link to="/relatorios-situacionais" className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-md shadow-sm">
+                            Voltar
+                        </Link>
+                    </div>
+                </div>
+
+                <SectionCard title="Identificação do Relatório">
+                    <InputField label="Nome do relatório" name="nome_relatorio" value={generalData.nome_relatorio} onChange={handleAutoSaveChange} helpText="Um nome curto para fácil identificação." required/>
+                </SectionCard>
+                
+                <SectionCard title="Metadados do Relatório">
+                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <InputField label="Período de Referência" name="periodo_referencia" value={generalData.periodo_referencia} onChange={handleAutoSaveChange} helpText="Ex: Jan/2023 a Jun/2023" />
+                        <InputField label="Responsável (nome)" name="responsavel_nome" value={generalData.responsavel_nome} onChange={handleAutoSaveChange}/>
+                        <InputField label="Responsável (cargo)" name="responsavel_cargo" value={generalData.responsavel_cargo} onChange={handleAutoSaveChange}/>
+                        <InputField label="Responsável (contato)" name="responsavel_contato" value={generalData.responsavel_contato} onChange={handleAutoSaveChange}/>
+                        <InputField label="Identificação da Equipe" name="identificacao_equipe" value={generalData.identificacao_equipe} onChange={handleAutoSaveChange} helpText="ESF nº" />
+                     </div>
+                </SectionCard>
+
+                <SectionCard title="Fluxo, Agenda e Acesso">
+                    <TextAreaField label="Fluxo, agenda e acesso" name="fluxo_agenda_acesso" value={generalData.fluxo_agenda_acesso} onChange={handleAutoSaveChange} helpText="Descreva como funciona acolhimento, agendamento, demanda espontânea, etc."/>
+                </SectionCard>
+
+                <SectionCard title="Informações Gerais da UBS">
+                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <InputField label="Nome da UBS" name="nome_ubs" value={generalData.nome_ubs} onChange={handleAutoSaveChange} required/>
+                        <InputField label="CNES" name="cnes" value={generalData.cnes} onChange={handleAutoSaveChange} required/>
+                        <div className="md:col-span-2 lg:col-span-1">
+                             <InputField label="Área de Atuação" name="area_atuacao" value={generalData.area_atuacao} onChange={handleAutoSaveChange} required/>
+                        </div>
+                     </div>
+                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
+                        <InputField label="Data de Inauguração" name="data_inauguracao" type="date" value={generalData.data_inauguracao} onChange={handleAutoSaveChange}/>
+                        <InputField label="Data da Última Reforma" name="data_ultima_reforma" type="date" value={generalData.data_ultima_reforma} onChange={handleAutoSaveChange}/>
+                     </div>
+                     <div className="mt-4">
+                        <TextAreaField label="Descritivos gerais" name="descritivos_gerais" value={generalData.descritivos_gerais} onChange={handleAutoSaveChange} helpText="Perfil de referência, localização estratégica, etc."/>
+                        <TextAreaField label="Observações gerais" name="observacoes_gerais" value={generalData.observacoes_gerais} onChange={handleAutoSaveChange} helpText="Histórico, mudanças recentes, projetos em andamento."/>
+                     </div>
+                </SectionCard>
+                
+                <SectionCard title="Serviços Oferecidos">
+                    <p className="text-sm text-gray-500 mb-4">Marque os serviços (apenas visualização - funcionalidade completa em breve).</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 mb-4">
+                        {["Programa Saúde da Família", "Atendimento médico", "Atendimento de enfermagem", "Atendimento odontológico", "Vacina", "Pré-natal"].map(s => (
+                            <label key={s} className="flex items-center space-x-2 text-sm text-gray-700">
+                                <input type="checkbox" className="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" />
+                                <span>{s}</span>
+                            </label>
+                        ))}
+                    </div>
+                    <InputField label="Outros serviços (especificar)" name="outros_servicos" value={generalData.outros_servicos} onChange={handleAutoSaveChange} placeholder="Descreva outros serviços ofertados..."/>
+                </SectionCard>
+
+                <SectionCard title="Indicadores Epidemiológicos">
+                    <div className="bg-yellow-50 p-4 rounded-md mb-4">
+                        <p className="text-sm text-yellow-700">Funcionalidade em desenvolvimento. Abaixo, exemplos de indicadores.</p>
+                    </div>
+                    <div className="space-y-4 opacity-75">
+                         <div className="flex justify-between items-center p-3 bg-gray-50 rounded border">
+                            <div>
+                                <p className="font-medium">Hipertensos cadastrados</p>
+                                <p className="text-xs text-gray-500">Último valor: 325 - Período: 2023 Q1</p>
+                            </div>
+                            <span className="text-xs bg-gray-200 px-2 py-1 rounded">Número absoluto</span>
+                         </div>
+                         <div className="flex justify-between items-center p-3 bg-gray-50 rounded border">
+                            <div>
+                                <p className="font-medium">Diabéticos cadastrados</p>
+                                <p className="text-xs text-gray-500">Último valor: 180 - Período: 2023 Q1</p>
+                            </div>
+                            <span className="text-xs bg-gray-200 px-2 py-1 rounded">Número absoluto</span>
+                         </div>
+                    </div>
+                </SectionCard>
+
+                <SectionCard title="Demografia e População">
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                        <InputField label="Habitantes ativos" name="numero_habitantes_ativos" type="number" value={generalData.numero_habitantes_ativos} onChange={handleAutoSaveChange}/>
+                        <InputField label="Microáreas" name="numero_microareas" type="number" value={generalData.numero_microareas} onChange={handleAutoSaveChange}/>
+                        <InputField label="Famílias cadastradas" name="numero_familias_cadastradas" type="number" value={generalData.numero_familias_cadastradas} onChange={handleAutoSaveChange}/>
+                        <InputField label="Domicílios" name="numero_domicilios" type="number" value={generalData.numero_domicilios} onChange={handleAutoSaveChange}/>
+                        <InputField label="Domicílios rurais" name="domicilios_rurais" type="number" value={generalData.domicilios_rurais} onChange={handleAutoSaveChange}/>
+                    </div>
+                </SectionCard>
+                
+                <ProfessionalsSection ubsId={id} initialData={reportData.professionals} onUpdate={forceRefresh} />
+                <TerritorySection ubsId={id} initialData={reportData.territory} />
+                <NeedsSection ubsId={id} initialData={reportData.needs} />
+                <AttachmentsSection ubsId={id} initialData={reportData.attachments} onUpdate={forceRefresh} />
+                
+            </div>
+        </div>
+    );
+};
+
+export default DiagnosticoUBS;

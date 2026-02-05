@@ -1,50 +1,62 @@
-import { Link } from "react-router-dom";
+import React from 'react';
+import Card from './Card';
+import { 
+  ClipboardDocumentListIcon, 
+  DocumentPlusIcon, 
+  ClockIcon, 
+  BookOpenIcon, 
+  LifebuoyIcon, 
+  UsersIcon, 
+  ChartBarIcon 
+} from '@heroicons/react/24/outline';
 
-export function CardGrid() {
-  const cartoes = [
+const CardGrid = () => {
+  const cards = [
     {
-      title: "Relatório Situacional",
-      desc: "Crie ou atualize o relatório da sua UBS.",
-      cta: "Acessar",
-      to: "/diagnostico",
+      title: 'Gerenciar relatórios situacionais',
+      to: '/relatorios-situacionais',
+      icon: ClipboardDocumentListIcon,
+      inDevelopment: false,
     },
     {
-      title: "Indicadores",
-      desc: "Visualize e envie indicadores epidemiológicos.",
-      cta: "Ver indicadores",
-      to: "#",
+      title: 'Marcação de Consultas',
+      to: '/agendamento',
+      icon: ClockIcon,
+      inDevelopment: false,
     },
     {
-      title: "Equipe",
-      desc: "Consulte profissionais cadastrados (área do gestor).",
-      cta: "Ver equipe",
-      to: "#",
+      title: 'Materiais Educativos',
+      to: '#',
+      icon: BookOpenIcon,
+      inDevelopment: true,
     },
     {
-      title: "Suporte",
-      desc: "Precisa de ajuda? Fale conosco.",
-      cta: "Entrar em contato",
-      to: "#",
+      title: 'Suporte e Feedback',
+      to: '#',
+      icon: LifebuoyIcon,
+      inDevelopment: true,
+    },
+    {
+      title: 'Gestão de Equipes e Microáreas',
+      to: '#',
+      icon: UsersIcon,
+      inDevelopment: true,
+    },
+    {
+      title: 'Relatórios e Priorizações',
+      to: '#',
+      icon: ChartBarIcon,
+      inDevelopment: true,
     },
   ];
 
   return (
-    <section className="card-grid">
-      {cartoes.map((cartao) => (
-        <article className="card" key={cartao.title}>
-          <h3>{cartao.title}</h3>
-          <p>{cartao.desc}</p>
-          {cartao.to ? (
-            <Link className="btn btn-primary" to={cartao.to}>
-              {cartao.cta}
-            </Link>
-          ) : (
-            <button className="btn btn-primary" type="button">
-              {cartao.cta}
-            </button>
-          )}
-        </article>
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      {cards.map((card, index) => (
+        <Card key={index} {...card} />
       ))}
-    </section>
+    </div>
   );
-}
+};
+
+export default CardGrid;
