@@ -19,9 +19,16 @@ depends_on = None
 
 
 def upgrade() -> None:
+    # Verifica colunas existentes
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    columns_usuarios = [c['name'] for c in inspector.get_columns("usuarios")]
+    tables = inspector.get_table_names()
+
     # Roles no usuário
-    with op.batch_alter_table("usuarios") as batch:
-        batch.add_column(sa.Column("role", sa.String(length=20), nullable=False, server_default="USER"))
+    if "role" not in columns_usuarios:
+        with op.batch_alter_table("usuarios") as batch:
+            batch.add_column(sa.Column("role", sa.String(length=20), nullable=False, server_default="USER"))
 
     # Backfill: usuários que já possuem registro em profissionais viram PROFISSIONAL
     op.execute(
@@ -29,35 +36,36 @@ def upgrade() -> None:
     )
 
     # Convites de profissional (uso único)
-    op.create_table(
-        "professional_invites",
-        sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True, nullable=False),
-        sa.Column("code_hash", sa.String(length=128), nullable=False, unique=True),
-        sa.Column("expires_at", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("used_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("used_by_user_id", sa.Integer(), sa.ForeignKey("usuarios.id"), nullable=True),
-        sa.Column("created_by_user_id", sa.Integer(), sa.ForeignKey("usuarios.id"), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("CURRENT_TIMESTAMP")),
-    )
+    if "professional_invites" not in tables:
+        op.create_table(
+            "professional_invites",
+            sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True, nullable=False),
+            sa.Column("code_hash", sa.String(length=128), nullable=False, unique=True),
+            sa.Column("expires_at", sa.DateTime(timezone=True), nullable=False),
+            sa.Column("used_at", sa.DateTime(timezone=True), nullable=True),
+            sa.Column("used_by_user_id", sa.Integer(), sa.ForeignKey("usuarios.id"), nullable=True),
+            sa.Column("created_by_user_id", sa.Integer(), sa.ForeignKey("usuarios.id"), nullable=False),
+            sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("CURRENT_TIMESTAMP")),
+        )
 
-    op.create_index(
-        "ix_professional_invites_created_by",
-        "professional_invites",
-        ["created_by_user_id"],
-        unique=False,
-    )
-    op.create_index(
-        "ix_professional_invites_used_by",
-        "professional_invites",
-        ["used_by_user_id"],
-        unique=False,
-    )
-    op.create_index(
-        "ix_professional_invites_expires_at",
-        "professional_invites",
-        ["expires_at"],
-        unique=False,
-    )
+        op.create_index(
+            "ix_professional_invites_created_by",
+            "professional_invites",
+            ["created_by_user_id"],
+            unique=False,
+        )
+        op.create_index(
+            "ix_professional_invites_used_by",
+            "professional_invites",
+            ["used_by_user_id"],
+            unique=False,
+        )
+        op.create_index(
+            "ix_professional_invites_expires_at",
+            "professional_invites",
+            ["expires_at"],
+            unique=False,
+        )
 
 
 def downgrade() -> None:
