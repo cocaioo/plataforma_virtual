@@ -20,9 +20,9 @@ const CardGrid = () => {
     },
     {
       title: 'Marcação de Consultas',
-      to: '#',
+      to: '/agendamento',
       icon: ClockIcon,
-      inDevelopment: true,
+      inDevelopment: false,
     },
     {
       title: 'Materiais Educativos',

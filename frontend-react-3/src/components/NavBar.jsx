@@ -3,7 +3,8 @@ import {
   BellIcon, 
   ArrowRightOnRectangleIcon, 
   Squares2X2Icon,
-  UserCircleIcon 
+  UserCircleIcon,
+  CalendarDaysIcon
 } from '@heroicons/react/24/outline';
 
 const NavBar = () => {
