@@ -169,8 +169,8 @@ class ProfessionalGroupOut(ProfessionalGroupBase):
 
 class TerritoryProfileBase(BaseModel):
     descricao_territorio: str
-    potencialidades_territorio: Optional[str]
-    riscos_vulnerabilidades: Optional[str]
+    potencialidades_territorio: Optional[str] = None
+    riscos_vulnerabilidades: Optional[str] = None
 
 
 class TerritoryProfileCreate(TerritoryProfileBase):
@@ -178,9 +178,9 @@ class TerritoryProfileCreate(TerritoryProfileBase):
 
 
 class TerritoryProfileUpdate(BaseModel):
-    descricao_territorio: Optional[str]
-    potencialidades_territorio: Optional[str]
-    riscos_vulnerabilidades: Optional[str]
+    descricao_territorio: Optional[str] = None
+    potencialidades_territorio: Optional[str] = None
+    riscos_vulnerabilidades: Optional[str] = None
 
 
 class TerritoryProfileOut(TerritoryProfileBase):
@@ -193,9 +193,9 @@ class TerritoryProfileOut(TerritoryProfileBase):
 
 class UBSNeedsBase(BaseModel):
     problemas_identificados: str
-    necessidades_equipamentos_insumos: Optional[str]
-    necessidades_especificas_acs: Optional[str]
-    necessidades_infraestrutura_manutencao: Optional[str]
+    necessidades_equipamentos_insumos: Optional[str] = None
+    necessidades_especificas_acs: Optional[str] = None
+    necessidades_infraestrutura_manutencao: Optional[str] = None
 
 
 class UBSNeedsCreate(UBSNeedsBase):
@@ -203,10 +203,10 @@ class UBSNeedsCreate(UBSNeedsBase):
 
 
 class UBSNeedsUpdate(BaseModel):
-    problemas_identificados: Optional[str]
-    necessidades_equipamentos_insumos: Optional[str]
-    necessidades_especificas_acs: Optional[str]
-    necessidades_infraestrutura_manutencao: Optional[str]
+    problemas_identificados: Optional[str] = None
+    necessidades_equipamentos_insumos: Optional[str] = None
+    necessidades_especificas_acs: Optional[str] = None
+    necessidades_infraestrutura_manutencao: Optional[str] = None
 
 
 class UBSNeedsOut(UBSNeedsBase):

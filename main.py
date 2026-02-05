@@ -8,6 +8,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 import logging
 import sys
+import os
 import asyncio
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -51,13 +52,24 @@ app.add_middleware(
 
 from routes.auth_routes import auth_router
 from routes.diagnostico_routes import diagnostico_router
+from routes.agendamento_routes import agendamento_router
 
-#Incluindo no Router as rotas de autenticação e diagnóstico
+# Incluindo as rotas (com e sem prefixo /api para compatibilidade total)
+app.include_router(auth_router, prefix="/api")
 app.include_router(auth_router)
+
+app.include_router(diagnostico_router, prefix="/api")
 app.include_router(diagnostico_router)
 
+app.include_router(agendamento_router, prefix="/api")
+app.include_router(agendamento_router)
+
 # Monta o diretório de assets estáticos do frontend
-app.mount("/assets", StaticFiles(directory="frontend-react/dist/assets"), name="assets")
+assets_path = "frontend-react/dist/assets"
+if os.path.exists(assets_path) and os.path.isdir(assets_path):
+    app.mount("/assets", StaticFiles(directory=assets_path), name="assets")
+else:
+    logger.warning(f"Diretório de assets não encontrado: {assets_path}. Modo desenvolvimento API ou build do frontend pendente.")
 
 # Rota para verificar SAÚDE da API (verificar se o banco está conectado e a API rodando)
 @app.get("/health") #Rate limite de 10 requisições por minuto
@@ -70,6 +82,13 @@ async def health_check(request: Request, db: AsyncSession = Depends(get_db)):
         return {"status": "error", "database": str(e)}
 
 # Rota catch-all para servir o index.html do React para qualquer outra rota
-@app.get("/{catchall:path}", response_class=FileResponse)
+@app.get("/{catchall:path}")
 async def serve_react_app(catchall: str):
-    return "frontend-react/dist/index.html"
+    index_path = "frontend-react/dist/index.html"
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    return {
+        "message": "API rodando em modo desenvolvimento",
+        "detail": "Frontend build não encontrado. Para acessar o frontend, inicie o servidor de desenvolvimento (npm run dev) ou faça o build (npm run build).",
+        "docs": "/docs"
+    }

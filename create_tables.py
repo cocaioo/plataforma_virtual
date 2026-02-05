@@ -13,6 +13,7 @@ from database import engine, Base, AsyncSessionLocal
 # Importa os modelos para registrar no metadata
 import models.auth_models  # noqa: F401
 import models.diagnostico_models  # noqa: F401
+import models.agendamento_models # noqa: F401
 from models.diagnostico_models import Service
 
 

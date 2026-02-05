@@ -290,6 +290,27 @@ async def update_professional_group(
     return grupo
 
 
+@diagnostico_router.delete("/professionals/{group_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_professional_group(
+    group_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(get_current_professional_user),
+):
+    resultado = await db.execute(
+        select(ProfessionalGroup).join(UBS).where(
+            ProfessionalGroup.id == group_id,
+            UBS.is_deleted.is_(False),
+        )
+    )
+    grupo = resultado.scalar_one_or_none()
+    if not grupo:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profissional não encontrado")
+
+    await db.delete(grupo)
+    await db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
 # ----------------------- Perfil do território -----------------------
 
 
@@ -405,6 +426,97 @@ async def upsert_ubs_needs(
     await db.commit()
     await db.refresh(necessidades)
     return necessidades
+
+
+# ----------------------- Indicadores epidemiológicos -----------------------
+
+
+@diagnostico_router.get("/{ubs_id}/indicators", response_model=List[IndicatorOut])
+async def list_ubs_indicators(
+    ubs_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(get_current_professional_user),
+):
+    ubs = await _get_ubs_or_404(ubs_id, current_user, db)
+    resultado = await db.execute(
+        select(Indicator)
+        .where(Indicator.ubs_id == ubs.id)
+        .order_by(Indicator.nome_indicador, Indicator.created_at.desc())
+    )
+    return resultado.scalars().all()
+
+
+@diagnostico_router.post("/{ubs_id}/indicators", response_model=IndicatorOut, status_code=status.HTTP_201_CREATED)
+async def create_ubs_indicator(
+    ubs_id: int,
+    payload: IndicatorCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(get_current_professional_user),
+):
+    ubs = await _get_ubs_or_404(ubs_id, current_user, db)
+    
+    indicador = Indicator(
+        ubs_id=ubs.id,
+        nome_indicador=payload.nome_indicador,
+        tipo_dado=payload.tipo_dado,
+        grau_precisao_valor=payload.grau_precisao_valor,
+        valor=payload.valor,
+        periodo_referencia=payload.periodo_referencia,
+        observacoes=payload.observacoes,
+        created_by=current_user.id
+    )
+    db.add(indicador)
+    await db.commit()
+    await db.refresh(indicador)
+    return indicador
+
+
+@diagnostico_router.patch("/indicators/{indicator_id}", response_model=IndicatorOut)
+async def update_indicator(
+    indicator_id: int,
+    payload: IndicatorUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(get_current_professional_user),
+):
+    resultado = await db.execute(
+        select(Indicator).join(UBS).where(
+            Indicator.id == indicator_id,
+            UBS.is_deleted.is_(False)
+        )
+    )
+    indicador = resultado.scalar_one_or_none()
+    if not indicador:
+        raise HTTPException(status_code=404, detail="Indicador não encontrado")
+    
+    dados = payload.model_dump(exclude_unset=True)
+    for campo, valor in dados.items():
+        setattr(indicador, campo, valor)
+    
+    indicador.updated_by = current_user.id
+    await db.commit()
+    await db.refresh(indicador)
+    return indicador
+
+
+@diagnostico_router.delete("/indicators/{indicator_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_indicator(
+    indicator_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(get_current_professional_user),
+):
+    resultado = await db.execute(
+        select(Indicator).join(UBS).where(
+            Indicator.id == indicator_id,
+            UBS.is_deleted.is_(False)
+        )
+    )
+    indicador = resultado.scalar_one_or_none()
+    if not indicador:
+        raise HTTPException(status_code=404, detail="Indicador não encontrado")
+    
+    await db.delete(indicador)
+    await db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 # ----------------------- Fluxo de envio -----------------------

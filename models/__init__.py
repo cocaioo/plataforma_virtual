@@ -10,3 +10,4 @@ from .diagnostico_models import (  # noqa: F401
     TerritoryProfile,
     UBSNeeds,
 )
+from .agendamento_models import Agendamento, BloqueioAgenda # noqa: F401
