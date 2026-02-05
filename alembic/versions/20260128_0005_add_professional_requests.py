@@ -20,46 +20,51 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.create_table(
-        "professional_requests",
-        sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True, nullable=False),
-        sa.Column("user_id", sa.Integer(), sa.ForeignKey("usuarios.id"), nullable=False),
-        sa.Column("cargo", sa.String(length=100), nullable=False),
-        sa.Column("registro_profissional", sa.String(length=50), nullable=False),
-        sa.Column("status", sa.String(length=20), nullable=False, server_default="PENDING"),
-        sa.Column("rejection_reason", sa.String(length=255), nullable=True),
-        sa.Column("submitted_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("CURRENT_TIMESTAMP")),
-        sa.Column("reviewed_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("reviewed_by_user_id", sa.Integer(), sa.ForeignKey("usuarios.id"), nullable=True),
-    )
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    tables = inspector.get_table_names()
 
-    op.create_index(
-        "ix_professional_requests_user_id",
-        "professional_requests",
-        ["user_id"],
-        unique=False,
-    )
-    op.create_index(
-        "ix_professional_requests_status",
-        "professional_requests",
-        ["status"],
-        unique=False,
-    )
+    if "professional_requests" not in tables:
+        op.create_table(
+            "professional_requests",
+            sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True, nullable=False),
+            sa.Column("user_id", sa.Integer(), sa.ForeignKey("usuarios.id"), nullable=False),
+            sa.Column("cargo", sa.String(length=100), nullable=False),
+            sa.Column("registro_profissional", sa.String(length=50), nullable=False),
+            sa.Column("status", sa.String(length=20), nullable=False, server_default="PENDING"),
+            sa.Column("rejection_reason", sa.String(length=255), nullable=True),
+            sa.Column("submitted_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("CURRENT_TIMESTAMP")),
+            sa.Column("reviewed_at", sa.DateTime(timezone=True), nullable=True),
+            sa.Column("reviewed_by_user_id", sa.Integer(), sa.ForeignKey("usuarios.id"), nullable=True),
+        )
 
-    # Evita duplicidade de registro_profissional em solicitações aprovadas/pendentes.
-    # Em SQLite, partial index nem sempre é suportado; mantemos único global como MVP.
-    op.create_unique_constraint(
-        "uq_professional_requests_registro_profissional",
-        "professional_requests",
-        ["registro_profissional"],
-    )
+        op.create_index(
+            "ix_professional_requests_user_id",
+            "professional_requests",
+            ["user_id"],
+            unique=False,
+        )
+        op.create_index(
+            "ix_professional_requests_status",
+            "professional_requests",
+            ["status"],
+            unique=False,
+        )
 
-    # MVP: uma solicitação por usuário (permite reenvio via atualização da mesma linha)
-    op.create_unique_constraint(
-        "uq_professional_requests_user_id",
-        "professional_requests",
-        ["user_id"],
-    )
+        # Evita duplicidade de registro_profissional em solicitações aprovadas/pendentes.
+        # Em SQLite, partial index nem sempre é suportado; mantemos único global como MVP.
+        op.create_unique_constraint(
+            "uq_professional_requests_registro_profissional",
+            "professional_requests",
+            ["registro_profissional"],
+        )
+
+        # MVP: uma solicitação por usuário (permite reenvio via atualização da mesma linha)
+        op.create_unique_constraint(
+            "uq_professional_requests_user_id",
+            "professional_requests",
+            ["user_id"],
+        )
 
 
 def downgrade() -> None:
