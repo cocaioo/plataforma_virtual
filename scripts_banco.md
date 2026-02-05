@@ -265,3 +265,568 @@ CREATE TABLE public.bloqueios_agenda (
     CONSTRAINT bloqueios_agenda_profissional_id_fkey FOREIGN KEY (profissional_id) REFERENCES public.profissionais (id)
 ) TABLESPACE pg_default;
 ```
+
+### 2.5. Inserir Profissionais de Teste
+Scripts para inserir dados de profissionais fictícios na base de dados.
+
+```sql
+INSERT INTO usuarios (nome, email, senha, cpf, role, ativo, tentativas_login, created_at, updated_at)
+VALUES (
+    'Ana Silva', 
+    'ana.silva0@example.com', 
+    '$pbkdf2-sha256$29000$7h2j1Lq31hoDAIDQ2htDCA$K5D8j/FzjN8I7ixaYwvDRxABi7RZAZVIpDTTwtydElo', 
+    '830.615.374-35', 
+    'PROFISSIONAL', 
+    TRUE, 
+    0, 
+    NOW(), 
+    NOW()
+)
+RETURNING id;
+
+-- Assuming the previous INSERT into usuarios returned the new user_id.
+-- Replace <LAST_INSERTED_USER_ID> with the actual ID.
+INSERT INTO profissionais (usuario_id, cargo, registro_professional, ativo, created_at, updated_at)
+VALUES (
+    <LAST_INSERTED_USER_ID>, 
+    'Fisioterapeuta', 
+    'F-27769',
+    TRUE,
+    NOW(),
+    NOW()
+);
+
+-- -- --
+
+INSERT INTO usuarios (nome, email, senha, cpf, role, ativo, tentativas_login, created_at, updated_at)
+VALUES (
+    'Bruno Costa',
+    'bruno.costa1@example.com',
+    '$pbkdf2-sha256$29000$7h2j1Lq31hoDAIDQ2htDCA$K5D8j/FzjN8I7ixaYwvDRxABi7RZAZVIpDTTwtydElo',
+    '164.753.338-87',
+    'PROFISSIONAL',
+    TRUE,
+    0,
+    NOW(),
+    NOW()
+)
+RETURNING id;
+
+-- Assuming the previous INSERT into usuarios returned the new user_id.
+-- Replace <LAST_INSERTED_USER_ID> with the actual ID.
+INSERT INTO profissionais (usuario_id, cargo, registro_professional, ativo, created_at, updated_at)
+VALUES (
+    <LAST_INSERTED_USER_ID>,
+    'Assistente Social',
+    'AS-50523',
+    TRUE,
+    NOW(),
+    NOW()
+);
+
+-- -- --
+
+INSERT INTO usuarios (nome, email, senha, cpf, role, ativo, tentativas_login, created_at, updated_at)
+VALUES (
+    'Carla Dias',
+    'carla.dias2@example.com',
+    '$pbkdf2-sha256$29000$7h2j1Lq31hoDAIDQ2htDCA$K5D8j/FzjN8I7ixaYwvDRxABi7RZAZVIpDTTwtydElo',
+    '330.407.424-76',
+    'PROFISSIONAL',
+    TRUE,
+    0,
+    NOW(),
+    NOW()
+)
+RETURNING id;
+
+-- Assuming the previous INSERT into usuarios returned the new user_id.
+-- Replace <LAST_INSERTED_USER_ID> with the actual ID.
+INSERT INTO profissionais (usuario_id, cargo, registro_professional, ativo, created_at, updated_at)
+VALUES (
+    <LAST_INSERTED_USER_ID>,
+    'Médico',
+    'M-84542',
+    TRUE,
+    NOW(),
+    NOW()
+);
+
+-- -- --
+
+INSERT INTO usuarios (nome, email, senha, cpf, role, ativo, tentativas_login, created_at, updated_at)
+VALUES (
+    'Daniel Souza',
+    'daniel.souza3@example.com',
+    '$pbkdf2-sha256$29000$7h2j1Lq31hoDAIDQ2htDCA$K5D8j/FzjN8I7ixaYwvDRxABi7RZAZVIpDTTwtydElo',
+    '511.453.290-30',
+    'PROFISSIONAL',
+    TRUE,
+    0,
+    NOW(),
+    NOW()
+)
+RETURNING id;
+
+-- Assuming the previous INSERT into usuarios returned the new user_id.
+-- Replace <LAST_INSERTED_USER_ID> with the actual ID.
+INSERT INTO profissionais (usuario_id, cargo, registro_professional, ativo, created_at, updated_at)
+VALUES (
+    <LAST_INSERTED_USER_ID>,
+    'Técnico de Enfermagem',
+    'TDE-31228',
+    TRUE,
+    NOW(),
+    NOW()
+);
+
+-- -- --
+
+INSERT INTO usuarios (nome, email, senha, cpf, role, ativo, tentativas_login, created_at, updated_at)
+VALUES (
+    'Eduarda Lima',
+    'eduarda.lima4@example.com',
+    '$pbkdf2-sha256$29000$7h2j1Lq31hoDAIDQ2htDCA$K5D8j/FzjN8I7ixaYwvDRxABi7RZAZVIpDTTwtydElo',
+    '503.108.951-23',
+    'PROFISSIONAL',
+    TRUE,
+    0,
+    NOW(),
+    NOW()
+)
+RETURNING id;
+
+-- Assuming the previous INSERT into usuarios returned the new user_id.
+-- Replace <LAST_INSERTED_USER_ID> with the actual ID.
+INSERT INTO profissionais (usuario_id, cargo, registro_professional, ativo, created_at, updated_at)
+VALUES (
+    <LAST_INSERTED_USER_ID>,
+    'Assistente Social',
+    'AS-65525',
+    TRUE,
+    NOW(),
+    NOW()
+);
+
+-- -- --
+
+INSERT INTO usuarios (nome, email, senha, cpf, role, ativo, tentativas_login, created_at, updated_at)
+VALUES (
+    'Fernando Rocha',
+    'fernando.rocha5@example.com',
+    '$pbkdf2-sha256$29000$7h2j1Lq31hoDAIDQ2htDCA$K5D8j/FzjN8I7ixaYwvDRxABi7RZAZVIpDTTwtydElo',
+    '916.566.191-12',
+    'PROFISSIONAL',
+    TRUE,
+    0,
+    NOW(),
+    NOW()
+)
+RETURNING id;
+
+-- Assuming the previous INSERT into usuarios returned the new user_id.
+-- Replace <LAST_INSERTED_USER_ID> with the actual ID.
+INSERT INTO profissionais (usuario_id, cargo, registro_professional, ativo, created_at, updated_at)
+VALUES (
+    <LAST_INSERTED_USER_ID>,
+    'Fisioterapeuta',
+    'F-45987',
+    TRUE,
+    NOW(),
+    NOW()
+);
+
+-- -- --
+
+INSERT INTO usuarios (nome, email, senha, cpf, role, ativo, tentativas_login, created_at, updated_at)
+VALUES (
+    'Giovana Alves',
+    'giovana.alves6@example.com',
+    '$pbkdf2-sha256$29000$7h2j1Lq31hoDAIDQ2htDCA$K5D8j/FzjN8I7ixaYwvDRxABi7RZAZVIpDTTwtydElo',
+    '806.127.276-99',
+    'PROFISSIONAL',
+    TRUE,
+    0,
+    NOW(),
+    NOW()
+)
+RETURNING id;
+
+-- Assuming the previous INSERT into usuarios returned the new user_id.
+-- Replace <LAST_INSERTED_USER_ID> with the actual ID.
+INSERT INTO profissionais (usuario_id, cargo, registro_professional, ativo, created_at, updated_at)
+VALUES (
+    <LAST_INSERTED_USER_ID>,
+    'Enfermeiro',
+    'E-24611',
+    TRUE,
+    NOW(),
+    NOW()
+);
+
+-- -- --
+
+INSERT INTO usuarios (nome, email, senha, cpf, role, ativo, tentativas_login, created_at, updated_at)
+VALUES (
+    'Hugo Pereira',
+    'hugo.pereira7@example.com',
+    '$pbkdf2-sha256$29000$7h2j1Lq31hoDAIDQ2htDCA$K5D8j/FzjN8I7ixaYwvDRxABi7RZAZVIpDTTwtydElo',
+    '146.185.626-25',
+    'PROFISSIONAL',
+    TRUE,
+    0,
+    NOW(),
+    NOW()
+)
+RETURNING id;
+
+-- Assuming the previous INSERT into usuarios returned the new user_id.
+-- Replace <LAST_INSERTED_USER_ID> with the actual ID.
+INSERT INTO profissionais (usuario_id, cargo, registro_professional, ativo, created_at, updated_at)
+VALUES (
+    <LAST_INSERTED_USER_ID>,
+    'Assistente Social',
+    'AS-69993',
+    TRUE,
+    NOW(),
+    NOW()
+);
+
+-- -- --
+
+INSERT INTO usuarios (nome, email, senha, cpf, role, ativo, tentativas_login, created_at, updated_at)
+VALUES (
+    'Isabela Gomes',
+    'isabela.gomes8@example.com',
+    '$pbkdf2-sha256$29000$7h2j1Lq31hoDAIDQ2htDCA$K5D8j/FzjN8I7ixaYwvDRxABi7RZAZVIpDTTwtydElo',
+    '256.162.233-49',
+    'PROFISSIONAL',
+    TRUE,
+    0,
+    NOW(),
+    NOW()
+)
+RETURNING id;
+
+-- Assuming the previous INSERT into usuarios returned the new user_id.
+-- Replace <LAST_INSERTED_USER_ID> with the actual ID.
+INSERT INTO profissionais (usuario_id, cargo, registro_professional, ativo, created_at, updated_at)
+VALUES (
+    <LAST_INSERTED_USER_ID>,
+    'Assistente Social',
+    'AS-77843',
+    TRUE,
+    NOW(),
+    NOW()
+);
+
+-- -- --
+
+INSERT INTO usuarios (nome, email, senha, cpf, role, ativo, tentativas_login, created_at, updated_at)
+VALUES (
+    'Joao Martins',
+    'joao.martins9@example.com',
+    '$pbkdf2-sha256$29000$7h2j1Lq31hoDAIDQ2htDCA$K5D8j/FzjN8I7ixaYwvDRxABi7RZAZVIpDTTwtydElo',
+    '719.133.233-80',
+    'PROFISSIONAL',
+    TRUE,
+    0,
+    NOW(),
+    NOW()
+)
+RETURNING id;
+
+-- Assuming the previous INSERT into usuarios returned the new user_id.
+-- Replace <LAST_INSERTED_USER_ID> with the actual ID.
+INSERT INTO profissionais (usuario_id, cargo, registro_professional, ativo, created_at, updated_at)
+VALUES (
+    <LAST_INSERTED_USER_ID>,
+    'Dentista',
+    'D-55622',
+    TRUE,
+    NOW(),
+    NOW()
+);
+
+-- -- --
+
+INSERT INTO usuarios (nome, email, senha, cpf, role, ativo, tentativas_login, created_at, updated_at)
+VALUES (
+    'Larissa Fernandes',
+    'larissa.fernandes10@example.com',
+    '$pbkdf2-sha256$29000$7h2j1Lq31hoDAIDQ2htDCA$K5D8j/FzjN8I7ixaYwvDRxABi7RZAZVIpDTTwtydElo',
+    '623.309.488-88',
+    'PROFISSIONAL',
+    TRUE,
+    0,
+    NOW(),
+    NOW()
+)
+RETURNING id;
+
+-- Assuming the previous INSERT into usuarios returned the new user_id.
+-- Replace <LAST_INSERTED_USER_ID> with the actual ID.
+INSERT INTO profissionais (usuario_id, cargo, registro_professional, ativo, created_at, updated_at)
+VALUES (
+    <LAST_INSERTED_USER_ID>,
+    'Psicólogo',
+    'P-25890',
+    TRUE,
+    NOW(),
+    NOW()
+);
+
+-- -- --
+
+INSERT INTO usuarios (nome, email, senha, cpf, role, ativo, tentativas_login, created_at, updated_at)
+VALUES (
+    'Marcelo Ribeiro',
+    'marcelo.ribeiro11@example.com',
+    '$pbkdf2-sha256$29000$7h2j1Lq31hoDAIDQ2htDCA$K5D8j/FzjN8I7ixaYwvDRxABi7RZAZVIpDTTwtydElo',
+    '191.270.403-70',
+    'PROFISSIONAL',
+    TRUE,
+    0,
+    NOW(),
+    NOW()
+)
+RETURNING id;
+
+-- Assuming the previous INSERT into usuarios returned the new user_id.
+-- Replace <LAST_INSERTED_USER_ID> with the actual ID.
+INSERT INTO profissionais (usuario_id, cargo, registro_professional, ativo, created_at, updated_at)
+VALUES (
+    <LAST_INSERTED_USER_ID>,
+    'Técnico de Enfermagem',
+    'TDE-13235',
+    TRUE,
+    NOW(),
+    NOW()
+);
+
+-- -- --
+
+INSERT INTO usuarios (nome, email, senha, cpf, role, ativo, tentativas_login, created_at, updated_at)
+VALUES (
+    'Natalia Santos',
+    'natalia.santos12@example.com',
+    '$pbkdf2-sha256$29000$7h2j1Lq31hoDAIDQ2htDCA$K5D8j/FzjN8I7ixaYwvDRxABi7RZAZVIpDTTwtydElo',
+    '346.445.237-83',
+    'PROFISSIONAL',
+    TRUE,
+    0,
+    NOW(),
+    NOW()
+)
+RETURNING id;
+
+-- Assuming the previous INSERT into usuarios returned the new user_id.
+-- Replace <LAST_INSERTED_USER_ID> with the actual ID.
+INSERT INTO profissionais (usuario_id, cargo, registro_professional, ativo, created_at, updated_at)
+VALUES (
+    <LAST_INSERTED_USER_ID>,
+    'Psicólogo',
+    'P-64542',
+    TRUE,
+    NOW(),
+    NOW()
+);
+
+-- -- --
+
+INSERT INTO usuarios (nome, email, senha, cpf, role, ativo, tentativas_login, created_at, updated_at)
+VALUES (
+    'Otavio Carvalho',
+    'otavio.carvalho13@example.com',
+    '$pbkdf2-sha256$29000$7h2j1Lq31hoDAIDQ2htDCA$K5D8j/FzjN8I7ixaYwvDRxABi7RZAZVIpDTTwtydElo',
+    '396.521.375-49',
+    'PROFISSIONAL',
+    TRUE,
+    0,
+    NOW(),
+    NOW()
+)
+RETURNING id;
+
+-- Assuming the previous INSERT into usuarios returned the new user_id.
+-- Replace <LAST_INSERTED_USER_ID> with the actual ID.
+INSERT INTO profissionais (usuario_id, cargo, registro_professional, ativo, created_at, updated_at)
+VALUES (
+    <LAST_INSERTED_USER_ID>,
+    'Nutricionista',
+    'N-90495',
+    TRUE,
+    NOW(),
+    NOW()
+);
+
+-- -- --
+
+INSERT INTO usuarios (nome, email, senha, cpf, role, ativo, tentativas_login, created_at, updated_at)
+VALUES (
+    'Patricia Mendes',
+    'patricia.mendes14@example.com',
+    '$pbkdf2-sha256$29000$7h2j1Lq31hoDAIDQ2htDCA$K5D8j/FzjN8I7ixaYwvDRxABi7RZAZVIpDTTwtydElo',
+    '290.277.688-32',
+    'PROFISSIONAL',
+    TRUE,
+    0,
+    NOW(),
+    NOW()
+)
+RETURNING id;
+
+-- Assuming the previous INSERT into usuarios returned the new user_id.
+-- Replace <LAST_INSERTED_USER_ID> with the actual ID.
+INSERT INTO profissionais (usuario_id, cargo, registro_professional, ativo, created_at, updated_at)
+VALUES (
+    <LAST_INSERTED_USER_ID>,
+    'Fisioterapeuta',
+    'F-41356',
+    TRUE,
+    NOW(),
+    NOW()
+);
+
+-- -- --
+
+INSERT INTO usuarios (nome, email, senha, cpf, role, ativo, tentativas_login, created_at, updated_at)
+VALUES (
+    'Ricardo Barros',
+    'ricardo.barros15@example.com',
+    '$pbkdf2-sha256$29000$7h2j1Lq31hoDAIDQ2htDCA$K5D8j/FzjN8I7ixaYwvDRxABi7RZAZVIpDTTwtydElo',
+    '360.267.666-66',
+    'PROFISSIONAL',
+    TRUE,
+    0,
+    NOW(),
+    NOW()
+)
+RETURNING id;
+
+-- Assuming the previous INSERT into usuarios returned the new user_id.
+-- Replace <LAST_INSERTED_USER_ID> with the actual ID.
+INSERT INTO profissionais (usuario_id, cargo, registro_professional, ativo, created_at, updated_at)
+VALUES (
+    <LAST_INSERTED_USER_ID>,
+    'Nutricionista',
+    'N-32386',
+    TRUE,
+    NOW(),
+    NOW()
+);
+
+-- -- --
+
+INSERT INTO usuarios (nome, email, senha, cpf, role, ativo, tentativas_login, created_at, updated_at)
+VALUES (
+    'Sofia Correia',
+    'sofia.correia16@example.com',
+    '$pbkdf2-sha256$29000$7h2j1Lq31hoDAIDQ2htDCA$K5D8j/FzjN8I7ixaYwvDRxABi7RZAZVIpDTTwtydElo',
+    '417.974.186-13',
+    'PROFISSIONAL',
+    TRUE,
+    0,
+    NOW(),
+    NOW()
+)
+RETURNING id;
+
+-- Assuming the previous INSERT into usuarios returned the new user_id.
+-- Replace <LAST_INSERTED_USER_ID> with the actual ID.
+INSERT INTO profissionais (usuario_id, cargo, registro_professional, ativo, created_at, updated_at)
+VALUES (
+    <LAST_INSERTED_USER_ID>,
+    'Farmacêutico',
+    'F-60480',
+    TRUE,
+    NOW(),
+    NOW()
+);
+
+-- -- --
+
+INSERT INTO usuarios (nome, email, senha, cpf, role, ativo, tentativas_login, created_at, updated_at)
+VALUES (
+    'Thiago Nogueira',
+    'thiago.nogueira17@example.com',
+    '$pbkdf2-sha256$29000$7h2j1Lq31hoDAIDQ2htDCA$K5D8j/FzjN8I7ixaYwvDRxABi7RZAZVIpDTTwtydElo',
+    '901.686.925-95',
+    'PROFISSIONAL',
+    TRUE,
+    0,
+    NOW(),
+    NOW()
+)
+RETURNING id;
+
+-- Assuming the previous INSERT into usuarios returned the new user_id.
+-- Replace <LAST_INSERTED_USER_ID> with the actual ID.
+INSERT INTO profissionais (usuario_id, cargo, registro_professional, ativo, created_at, updated_at)
+VALUES (
+    <LAST_INSERTED_USER_ID>,
+    'Farmacêutico',
+    'F-13510',
+    TRUE,
+    NOW(),
+    NOW()
+);
+
+-- -- --
+
+INSERT INTO usuarios (nome, email, senha, cpf, role, ativo, tentativas_login, created_at, updated_at)
+VALUES (
+    'Veronica Almeida',
+    'veronica.almeida18@example.com',
+    '$pbkdf2-sha256$29000$7h2j1Lq31hoDAIDQ2htDCA$K5D8j/FzjN8I7ixaYwvDRxABi7RZAZVIpDTTwtydElo',
+    '445.829.512-38',
+    'PROFISSIONAL',
+    TRUE,
+    0,
+    NOW(),
+    NOW()
+)
+RETURNING id;
+
+-- Assuming the previous INSERT into usuarios returned the new user_id.
+-- Replace <LAST_INSERTED_USER_ID> with the actual ID.
+INSERT INTO profissionais (usuario_id, cargo, registro_professional, ativo, created_at, updated_at)
+VALUES (
+    <LAST_INSERTED_USER_ID>,
+    'Recepcionista',
+    'R-34449',
+    TRUE,
+    NOW(),
+    NOW()
+);
+
+-- -- --
+
+INSERT INTO usuarios (nome, email, senha, cpf, role, ativo, tentativas_login, created_at, updated_at)
+VALUES (
+    'Wilson Castro',
+    'wilson.castro19@example.com',
+    '$pbkdf2-sha256$29000$7h2j1Lq31hoDAIDQ2htDCA$K5D8j/FzjN8I7ixaYwvDRxABi7RZAZVIpDTTwtydElo',
+    '423.220.223-41',
+    'PROFISSIONAL',
+    TRUE,
+    0,
+    NOW(),
+    NOW()
+)
+RETURNING id;
+
+-- Assuming the previous INSERT into usuarios returned the new user_id.
+-- Replace <LAST_INSERTED_USER_ID> with the actual ID.
+INSERT INTO profissionais (usuario_id, cargo, registro_professional, ativo, created_at, updated_at)
+VALUES (
+    <LAST_INSERTED_USER_ID>,
+    'Técnico de Enfermagem',
+    'TDE-48687',
+    TRUE,
+    NOW(),
+    NOW()
+);
+
+-- -- --
+

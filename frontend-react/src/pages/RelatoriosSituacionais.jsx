@@ -437,10 +437,18 @@ const FullReportModal = ({ isOpen, onClose, reportId, onRefresh }) => {
 
     const handleSectionPut = async (endpoint, data) => {
         try {
-            await axios.put(`/api/ubs/${id}/${endpoint}`, data, { headers: { Authorization: `Bearer ${getToken()}` } });
+            const payload = { ...data };
+            // Remove id and ubs_id from payload as they are part of the URL and not expected in body for PUT/PATCH
+            if (payload.id) delete payload.id;
+            if (payload.ubs_id) delete payload.ubs_id;
+            await axios.put(`/api/ubs/${id}/${endpoint}`, payload, { headers: { Authorization: `Bearer ${getToken()}` } });
             setSaveStatus('Salvo');
             fetchFullData(id);
-        } catch (err) { alert("Erro ao salvar seção."); }
+        } catch (err) { 
+            console.error(err);
+            const msg = err.response?.data?.detail?.errors?.[0]?.message || err.response?.data?.detail || "Erro desconhecido";
+            alert("Erro ao salvar seção: " + msg); 
+        }
     }
 
     if (!isOpen) return null;
@@ -543,7 +551,7 @@ const FullReportModal = ({ isOpen, onClose, reportId, onRefresh }) => {
                                 placeholder="Informe situações de vulnerabilidade: alagamentos, violência, descarte irregular de lixo, etc." 
                             />
                             <div className="flex justify-end">
-                                <button onClick={() => handleSectionPut('territory', reportData.territory)} className="bg-indigo-600 text-white px-6 py-2 rounded font-bold hover:bg-indigo-700">Salvar Seção</button>
+                                <button onClick={() => handleSectionPut('territory', reportData?.territory || { descricao_territorio: '', potencialidades_territorio: '', riscos_vulnerabilidades: '' })} className="bg-indigo-600 text-white px-6 py-2 rounded font-bold hover:bg-indigo-700">Salvar Seção</button>
                             </div>
                         </div>
                     </SectionCard>
@@ -575,7 +583,7 @@ const FullReportModal = ({ isOpen, onClose, reportId, onRefresh }) => {
                                 placeholder="Reforma de telhado, substituição de portas, acessibilidade, adequação elétrica, pintura, etc." 
                             />
                             <div className="flex justify-end">
-                                <button onClick={() => handleSectionPut('needs', reportData.needs)} className="bg-indigo-600 text-white px-6 py-2 rounded font-bold hover:bg-indigo-700">Salvar Seção</button>
+                                <button onClick={() => handleSectionPut('needs', reportData?.needs || { problemas_identificados: '', necessidades_equipamentos_insumos: '', necessidades_especificas_acs: '', necessidades_infraestrutura_manutencao: '' })} className="bg-indigo-600 text-white px-6 py-2 rounded font-bold hover:bg-indigo-700">Salvar Seção</button>
                             </div>
                         </div>
                     </SectionCard>
