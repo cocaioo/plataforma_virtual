@@ -127,7 +127,7 @@ async def atualizar_agendamento(
     # Nota: Simplificando. Se o usuário for profissional, assume que pode gerenciar.
     # Idealmente checar se ele é O profissional da consulta ou admin.
     is_owner = agendamento.paciente_id == current_user.id
-    is_staff = current_user.role in ["PROFISSIONAL", "GESTOR"]
+    is_staff = current_user.role in ["PROFISSIONAL", "GESTOR", "RECEPCAO"]
     
     if not (is_owner or is_staff):
         raise HTTPException(status_code=403, detail="Sem permissão")
@@ -167,7 +167,7 @@ async def confirmar_consulta(
     """
     Recepcionista envia confirmação (simulação).
     """
-    if current_user.role not in ["PROFISSIONAL", "GESTOR"]: # Assumindo recepcionista como profissional/gestor
+    if current_user.role not in ["PROFISSIONAL", "GESTOR", "RECEPCAO"]: 
         raise HTTPException(status_code=403, detail="Apenas funcionários podem enviar confirmações.")
         
     agendamento = await db.get(Agendamento, agendamento_id)
@@ -195,7 +195,7 @@ async def get_agenda_profissional(
     """
     # TODO: Refinar permissões se necessário. Por enquanto, logado pode ver disponibilidade?
     # Req: "A recepcionista, o profissional da saude e o agente comunitário de saúde podem ver..."
-    if current_user.role not in ["PROFISSIONAL", "GESTOR"]:
+    if current_user.role not in ["PROFISSIONAL", "GESTOR", "RECEPCAO"]:
          raise HTTPException(status_code=403, detail="Acesso restrito a profissionais.")
 
     query = select(Agendamento).where(

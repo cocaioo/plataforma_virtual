@@ -3,7 +3,11 @@ import {
   BellIcon, 
   ArrowRightOnRectangleIcon, 
   Squares2X2Icon,
-  UserCircleIcon
+  UserCircleIcon,
+  CalendarIcon,
+  ClipboardDocumentListIcon,
+  UsersIcon,
+  LifebuoyIcon
 } from '@heroicons/react/24/outline';
 
 const NavBar = () => {
@@ -50,7 +54,31 @@ const NavBar = () => {
                 <Squares2X2Icon className="w-5 h-5 mr-2" />
                 Dashboard
               </Link>
-              
+
+              <Link 
+                to="/agendamento" 
+                className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  isActive('/agendamento') 
+                    ? 'bg-blue-50 text-blue-700' 
+                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                }`}
+              >
+                <CalendarIcon className="w-5 h-5 mr-2" />
+                Agendamento
+              </Link>
+
+              <Link 
+                to="/relatorios-situacionais" 
+                className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  isActive('/relatorios-situacionais') 
+                    ? 'bg-blue-50 text-blue-700' 
+                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                }`}
+              >
+                <ClipboardDocumentListIcon className="w-5 h-5 mr-2" />
+                Relatórios
+              </Link>
+
               {(role === 'GESTOR' || role === 'RECEPCAO') && (
                 <Link 
                   to="/notificacoes" 
@@ -64,6 +92,24 @@ const NavBar = () => {
                   Notificações
                 </Link>
               )}
+
+              {(role === 'GESTOR' || role === 'RECEPCAO') && (
+                <Link 
+                  to="#" 
+                  className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 text-gray-400 cursor-not-allowed`}
+                >
+                  <UsersIcon className="w-5 h-5 mr-2" />
+                  Equipes
+                </Link>
+              )}
+
+              <Link 
+                to="#" 
+                className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 text-gray-400 cursor-not-allowed`}
+              >
+                <LifebuoyIcon className="w-5 h-5 mr-2" />
+                Suporte
+              </Link>
             </div>
           </div>
 

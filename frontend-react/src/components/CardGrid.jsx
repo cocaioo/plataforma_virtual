@@ -63,7 +63,7 @@ const CardGrid = () => {
       to: '#',
       icon: UsersIcon,
       inDevelopment: true,
-      allowed: ['PROFISSIONAL', 'GESTOR', 'RECEPCAO'] // Bloqueado para USER
+      allowed: ['GESTOR', 'RECEPCAO'] // Bloqueado para USER e PROFISSIONAL
     },
   ];
 
