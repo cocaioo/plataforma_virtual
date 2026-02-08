@@ -416,16 +416,16 @@ Usuários padrão para validação de perfis e permissões. Senha padrão: `Plat
 
 ```sql
 -- Paciente (USER)
-INSERT INTO public.usuarios (nome, email, senha, cpf, role, ativo, welcome_email_sent, created_at, updated_at)
-VALUES ('Paciente de Teste', 'teste.paciente@plataforma.com', '$pbkdf2-sha256$29000$7h2j1Lq31hoDAIDQ2htDCA$K5D8j/FzjN8I7ixaYwvDRxABi7RZAZVIpDTTwtydElo', '111.444.777-35', 'USER', TRUE, TRUE, NOW(), NOW()) ON CONFLICT (email) DO NOTHING;
+INSERT INTO public.usuarios (nome, email, senha, cpf, role, ativo, tentativas_login, welcome_email_sent, created_at, updated_at)
+VALUES ('Paciente de Teste', 'teste.paciente@plataforma.com', '$pbkdf2-sha256$29000$7h2j1Lq31hoDAIDQ2htDCA$K5D8j/FzjN8I7ixaYwvDRxABi7RZAZVIpDTTwtydElo', '111.444.777-35', 'USER', TRUE, 0, TRUE, NOW(), NOW()) ON CONFLICT (email) DO NOTHING;
 
 -- Gestor (GESTOR)
-INSERT INTO public.usuarios (nome, email, senha, cpf, role, ativo, welcome_email_sent, created_at, updated_at)
-VALUES ('Gestor de Teste', 'teste.gestor@plataforma.com', '$pbkdf2-sha256$29000$7h2j1Lq31hoDAIDQ2htDCA$K5D8j/FzjN8I7ixaYwvDRxABi7RZAZVIpDTTwtydElo', '222.555.888-41', 'GESTOR', TRUE, TRUE, NOW(), NOW()) ON CONFLICT (email) DO NOTHING;
+INSERT INTO public.usuarios (nome, email, senha, cpf, role, ativo, tentativas_login, welcome_email_sent, created_at, updated_at)
+VALUES ('Gestor de Teste', 'teste.gestor@plataforma.com', '$pbkdf2-sha256$29000$7h2j1Lq31hoDAIDQ2htDCA$K5D8j/FzjN8I7ixaYwvDRxABi7RZAZVIpDTTwtydElo', '222.555.888-41', 'GESTOR', TRUE, 0, TRUE, NOW(), NOW()) ON CONFLICT (email) DO NOTHING;
 
 -- Recepcionista (RECEPCAO)
-INSERT INTO public.usuarios (nome, email, senha, cpf, role, ativo, welcome_email_sent, created_at, updated_at)
-VALUES ('Recepção de Teste', 'teste.recepcao@plataforma.com', '$pbkdf2-sha256$29000$7h2j1Lq31hoDAIDQ2htDCA$K5D8j/FzjN8I7ixaYwvDRxABi7RZAZVIpDTTwtydElo', '333.666.999-91', 'RECEPCAO', TRUE, TRUE, NOW(), NOW()) ON CONFLICT (email) DO NOTHING;
+INSERT INTO public.usuarios (nome, email, senha, cpf, role, ativo, tentativas_login, welcome_email_sent, created_at, updated_at)
+VALUES ('Recepção de Teste', 'teste.recepcao@plataforma.com', '$pbkdf2-sha256$29000$7h2j1Lq31hoDAIDQ2htDCA$K5D8j/FzjN8I7ixaYwvDRxABi7RZAZVIpDTTwtydElo', '333.666.999-91', 'RECEPCAO', TRUE, 0, TRUE, NOW(), NOW()) ON CONFLICT (email) DO NOTHING;
 ```
 
 ### 2.7. Atualizar Tabela `usuarios` (Controle de Boas-vindas) - **NOVO**
