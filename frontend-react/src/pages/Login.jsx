@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
+import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
@@ -44,15 +46,28 @@ const Login = () => {
             <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="password">
               Senha
             </label>
-            <input
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline"
-              id="password"
-              type="password"
-              placeholder="******************"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+            <div className="relative">
+              <input
+                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline pr-10"
+                id="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="******************"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+              <button
+                type="button"
+                className="absolute inset-y-0 right-0 pr-3 flex items-center mb-3 text-gray-400 hover:text-gray-600"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? (
+                  <EyeSlashIcon className="h-5 w-5" />
+                ) : (
+                  <EyeIcon className="h-5 w-5" />
+                )}
+              </button>
+            </div>
           </div>
           <div className="flex items-center justify-between">
             <button
@@ -61,6 +76,14 @@ const Login = () => {
             >
               Entrar
             </button>
+          </div>
+          <div className="mt-4 text-center">
+            <p className="text-sm text-gray-600">
+              Não possui conta?{' '}
+              <Link to="/register" className="font-bold text-blue-500 hover:text-blue-800">
+                Cadastre-se aqui
+              </Link>
+            </p>
           </div>
         </form>
       </div>

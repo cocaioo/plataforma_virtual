@@ -3,8 +3,7 @@ import {
   BellIcon, 
   ArrowRightOnRectangleIcon, 
   Squares2X2Icon,
-  UserCircleIcon,
-  CalendarDaysIcon
+  UserCircleIcon
 } from '@heroicons/react/24/outline';
 
 const NavBar = () => {
@@ -21,6 +20,7 @@ const NavBar = () => {
   if (!user) return null;
 
   const isActive = (path) => location.pathname === path;
+  const role = user.role || 'USER';
 
   return (
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-30 w-full transition-all duration-300">
@@ -50,17 +50,20 @@ const NavBar = () => {
                 <Squares2X2Icon className="w-5 h-5 mr-2" />
                 Dashboard
               </Link>
-              <Link 
-                to="/solicitacoes" 
-                className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                  isActive('/solicitacoes') 
-                    ? 'bg-blue-50 text-blue-700' 
-                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                }`}
-              >
-                <BellIcon className="w-5 h-5 mr-2" />
-                Solicitações
-              </Link>
+              
+              {(role === 'GESTOR' || role === 'RECEPCAO') && (
+                <Link 
+                  to="/notificacoes" 
+                  className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    isActive('/notificacoes') 
+                      ? 'bg-blue-50 text-blue-700' 
+                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                  }`}
+                >
+                  <BellIcon className="w-5 h-5 mr-2" />
+                  Notificações
+                </Link>
+              )}
             </div>
           </div>
 
@@ -71,7 +74,7 @@ const NavBar = () => {
               </span>
               <span className="text-xs text-gray-500 flex items-center capitalize">
                 <UserCircleIcon className="w-3 h-3 mr-1" />
-                Acesso: {user.role?.toLowerCase() || 'Usuário'}
+                Acesso: {role.toLowerCase()}
               </span>
             </div>
 

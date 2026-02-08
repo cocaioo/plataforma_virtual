@@ -622,6 +622,10 @@ const RelatoriosSituacionais = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedReportId, setSelectedReportId] = useState(null);
 
+  const userJson = localStorage.getItem('user');
+  const user = userJson ? JSON.parse(userJson) : null;
+  const isUserRole = user?.role === 'USER';
+
   const fetchRelatorios = async () => {
     setLoading(true);
     try {
@@ -677,10 +681,12 @@ const RelatoriosSituacionais = () => {
             <h1 className="text-3xl font-bold text-gray-800">Relatórios Situacionais</h1>
             <p className="text-gray-500 mt-1">Gerencie os diagnósticos das Unidades Básicas de Saúde</p>
           </div>
-          <button onClick={() => { setSelectedReportId(null); setModalOpen(true); }} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-2">
-            <PlusIcon className="w-5 h-5" />
-            Novo Relatório
-          </button>
+          {!isUserRole && (
+            <button onClick={() => { setSelectedReportId(null); setModalOpen(true); }} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-2">
+              <PlusIcon className="w-5 h-5" />
+              Novo Relatório
+            </button>
+          )}
         </div>
 
         {error && (
@@ -718,13 +724,15 @@ const RelatoriosSituacionais = () => {
                       </td>
                       <td className="px-6 py-4 text-center">
                         <div className="flex justify-center gap-2">
-                          <button 
-                            onClick={() => { setSelectedReportId(relatorio.id); setModalOpen(true); }}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-transparent hover:border-blue-200"
-                            title="Editar Relatório"
-                          >
-                            <PencilSquareIcon className="w-5 h-5" />
-                          </button>
+                          {!isUserRole && (
+                            <button 
+                              onClick={() => { setSelectedReportId(relatorio.id); setModalOpen(true); }}
+                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-transparent hover:border-blue-200"
+                              title="Editar Relatório"
+                            >
+                              <PencilSquareIcon className="w-5 h-5" />
+                            </button>
+                          )}
                           <button 
                             onClick={() => handleExport(relatorio.id)} 
                             className="p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors border border-transparent hover:border-gray-200"
@@ -732,13 +740,15 @@ const RelatoriosSituacionais = () => {
                           >
                             <DocumentArrowDownIcon className="w-5 h-5" />
                           </button>
-                          <button 
-                            onClick={() => handleDelete(relatorio.id)} 
-                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-200"
-                            title="Excluir Relatório"
-                          >
-                            <TrashIcon className="w-5 h-5" />
-                          </button>
+                          {!isUserRole && (
+                            <button 
+                              onClick={() => handleDelete(relatorio.id)} 
+                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-200"
+                              title="Excluir Relatório"
+                            >
+                              <TrashIcon className="w-5 h-5" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

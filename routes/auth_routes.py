@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Request, BackgroundTasks
 from pydantic import BaseModel, EmailStr, Field, field_validator
+from typing import Literal
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from passlib.context import CryptContext
@@ -29,6 +30,7 @@ class UsuarioCreate(BaseModel):
     email: EmailStr
     senha: str = Field(..., min_length=8, max_length=100)
     cpf: str = Field(..., min_length=11, max_length=14)
+    role: Literal["USER", "GESTOR", "RECEPCAO"] = "USER"
     
     @field_validator('nome')
     @classmethod
@@ -201,7 +203,11 @@ async def reset_login_attempts(db: AsyncSession, user: Usuario):
 
 @auth_router.post("/register", response_model=UsuarioOut, status_code=status.HTTP_201_CREATED)
 @limiter.limit("5/minute")
-async def register_user(request: Request, payload: UsuarioCreate, db: AsyncSession = Depends(get_db)):
+async def register_user(
+    request: Request, 
+    payload: UsuarioCreate, 
+    db: AsyncSession = Depends(get_db)
+):
     resultado = await db.execute(select(Usuario).filter(Usuario.email == payload.email))
     if resultado.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Email já cadastrado")
@@ -215,7 +221,8 @@ async def register_user(request: Request, payload: UsuarioCreate, db: AsyncSessi
         email=payload.email,
         senha=hash_password(payload.senha),
         cpf=payload.cpf,
-        role="USER",
+        role=payload.role,
+        welcome_email_sent=False # Default explicit
     )
     db.add(usuario)
     await db.commit()
@@ -271,7 +278,7 @@ async def login_user(request: Request, payload: UsuarioLogin, db: AsyncSession =
     await reset_login_attempts(db, usuario)
     
     role = (usuario.role or "USER").upper()
-    if role not in ("USER", "PROFISSIONAL", "GESTOR"):
+    if role not in ("USER", "PROFISSIONAL", "GESTOR", "RECEPCAO"):
         role = "USER"
 
     resultado = await db.execute(select(ProfissionalUbs).filter(ProfissionalUbs.usuario_id == usuario.id))
@@ -489,3 +496,43 @@ async def reject_professional_request(
 
     await db.commit()
     return {"message": "Solicitação reprovada"}
+
+
+@auth_router.get("/users/pending-welcome", response_model=list[UserSummaryOut])
+async def list_pending_welcome_users(
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(get_current_active_user),
+):
+    if current_user.role not in ("RECEPCAO", "GESTOR"):
+        raise HTTPException(status_code=403, detail="Acesso restrito à Recepção ou Gestão")
+    
+    resultado = await db.execute(
+        select(Usuario)
+        .where(
+            (Usuario.welcome_email_sent.is_(False)) | (Usuario.welcome_email_sent.is_(None)),
+            Usuario.ativo.is_(True)
+        )
+        .order_by(Usuario.created_at.desc())
+    )
+    return resultado.scalars().all()
+
+
+@auth_router.patch("/users/{user_id}/confirm-welcome")
+async def confirm_welcome_email_sent(
+    user_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(get_current_active_user),
+):
+    if current_user.role not in ("RECEPCAO", "GESTOR"):
+        raise HTTPException(status_code=403, detail="Acesso restrito à Recepção ou Gestão")
+        
+    resultado = await db.execute(select(Usuario).where(Usuario.id == user_id))
+    usuario = resultado.scalar_one_or_none()
+    
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+        
+    usuario.welcome_email_sent = True
+    await db.commit()
+    
+    return {"message": "Status de boas-vindas atualizado"}

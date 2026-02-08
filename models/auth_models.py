@@ -9,8 +9,9 @@ class Usuario(Base):
     email = Column(String(200), nullable=False, unique=True)
     senha = Column(String(255), nullable=False)
     cpf = Column(String(14), nullable=False, unique=True)
-    # USER | PROFISSIONAL | GESTOR
+    # USER | PROFISSIONAL | GESTOR | RECEPCAO
     role = Column(String(20), nullable=False, default="USER")
+    welcome_email_sent = Column(Boolean, default=False, nullable=True)
     ativo = Column(Boolean, default=True, nullable=False)
     tentativas_login = Column(Integer, default=0, nullable=False)
     bloqueado_ate = Column(DateTime(timezone=True), nullable=True)

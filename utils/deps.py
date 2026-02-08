@@ -23,15 +23,22 @@ async def get_current_user(
 
     carga_util = verify_token(token)
     if not carga_util:
+        print(f"DEBUG: Token inválido ou expirado: {token[:10]}...")
         raise excecao_credenciais
 
     id_usuario = carga_util.get("sub")
     if id_usuario is None:
+        print("DEBUG: Token sem campo 'sub'")
         raise excecao_credenciais
 
     resultado = await db.execute(select(Usuario).where(Usuario.id == int(id_usuario)))
     usuario = resultado.scalar_one_or_none()
-    if not usuario or not usuario.ativo:
+    if not usuario:
+        print(f"DEBUG: Usuário ID {id_usuario} não encontrado no banco")
+        raise excecao_credenciais
+    
+    if not usuario.ativo:
+        print(f"DEBUG: Usuário ID {id_usuario} está inativo")
         raise excecao_credenciais
 
     return usuario

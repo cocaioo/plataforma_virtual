@@ -49,7 +49,7 @@ from schemas.diagnostico_schemas import (
     ErrorDetail,
     UBSSubmitRequest,
 )
-from utils.deps import get_current_professional_user
+from utils.deps import get_current_professional_user, get_current_active_user
 from services.reporting.simple_situational_report_pdf import (
     generate_situational_report_pdf_simple,
 )
@@ -151,23 +151,37 @@ async def update_ubs(
 @diagnostico_router.get("", response_model=PaginatedUBS)
 async def list_ubs_reports(
     db: AsyncSession = Depends(get_db),
-    current_user: Usuario = Depends(get_current_professional_user),
+    current_user: Usuario = Depends(get_current_active_user),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     status_filter: Optional[UBSStatus] = Query(None, alias="status"),
 ):
     """Lista relatórios (diagnósticos UBS) do usuário autenticado.
 
-    Observação: no frontend, isso substitui mocks na tela de "Relatórios Situacionais".
+    Se USER: vê apenas relatórios criados por NÃO-USER (Gestor/Profissional).
     """
 
     base_stmt = select(UBS).where(UBS.is_deleted.is_(False))
+    
+    # Lógica de filtro para USER
+    if (current_user.role or "USER") == "USER":
+        # Junta com a tabela de usuarios para verificar a role do criador (owner_user_id)
+        # Queremos relatórios onde o criador NÃO é USER
+        base_stmt = base_stmt.join(Usuario, UBS.owner_user_id == Usuario.id).where(Usuario.role != "USER")
+
     if status_filter is not None:
         base_stmt = base_stmt.where(UBS.status == status_filter.value)
 
-    count_stmt = select(func.count(UBS.id)).where(UBS.is_deleted.is_(False))
+    # Contagem total com os filtros aplicados
+    # Note que precisamos replicar os joins/wheres para o count funcionar corretamente com o filtro
+    if (current_user.role or "USER") == "USER":
+        count_stmt = select(func.count(UBS.id)).join(Usuario, UBS.owner_user_id == Usuario.id).where(UBS.is_deleted.is_(False), Usuario.role != "USER")
+    else:
+        count_stmt = select(func.count(UBS.id)).where(UBS.is_deleted.is_(False))
+
     if status_filter is not None:
         count_stmt = count_stmt.where(UBS.status == status_filter.value)
+        
     total = (await db.execute(count_stmt)).scalar_one()
 
     ordering = func.coalesce(UBS.updated_at, UBS.created_at).desc()
@@ -632,7 +646,7 @@ async def submit_diagnosis(
 async def get_full_diagnosis(
     ubs_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: Usuario = Depends(get_current_professional_user),
+    current_user: Usuario = Depends(get_current_active_user),
 ):
     ubs = await _get_ubs_or_404(ubs_id, current_user, db)
 
@@ -863,7 +877,7 @@ async def delete_ubs_attachment(
 async def export_situational_report_pdf(
     ubs_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: Usuario = Depends(get_current_professional_user),
+    current_user: Usuario = Depends(get_current_active_user),
 ):
     """Exporta o relatório situacional em PDF.
 
