@@ -133,7 +133,7 @@ Se preferir usar seu próprio cadastro feito pelo frontend:
 - **Usuários de Teste (Seed Data):** Para facilitar a validação das permissões (RBAC) em ambiente de teste ou produção, você pode utilizar os seguintes usuários padrão (Senha única: `Plataforma123`):
   - **Paciente (USER):** `teste.paciente@plataforma.com`
   - **Gestor (GESTOR):** `teste.gestor@plataforma.com`
-  - **Recepção (RECEPCAO):** `teste.recepcao@plataforma.com`
+  - **Recepção (RECEPCAO):** `recepcao@plataforma.com`
 - **Banco de Dados:** Por padrão, o projeto usa SQLite localmente. Para usar PostgreSQL, configure a variável de ambiente `DATABASE_URL` no arquivo `.env`.
 - **CORS:** A API está configurada para aceitar requisições de `http://localhost:5173` por padrão.
 - **Relatórios:** A geração de relatórios PDF utiliza a biblioteca `reportlab`.

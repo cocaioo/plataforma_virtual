@@ -425,7 +425,7 @@ VALUES ('Gestor de Teste', 'teste.gestor@plataforma.com', '$pbkdf2-sha256$29000$
 
 -- Recepcionista (RECEPCAO)
 INSERT INTO public.usuarios (nome, email, senha, cpf, role, ativo, tentativas_login, welcome_email_sent, created_at, updated_at)
-VALUES ('Recepção de Teste', 'teste.recepcao@plataforma.com', '$pbkdf2-sha256$29000$3VvL.X/PuVeqFYJQ6v3fmw$DeWP4kJ4JIgk3lpxXsRXEagRvrprhj82aahb1egA1Es', '333.666.999-91', 'RECEPCAO', TRUE, 0, TRUE, NOW(), NOW()) ON CONFLICT (email) DO NOTHING;
+VALUES ('Recepção de Teste', 'recepcao@plataforma.com', '$pbkdf2-sha256$29000$3VvL.X/PuVeqFYJQ6v3fmw$DeWP4kJ4JIgk3lpxXsRXEagRvrprhj82aahb1egA1Es', '468.102.350-01', 'RECEPCAO', TRUE, 0, TRUE, NOW(), NOW()) ON CONFLICT (email) DO NOTHING;
 ```
 
 ### 2.7. Atualizar Tabela `usuarios` (Controle de Boas-vindas) - **NOVO**
