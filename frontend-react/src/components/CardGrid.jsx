@@ -34,7 +34,7 @@ const CardGrid = () => {
       title: 'Diagnóstico UBS',
       to: '/diagnostico-ubs',
       icon: ClipboardDocumentCheckIcon,
-      inDevelopment: false,
+      inDevelopment: true,
       allowed: ['PROFISSIONAL', 'GESTOR']
     },
     {
