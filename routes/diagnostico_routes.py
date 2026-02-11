@@ -3,6 +3,7 @@ from pathlib import Path
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status, UploadFile, File, Form
+import logging
 from fastapi.responses import Response as FastAPIResponse
 from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -56,6 +57,8 @@ from services.reporting.simple_situational_report_pdf import (
 
 
 diagnostico_router = APIRouter(prefix="/ubs", tags=["diagnostico"])
+
+logger = logging.getLogger(__name__)
 
 _UPLOADS_BASE_DIR = Path(__file__).resolve().parents[1] / "uploads"
 
@@ -472,9 +475,8 @@ async def create_ubs_indicator(
     indicador = Indicator(
         ubs_id=ubs.id,
         nome_indicador=payload.nome_indicador,
-        tipo_dado=payload.tipo_dado,
-        grau_precisao_valor=payload.grau_precisao_valor,
         valor=payload.valor,
+        meta=payload.meta,
         periodo_referencia=payload.periodo_referencia,
         observacoes=payload.observacoes,
         created_by=current_user.id
@@ -687,9 +689,8 @@ async def get_full_diagnosis(
             id=ind.id,
             ubs_id=ind.ubs_id,
             nome_indicador=ind.nome_indicador,
-            tipo_dado=ind.tipo_dado,
-            grau_precisao_valor=ind.grau_precisao_valor,
             valor=float(ind.valor),
+            meta=float(ind.meta) if ind.meta is not None else None,
             periodo_referencia=ind.periodo_referencia,
             observacoes=ind.observacoes,
             created_at=ind.created_at,
@@ -910,12 +911,13 @@ async def export_situational_report_pdf(
     try:
         pdf_bytes, filename_base = generate_situational_report_pdf_simple(
             diagnosis,
-            municipality="Município",
+            municipality="Municipio",
             reference_period=(diagnosis.ubs.periodo_referencia or ""),
             attachments=attachments_for_pdf,
         )
     except Exception as exc:
-        raise HTTPException(status_code=500, detail="Erro ao gerar PDF") from exc
+        logger.exception("Erro ao gerar PDF")
+        raise HTTPException(status_code=500, detail=f"Erro ao gerar PDF: {exc}") from exc
 
     headers = {
         "Content-Disposition": f'attachment; filename="{filename_base}.pdf"',

@@ -28,6 +28,9 @@ def get_database_url() -> str:
     # Prioriza a variável DATABASE_URL, comum em serviços de hospedagem como o Render.
     url = os.getenv("DATABASE_URL")
     if url:
+        # Alembic usa driver síncrono.
+        if url.startswith("sqlite+aiosqlite"):
+            return url.replace("sqlite+aiosqlite", "sqlite", 1)
         # Garante que a URL é compatível com o driver síncrono do psycopg.
         # Alembic roda de forma síncrona.
         if url.startswith("postgres://"):
@@ -44,7 +47,8 @@ def get_database_url() -> str:
     name = os.getenv("DB_NAME")
 
     if not all([user, password, host, port, name]):
-        raise ValueError("Database connection details are missing.")
+        # Fallback local para SQLite quando variáveis não são informadas.
+        return "sqlite:///./dev.db"
 
     return f"postgresql+psycopg://{user}:{password}@{host}:{port}/{name}"
 

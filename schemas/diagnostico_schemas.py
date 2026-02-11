@@ -7,18 +7,6 @@ from typing import List, Optional
 from pydantic import BaseModel, Field, field_validator
 
 
-class IndicatorType(str, Enum):
-    NUMERO_ABSOLUTO = "NUMERO_ABSOLUTO"
-    TAXA_PERCENTUAL = "TAXA_PERCENTUAL"
-    TAXA_POR_1000HAB = "TAXA_POR_1000HAB"
-
-
-class IndicatorPrecision(str, Enum):
-    UNIDADE = "UNIDADE"
-    UMA_CASA_DECIMAL = "UMA_CASA_DECIMAL"
-    DUAS_CASAS_DECIMAIS = "DUAS_CASAS_DECIMAIS"
-
-
 class UBSStatus(str, Enum):
     DRAFT = "DRAFT"
     SUBMITTED = "SUBMITTED"
@@ -109,11 +97,26 @@ class UBSServicesOut(BaseModel):
 
 class IndicatorBase(BaseModel):
     nome_indicador: str = Field(..., max_length=255)
-    tipo_dado: IndicatorType
-    grau_precisao_valor: IndicatorPrecision
     valor: float = Field(...)
+    meta: Optional[float] = Field(None)
     periodo_referencia: str = Field(..., max_length=100)
     observacoes: Optional[str]
+
+    @field_validator("valor")
+    @classmethod
+    def _validate_valor(cls, value: float) -> float:
+        if value < 0 or value > 100:
+            raise ValueError("valor deve estar entre 0 e 100")
+        return value
+
+    @field_validator("meta")
+    @classmethod
+    def _validate_meta(cls, value: Optional[float]) -> Optional[float]:
+        if value is None:
+            return value
+        if value < 0 or value > 100:
+            raise ValueError("meta deve estar entre 0 e 100")
+        return value
 
 
 class IndicatorCreate(IndicatorBase):
@@ -122,11 +125,28 @@ class IndicatorCreate(IndicatorBase):
 
 class IndicatorUpdate(BaseModel):
     nome_indicador: Optional[str] = Field(None, max_length=255)
-    tipo_dado: Optional[IndicatorType]
-    grau_precisao_valor: Optional[IndicatorPrecision]
     valor: Optional[float]
+    meta: Optional[float]
     periodo_referencia: Optional[str] = Field(None, max_length=100)
     observacoes: Optional[str]
+
+    @field_validator("valor")
+    @classmethod
+    def _validate_valor(cls, value: Optional[float]) -> Optional[float]:
+        if value is None:
+            return value
+        if value < 0 or value > 100:
+            raise ValueError("valor deve estar entre 0 e 100")
+        return value
+
+    @field_validator("meta")
+    @classmethod
+    def _validate_meta(cls, value: Optional[float]) -> Optional[float]:
+        if value is None:
+            return value
+        if value < 0 or value > 100:
+            raise ValueError("meta deve estar entre 0 e 100")
+        return value
 
 
 class IndicatorOut(IndicatorBase):

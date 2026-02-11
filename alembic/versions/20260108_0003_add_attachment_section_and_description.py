@@ -9,6 +9,8 @@ Create Date: 2026-01-08
 from __future__ import annotations
 
 from alembic import op
+import sqlalchemy as sa
+from sqlalchemy import inspect
 
 # revision identifiers, used by Alembic.
 revision = "20260108_0003"
@@ -18,10 +20,22 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.execute("ALTER TABLE ubs_attachments ADD COLUMN IF NOT EXISTS section VARCHAR(50)")
-    op.execute("ALTER TABLE ubs_attachments ADD COLUMN IF NOT EXISTS description TEXT")
+    bind = op.get_bind()
+    inspector = inspect(bind)
+    columns = [col["name"] for col in inspector.get_columns("ubs_attachments")]
+    with op.batch_alter_table("ubs_attachments") as batch_op:
+        if "section" not in columns:
+            batch_op.add_column(sa.Column("section", sa.String(length=50), nullable=True))
+        if "description" not in columns:
+            batch_op.add_column(sa.Column("description", sa.Text(), nullable=True))
 
 
 def downgrade() -> None:
-    op.execute("ALTER TABLE ubs_attachments DROP COLUMN IF EXISTS description")
-    op.execute("ALTER TABLE ubs_attachments DROP COLUMN IF EXISTS section")
+    bind = op.get_bind()
+    inspector = inspect(bind)
+    columns = [col["name"] for col in inspector.get_columns("ubs_attachments")]
+    with op.batch_alter_table("ubs_attachments") as batch_op:
+        if "description" in columns:
+            batch_op.drop_column("description")
+        if "section" in columns:
+            batch_op.drop_column("section")

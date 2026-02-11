@@ -9,6 +9,8 @@ Create Date: 2026-01-08
 from __future__ import annotations
 
 from alembic import op
+import sqlalchemy as sa
+from sqlalchemy import inspect
 
 # revision identifiers, used by Alembic.
 revision = "20260108_0001"
@@ -18,10 +20,18 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Idempotente: evita falhar em ambientes onde a coluna já existe
-    op.execute("ALTER TABLE ubs ADD COLUMN IF NOT EXISTS nome_relatorio VARCHAR(255)")
+    bind = op.get_bind()
+    inspector = inspect(bind)
+    columns = [col["name"] for col in inspector.get_columns("ubs")]
+    if "nome_relatorio" not in columns:
+        with op.batch_alter_table("ubs") as batch_op:
+            batch_op.add_column(sa.Column("nome_relatorio", sa.String(length=255), nullable=True))
 
 
 def downgrade() -> None:
-    # Idempotente: evita falhar se já tiver sido removida
-    op.execute("ALTER TABLE ubs DROP COLUMN IF EXISTS nome_relatorio")
+    bind = op.get_bind()
+    inspector = inspect(bind)
+    columns = [col["name"] for col in inspector.get_columns("ubs")]
+    if "nome_relatorio" in columns:
+        with op.batch_alter_table("ubs") as batch_op:
+            batch_op.drop_column("nome_relatorio")

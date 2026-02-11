@@ -209,8 +209,8 @@ def generate_situational_report_pdf(
             {
                 "nome": latex_escape(i.nome_indicador),
                 "valor": latex_escape(i.valor),
+                "meta": latex_escape(i.meta) if i.meta is not None else "-",
                 "periodo": latex_escape(i.periodo_referencia),
-                "tipo": latex_escape(i.tipo_dado),
             }
         )
 
@@ -250,7 +250,7 @@ def generate_situational_report_pdf(
         observacoes_gerais=_as_lines(ubs.observacoes_gerais),
         services=[latex_escape(s) for s in services] if services else ["-"],
         outros_servicos=latex_escape(ubs.outros_servicos or "-"),
-        indicators=indicators if indicators else [{"nome": "-", "valor": "-", "periodo": "-", "tipo": "-"}],
+        indicators=indicators if indicators else [{"nome": "-", "valor": "-", "meta": "-", "periodo": "-"}],
         professional_groups=professional_groups if professional_groups else [{"cargo": "-", "quantidade": "-", "vinculo": "-"}],
         territorio_descricao=_as_lines(territorio.descricao_territorio) if territorio else "-",
         territorio_potencialidades=_as_lines(territorio.potencialidades_territorio) if territorio else "-",

@@ -12,31 +12,48 @@
 \usepackage{longtable}
 \usepackage{booktabs}
 \usepackage{hyperref}
-\usepackage{xcolor}
+\usepackage[table]{xcolor}
 \usepackage{enumitem}
 \usepackage{fancyhdr}
+\usepackage{titlesec}
 
 \geometry{left=2.2cm,right=2.2cm,top=2.2cm,bottom=2.2cm}
+
+\definecolor{Primary}{HTML}{0F4C5C}
+\definecolor{Secondary}{HTML}{4B5563}
+\definecolor{LightGray}{HTML}{F3F4F6}
+\definecolor{TableHeader}{HTML}{E5E7EB}
+
+\renewcommand{\arraystretch}{1.15}
+\setlength{\tabcolsep}{6pt}
+
+	itleformat{\section}{\Large\bfseries\color{Primary}}{}{0pt}{}
+	itleformat{\subsection}{\normalsize\bfseries\color{Secondary}}{}{0pt}{}
 
 \pagestyle{fancy}
 \fancyhf{}
 \lhead{\textbf{Relatório Situacional UBS}}
-\rhead{\thepage}
+\rhead{\textbf{\textcolor{Secondary}{\thepage}}}
 \renewcommand{\headrulewidth}{0.4pt}
 
 \setlist[itemize]{noitemsep, topsep=0pt}
 
 \begin{document}
 
-% Capa simples
+% Capa premium
 \begin{center}
-    {\LARGE \textbf{ {{ title }} }}\\[0.6cm]
-    {\large {{ municipality }} }\\[0.2cm]
-    {\large {{ reference_period }} }\\[0.8cm]
-    \vspace{0.6cm}
-    \textbf{UBS:} {{ ubs_name }}\\
-    \textbf{CNES:} {{ cnes }}\\[0.4cm]
-    \textbf{Gerado em:} {{ generated_at }}
+  \colorbox{LightGray}{
+    \parbox{0.95\textwidth}{
+      \vspace{0.5cm}
+      {\LARGE \textbf{\textcolor{Primary}{ {{ title }} }}}\\[0.2cm]
+      {\large \textcolor{Secondary}{ {{ municipality }} }}\\[0.1cm]
+      {\large \textcolor{Secondary}{ {{ reference_period }} }}\\[0.4cm]
+      	extbf{UBS:} {{ ubs_name }}\\
+      	extbf{CNES:} {{ cnes }}\\[0.2cm]
+      	extbf{Gerado em:} {{ generated_at }}
+      \vspace{0.5cm}
+    }
+  }
 \end{center}
 
 \vspace{0.8cm}
@@ -44,8 +61,9 @@
 \section*{1. Identificação e Caracterização}
 
 \begin{tabular}{@{} p{5.3cm} p{10.2cm} @{}}
-\toprule
-\textbf{Campo} & \textbf{Valor} \\
+	oprule
+\rowcolor{TableHeader}
+	extbf{Campo} & \textbf{Valor} \\
 \midrule
 Nome do relatório & {{ report_name }} \\
 Área de atuação & {{ area_atuacao }} \\
@@ -77,13 +95,14 @@ Data da última reforma & {{ data_ultima_reforma }} \\
 
 \section*{3. Indicadores Epidemiológicos (último valor)}
 
-\begin{longtable}{@{} p{6.8cm} p{2.6cm} p{2.8cm} p{2.6cm} @{}}
+\begin{longtable}{@{} p{6.2cm} p{2.4cm} p{2.4cm} p{2.6cm} @{}}
 \toprule
-\textbf{Indicador} & \textbf{Valor} & \textbf{Período} & \textbf{Tipo} \\
+\rowcolor{TableHeader}
+	extbf{Indicador} & \textbf{Valor (\%)} & \textbf{Meta (\%)} & \textbf{Período} \\
 \midrule
 \endhead
 {% for i in indicators %}
-{{ i.nome }} & {{ i.valor }} & {{ i.periodo }} & {{ i.tipo }} \\
+{{ i.nome }} & {{ i.valor }} & {{ i.meta }} & {{ i.periodo }} \\
 {% endfor %}
 \bottomrule
 \end{longtable}
@@ -91,8 +110,9 @@ Data da última reforma & {{ data_ultima_reforma }} \\
 \section*{4. Recursos Humanos (grupos profissionais)}
 
 \begin{longtable}{@{} p{7.0cm} p{2.2cm} p{3.6cm} @{}}
-\toprule
-\textbf{Cargo/Função} & \textbf{Qtd.} & \textbf{Vínculo} \\
+	oprule
+\rowcolor{TableHeader}
+	extbf{Cargo/Função} & \textbf{Qtd.} & \textbf{Vínculo} \\
 \midrule
 \endhead
 {% for g in professional_groups %}
@@ -129,8 +149,9 @@ Data da última reforma & {{ data_ultima_reforma }} \\
 \section*{7. Metadados de Envio}
 
 \begin{tabular}{@{} p{5.3cm} p{10.2cm} @{}}
-\toprule
-\textbf{Campo} & \textbf{Valor} \\
+	oprule
+\rowcolor{TableHeader}
+	extbf{Campo} & \textbf{Valor} \\
 \midrule
 Status & {{ submission_status }} \\
 Submetido em & {{ submitted_at }} \\

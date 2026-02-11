@@ -9,6 +9,8 @@ Create Date: 2026-01-08
 from __future__ import annotations
 
 from alembic import op
+import sqlalchemy as sa
+from sqlalchemy import inspect
 
 # revision identifiers, used by Alembic.
 revision = "20260108_0002"
@@ -18,39 +20,58 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Idempotente: evita falhar em ambientes onde colunas já existem
-    op.execute("ALTER TABLE ubs ADD COLUMN IF NOT EXISTS periodo_referencia VARCHAR(50)")
-    op.execute("ALTER TABLE ubs ADD COLUMN IF NOT EXISTS identificacao_equipe VARCHAR(100)")
-    op.execute("ALTER TABLE ubs ADD COLUMN IF NOT EXISTS responsavel_nome VARCHAR(255)")
-    op.execute("ALTER TABLE ubs ADD COLUMN IF NOT EXISTS responsavel_cargo VARCHAR(255)")
-    op.execute("ALTER TABLE ubs ADD COLUMN IF NOT EXISTS responsavel_contato VARCHAR(255)")
-    op.execute("ALTER TABLE ubs ADD COLUMN IF NOT EXISTS fluxo_agenda_acesso TEXT")
+    bind = op.get_bind()
+    inspector = inspect(bind)
 
-    # Tabela de anexos (armazenamento em disco + metadados no banco)
-    op.execute(
-        """
-        CREATE TABLE IF NOT EXISTS ubs_attachments (
-            id SERIAL PRIMARY KEY,
-            ubs_id INTEGER NOT NULL REFERENCES ubs(id) ON DELETE CASCADE,
-            original_filename VARCHAR(255) NOT NULL,
-            content_type VARCHAR(100),
-            size_bytes INTEGER NOT NULL DEFAULT 0,
-            storage_path TEXT NOT NULL,
-            created_at TIMESTAMPTZ DEFAULT now()
+    columns = [col["name"] for col in inspector.get_columns("ubs")]
+    with op.batch_alter_table("ubs") as batch_op:
+        if "periodo_referencia" not in columns:
+            batch_op.add_column(sa.Column("periodo_referencia", sa.String(length=50), nullable=True))
+        if "identificacao_equipe" not in columns:
+            batch_op.add_column(sa.Column("identificacao_equipe", sa.String(length=100), nullable=True))
+        if "responsavel_nome" not in columns:
+            batch_op.add_column(sa.Column("responsavel_nome", sa.String(length=255), nullable=True))
+        if "responsavel_cargo" not in columns:
+            batch_op.add_column(sa.Column("responsavel_cargo", sa.String(length=255), nullable=True))
+        if "responsavel_contato" not in columns:
+            batch_op.add_column(sa.Column("responsavel_contato", sa.String(length=255), nullable=True))
+        if "fluxo_agenda_acesso" not in columns:
+            batch_op.add_column(sa.Column("fluxo_agenda_acesso", sa.Text(), nullable=True))
+
+    if "ubs_attachments" not in inspector.get_table_names():
+        op.create_table(
+            "ubs_attachments",
+            sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True),
+            sa.Column("ubs_id", sa.Integer(), nullable=False),
+            sa.Column("original_filename", sa.String(length=255), nullable=False),
+            sa.Column("content_type", sa.String(length=100), nullable=True),
+            sa.Column("size_bytes", sa.Integer(), nullable=False, server_default="0"),
+            sa.Column("storage_path", sa.Text(), nullable=False),
+            sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("CURRENT_TIMESTAMP")),
+            sa.ForeignKeyConstraint(["ubs_id"], ["ubs.id"], ondelete="CASCADE"),
         )
-        """
-    )
-
-    op.execute("CREATE INDEX IF NOT EXISTS ix_ubs_attachments_ubs_id ON ubs_attachments(ubs_id)")
+        op.create_index("ix_ubs_attachments_ubs_id", "ubs_attachments", ["ubs_id"], unique=False)
 
 
 def downgrade() -> None:
-    op.execute("DROP INDEX IF EXISTS ix_ubs_attachments_ubs_id")
-    op.execute("DROP TABLE IF EXISTS ubs_attachments")
+    bind = op.get_bind()
+    inspector = inspect(bind)
 
-    op.execute("ALTER TABLE ubs DROP COLUMN IF EXISTS fluxo_agenda_acesso")
-    op.execute("ALTER TABLE ubs DROP COLUMN IF EXISTS responsavel_contato")
-    op.execute("ALTER TABLE ubs DROP COLUMN IF EXISTS responsavel_cargo")
-    op.execute("ALTER TABLE ubs DROP COLUMN IF EXISTS responsavel_nome")
-    op.execute("ALTER TABLE ubs DROP COLUMN IF EXISTS identificacao_equipe")
-    op.execute("ALTER TABLE ubs DROP COLUMN IF EXISTS periodo_referencia")
+    if "ubs_attachments" in inspector.get_table_names():
+        op.drop_index("ix_ubs_attachments_ubs_id", table_name="ubs_attachments")
+        op.drop_table("ubs_attachments")
+
+    columns = [col["name"] for col in inspector.get_columns("ubs")]
+    with op.batch_alter_table("ubs") as batch_op:
+        if "fluxo_agenda_acesso" in columns:
+            batch_op.drop_column("fluxo_agenda_acesso")
+        if "responsavel_contato" in columns:
+            batch_op.drop_column("responsavel_contato")
+        if "responsavel_cargo" in columns:
+            batch_op.drop_column("responsavel_cargo")
+        if "responsavel_nome" in columns:
+            batch_op.drop_column("responsavel_nome")
+        if "identificacao_equipe" in columns:
+            batch_op.drop_column("identificacao_equipe")
+        if "periodo_referencia" in columns:
+            batch_op.drop_column("periodo_referencia")

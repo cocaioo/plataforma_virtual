@@ -133,9 +133,8 @@ class Indicator(Base):
     ubs_id = Column(Integer, ForeignKey("ubs.id", ondelete="CASCADE"), nullable=False)
 
     nome_indicador = Column(String(255), nullable=False)
-    tipo_dado = Column(String(40), nullable=False)  # ex.: NUMERO_ABSOLUTO, TAXA_PERCENTUAL
-    grau_precisao_valor = Column(String(40), nullable=False)
     valor = Column(Numeric(18, 4), nullable=False)
+    meta = Column(Numeric(18, 4), nullable=True)
     periodo_referencia = Column(String(100), nullable=False)
     observacoes = Column(Text, nullable=True)
 
