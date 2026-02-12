@@ -72,23 +72,64 @@ const TextAreaField = ({ label, name, value, onChange, helpText, placeholder, ..
 const IndicatorsSection = ({ ubsId, initialData, onUpdate }) => {
     const currentYear = new Date().getFullYear();
     const yearOptions = [currentYear - 1, currentYear, currentYear + 1];
-    const indicatorPresets = [
-        "Gestantes com 6 consultas (1a ate 20a semana)",
-        "Gestantes com exames de sifilis e HIV",
-        "Citopatologico 25-64 anos",
-        "Cobertura vacinal Polio < 1 ano",
-        "Cobertura vacinal Pentavalente < 1 ano",
-        "Hipertensao com PA aferida",
-        "Diabetes com HbA1c solicitada"
+    const indicatorPresetGroups = [
+        {
+            title: "Bloco 1: eSF e eAP",
+            items: [
+                { name: "Mais acesso a APS - Proporcao de atendimentos programados", desc: "Acompanha o acesso oportuno a agenda programada." },
+                { name: "Cuidado da pessoa com diabetes - Cobertura de monitoramento", desc: "Monitora acompanhamento regular de diabetes." },
+                { name: "Cuidado da pessoa com hipertensao - Cobertura de afericoes", desc: "Avalia monitoramento de hipertensos." },
+                { name: "Cuidado da gestante e puerperio - Consultas adequadas", desc: "Verifica pre-natal conforme protocolo." },
+                { name: "Cuidado da mulher - Citopatologico e mamografia", desc: "Avalia cobertura de exames preventivos." },
+                { name: "Cuidado da pessoa idosa - Avaliacoes", desc: "Acompanha avaliacoes periodicas de idosos." },
+                { name: "Cuidado no desenvolvimento infantil - Acompanhamento", desc: "Monitora acompanhamento de criancas." },
+            ],
+        },
+        {
+            title: "Bloco 2: eMulti",
+            items: [
+                { name: "Acoes interprofissionais eMulti - Proporcao de acoes coletivas", desc: "Registra atividades interprofissionais." },
+                { name: "Media de atendimentos por pessoa assistida pela eMulti", desc: "Mede consultas por usuario assistido." },
+            ],
+        },
+        {
+            title: "Bloco 3: eSB",
+            items: [
+                { name: "Escovacao supervisionada (faixa escolar)", desc: "Cobertura em escolas." },
+                { name: "Primeira consulta odontologica programada", desc: "Proporcao de primeiras consultas." },
+                { name: "Tratamento odontologico concluido", desc: "Relacao entre iniciados e concluidos." },
+                { name: "Tratamento restaurador atraumatico", desc: "Cobertura de procedimentos minimamente invasivos." },
+                { name: "Procedimentos odontologicos preventivos", desc: "Proporcao de acoes preventivas." },
+                { name: "Taxa de exodontias realizadas", desc: "Taxa de extracoes odontologicas." },
+            ],
+        },
+    ];
+    const valueTypeOptions = [
+        { value: "PERCENTUAL", label: "Porcentagem (%)", help: "Use valores de 0 a 100.", suffix: "%" },
+        { value: "ABSOLUTO", label: "Absoluto", help: "Use valores absolutos (ex.: total de atendimentos).", suffix: "" },
+        { value: "POR_1000", label: "Por 1000 habitantes", help: "Use taxa por 1000 habitantes.", suffix: " / 1000 hab." },
     ];
     const [formData, setFormData] = useState({
         nome_indicador: '',
         valor: '',
         meta: '',
+        tipo_valor: 'PERCENTUAL',
         periodo_quadrimestre: '',
         periodo_ano: '',
         observacoes: ''
     });
+    const valueType = valueTypeOptions.find(option => option.value === formData.tipo_valor) || valueTypeOptions[0];
+    const valueStep = formData.tipo_valor === 'ABSOLUTO' ? '1' : '0.01';
+
+    const formatIndicatorValue = (rawValue, tipoValor) => {
+        if (rawValue === null || rawValue === undefined || rawValue === '') return '-';
+        const parsed = Number(rawValue);
+        const formatted = Number.isFinite(parsed) ? parsed.toString() : rawValue;
+        const type = valueTypeOptions.find(option => option.value === tipoValor) || valueTypeOptions[0];
+        if (type.value === 'PERCENTUAL') return `${formatted}%`;
+        if (type.value === 'POR_1000') return `${formatted} / 1000 hab.`;
+        return `${formatted}`;
+    };
 
     const handleAdd = async (e) => {
         e.preventDefault();
@@ -98,6 +139,7 @@ const IndicatorsSection = ({ ubsId, initialData, onUpdate }) => {
                 observacoes: formData.observacoes,
                 valor: parseFloat(formData.valor) || 0,
                 meta: formData.meta !== '' ? parseFloat(formData.meta) || 0 : null,
+                tipo_valor: formData.tipo_valor,
                 periodo_referencia: `${formData.periodo_quadrimestre}/${formData.periodo_ano}`
             };
             // Nota: Se o backend ainda não tiver a rota /indicators, essa chamada falhará.
@@ -105,7 +147,7 @@ const IndicatorsSection = ({ ubsId, initialData, onUpdate }) => {
             await axios.post(`/api/ubs/${ubsId}/indicators`, payload, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
             });
-            setFormData({ nome_indicador: '', valor: '', meta: '', periodo_quadrimestre: '', periodo_ano: '', observacoes: '' });
+            setFormData({ nome_indicador: '', valor: '', meta: '', tipo_valor: 'PERCENTUAL', periodo_quadrimestre: '', periodo_ano: '', observacoes: '' });
             onUpdate();
         } catch(err) { alert("Erro ao salvar indicador."); }
     }
@@ -133,25 +175,35 @@ const IndicatorsSection = ({ ubsId, initialData, onUpdate }) => {
                             <TrashIcon className="w-4 h-4" />
                         </button>
                         <h4 className="font-bold text-gray-700 text-sm pr-6">{ind.nome_indicador}</h4>
-                        <p className="text-xl font-bold text-blue-600 mt-1">{ind.valor}%</p>
+                        <p className="text-xl font-bold text-blue-600 mt-1">{formatIndicatorValue(ind.valor, ind.tipo_valor)}</p>
                         <p className="text-xs text-gray-500 mt-1">Periodo: {ind.periodo_referencia || "-"}</p>
-                        <p className="text-xs text-gray-500">Meta: {ind.meta !== null && ind.meta !== undefined ? `${ind.meta}%` : "-"}</p>
+                        <p className="text-xs text-gray-500">Meta: {formatIndicatorValue(ind.meta, ind.tipo_valor)}</p>
+                        <p className="text-xs text-gray-400">Tipo: {(valueTypeOptions.find(option => option.value === ind.tipo_valor) || valueTypeOptions[0]).label}</p>
                     </div>
                 ))}
             </div>
 
             <div className="p-4 border rounded-md bg-green-50">
                 <h4 className="font-bold text-green-900 mb-4 text-sm uppercase">Adicionar ou atualizar indicador</h4>
-                <div className="mb-4 flex flex-wrap gap-2">
-                    {indicatorPresets.map(preset => (
-                        <button
-                            key={preset}
-                            type="button"
-                            onClick={() => setFormData(p => ({ ...p, nome_indicador: preset }))}
-                            className="text-xs px-3 py-1 rounded-full border border-green-200 bg-white text-green-700 hover:bg-green-100"
-                        >
-                            {preset}
-                        </button>
+                <div className="mb-6 space-y-4">
+                    {indicatorPresetGroups.map(group => (
+                        <div key={group.title}>
+                            <p className="text-xs font-semibold text-green-800 uppercase tracking-wide">{group.title}</p>
+                            <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-3">
+                                {group.items.map(item => (
+                                    <div key={item.name} className="rounded-md border border-green-200 bg-white p-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => setFormData(p => ({ ...p, nome_indicador: item.name }))}
+                                            className="text-xs font-semibold text-green-700 hover:text-green-900"
+                                        >
+                                            {item.name}
+                                        </button>
+                                        <p className="text-[11px] text-green-700/80 mt-1">{item.desc}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                     ))}
                 </div>
                 <form onSubmit={handleAdd}>
@@ -165,29 +217,45 @@ const IndicatorsSection = ({ ubsId, initialData, onUpdate }) => {
                             placeholder="Ex: Hipertensao com PA aferida"
                             helpText="Dica: use os atalhos acima para preencher mais rapido."
                         />
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700">Tipo de valor *</label>
+                            <select
+                                value={formData.tipo_valor}
+                                onChange={e => setFormData(p => ({...p, tipo_valor: e.target.value}))}
+                                className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm"
+                                required
+                            >
+                                {valueTypeOptions.map(option => (
+                                    <option key={option.value} value={option.value}>{option.label}</option>
+                                ))}
+                            </select>
+                            <p className="mt-2 text-xs text-gray-500 italic">Escolha a unidade para valor e meta.</p>
+                        </div>
                         <InputField
-                            label="Valor (%)"
+                            label={`Valor (${valueType.label})`}
                             name="valor"
                             type="number"
-                            step="0.01"
+                            step={valueStep}
+                            min="0"
                             value={formData.valor}
                             onChange={e => setFormData(p => ({...p, valor: e.target.value}))}
                             required
                             placeholder="Ex: 67"
-                            helpText="Use valores de 0 a 100."
+                            helpText={valueType.help}
                         />
                         <InputField
-                            label="Meta (%)"
+                            label={`Meta (${valueType.label})`}
                             name="meta"
                             type="number"
-                            step="0.01"
+                            step={valueStep}
+                            min="0"
                             value={formData.meta}
                             onChange={e => setFormData(p => ({...p, meta: e.target.value}))}
                             placeholder="Ex: 90"
                             helpText="Opcional. Use para comparar com a meta da equipe."
                         />
                         <div className="mb-4">
-                            <label className="block text-sm font-medium text-gray-700">Periodo (quadrimestre) *</label>
+                            <label className="block text-sm font-medium text-gray-700">Periodo (trimestre) *</label>
                             <select
                                 value={formData.periodo_quadrimestre}
                                 onChange={e => setFormData(p => ({...p, periodo_quadrimestre: e.target.value}))}
@@ -200,7 +268,7 @@ const IndicatorsSection = ({ ubsId, initialData, onUpdate }) => {
                                 <option value="Q3">Q3</option>
                                 <option value="Q4">Q4</option>
                             </select>
-                            <p className="mt-2 text-xs text-gray-500 italic">Use o quadrimestre do periodo analisado.</p>
+                            <p className="mt-2 text-xs text-gray-500 italic">Use o trimestre do periodo analisado.</p>
                         </div>
                         <div className="mb-4">
                             <label className="block text-sm font-medium text-gray-700">Ano *</label>
@@ -220,7 +288,7 @@ const IndicatorsSection = ({ ubsId, initialData, onUpdate }) => {
                     </div>
                     <TextAreaField label="Observações (opcional)" name="observacoes" rows={2} value={formData.observacoes} onChange={e => setFormData(p => ({...p, observacoes: e.target.value}))} placeholder="Fonte dos dados, critérios, etc."/>
                     <div className="flex justify-end gap-2 mt-2">
-                        <button type="button" onClick={() => setFormData({ nome_indicador: '', valor: '', meta: '', periodo_quadrimestre: '', periodo_ano: '', observacoes: '' })} className="text-sm font-medium text-gray-600 hover:underline">Limpar</button>
+                        <button type="button" onClick={() => setFormData({ nome_indicador: '', valor: '', meta: '', tipo_valor: 'PERCENTUAL', periodo_quadrimestre: '', periodo_ano: '', observacoes: '' })} className="text-sm font-medium text-gray-600 hover:underline">Limpar</button>
                         <button type="submit" className="bg-green-600 text-white px-6 py-2 rounded font-bold hover:bg-green-700 transition-colors">Salvar indicador</button>
                     </div>
                 </form>

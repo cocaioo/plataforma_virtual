@@ -45,6 +45,24 @@ def _fmt_percent(value: Any) -> str:
     return "-" if formatted == "-" else f"{formatted}%"
 
 
+def _indicator_type_label(tipo_valor: Optional[str]) -> str:
+    if tipo_valor == "ABSOLUTO":
+        return "Absoluto"
+    if tipo_valor == "POR_1000":
+        return "Por 1000 hab."
+    return "Porcentagem"
+
+
+def _format_indicator_value(value: Any, tipo_valor: Optional[str]) -> str:
+    if value is None:
+        return "-"
+    if tipo_valor == "ABSOLUTO":
+        return _fmt(value)
+    if tipo_valor == "POR_1000":
+        return f"{_fmt(value)} / 1000 hab."
+    return _fmt_percent(value)
+
+
 def _safe_filename(value: str, default: str = "relatorio_situacional") -> str:
     if not value:
         return default
@@ -136,6 +154,20 @@ def generate_situational_report_pdf_simple(
         fontSize=10,
         leading=14,
     )
+    style_table = ParagraphStyle(
+        name="TableCell",
+        parent=styles["BodyText"],
+        fontSize=8,
+        leading=10,
+    )
+    style_table_header = ParagraphStyle(
+        name="TableHeader",
+        parent=styles["BodyText"],
+        fontName="Helvetica-Bold",
+        fontSize=8,
+        leading=10,
+        textColor=PRIMARY,
+    )
 
     story = []
 
@@ -225,16 +257,31 @@ def generate_situational_report_pdf_simple(
     story.append(Paragraph("3. Indicadores Epidemiologicos", style_h2))
     indicators = diagnosis.indicators_latest or []
     if indicators:
-        ind_data = [["Indicador", "Valor (%)", "Meta (%)", "Periodo"]]
+        ind_data = [[
+            Paragraph("Indicador", style_table_header),
+            Paragraph("Tipo", style_table_header),
+            Paragraph("Valor", style_table_header),
+            Paragraph("Meta", style_table_header),
+            Paragraph("Periodo", style_table_header),
+        ]]
         for i in indicators:
             ind_data.append([
-                _escape_xml(str(i.nome_indicador)),
-                _fmt_percent(i.valor),
-                _fmt_percent(i.meta) if i.meta is not None else "-",
-                _escape_xml(str(i.periodo_referencia)),
+                Paragraph(_escape_xml(str(i.nome_indicador)), style_table),
+                Paragraph(_escape_xml(_indicator_type_label(getattr(i, "tipo_valor", None))), style_table),
+                Paragraph(_escape_xml(_format_indicator_value(i.valor, getattr(i, "tipo_valor", None))), style_table),
+                Paragraph(_escape_xml(_format_indicator_value(i.meta, getattr(i, "tipo_valor", None))), style_table),
+                Paragraph(_escape_xml(str(i.periodo_referencia)), style_table),
             ])
-        ind_table = Table(ind_data, colWidths=[7.2 * cm, 2.2 * cm, 2.2 * cm, 3.4 * cm])
+        ind_table = Table(ind_data, colWidths=[6.8 * cm, 2.2 * cm, 1.9 * cm, 1.9 * cm, 3.7 * cm])
         ind_table.setStyle(_zebra_style(len(ind_data)))
+        ind_table.setStyle(
+            TableStyle(
+                [
+                    ("LEFTPADDING", (0, 0), (-1, -1), 6),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+                ]
+            )
+        )
         story.append(ind_table)
     else:
         story.append(Paragraph("-", style_body))

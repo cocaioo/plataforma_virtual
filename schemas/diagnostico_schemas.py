@@ -4,12 +4,18 @@ from datetime import date, datetime
 from enum import Enum
 from typing import List, Optional
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, ValidationInfo, field_validator
 
 
 class UBSStatus(str, Enum):
     DRAFT = "DRAFT"
     SUBMITTED = "SUBMITTED"
+
+
+class IndicatorValueType(str, Enum):
+    PERCENTUAL = "PERCENTUAL"
+    ABSOLUTO = "ABSOLUTO"
+    POR_1000 = "POR_1000"
 
 
 class UBSBase(BaseModel):
@@ -99,24 +105,31 @@ class IndicatorBase(BaseModel):
     nome_indicador: str = Field(..., max_length=255)
     valor: float = Field(...)
     meta: Optional[float] = Field(None)
+    tipo_valor: IndicatorValueType = Field(default=IndicatorValueType.PERCENTUAL)
     periodo_referencia: str = Field(..., max_length=100)
     observacoes: Optional[str]
 
+    @staticmethod
+    def _validate_by_type(value: float, tipo_valor: IndicatorValueType, field_name: str) -> float:
+        if value < 0:
+            raise ValueError(f"{field_name} deve ser maior ou igual a 0")
+        if tipo_valor == IndicatorValueType.PERCENTUAL and value > 100:
+            raise ValueError(f"{field_name} deve estar entre 0 e 100")
+        return value
+
     @field_validator("valor")
     @classmethod
-    def _validate_valor(cls, value: float) -> float:
-        if value < 0 or value > 100:
-            raise ValueError("valor deve estar entre 0 e 100")
-        return value
+    def _validate_valor(cls, value: float, info: ValidationInfo) -> float:
+        tipo_valor = info.data.get("tipo_valor") or IndicatorValueType.PERCENTUAL
+        return cls._validate_by_type(value, tipo_valor, "valor")
 
     @field_validator("meta")
     @classmethod
-    def _validate_meta(cls, value: Optional[float]) -> Optional[float]:
+    def _validate_meta(cls, value: Optional[float], info: ValidationInfo) -> Optional[float]:
         if value is None:
             return value
-        if value < 0 or value > 100:
-            raise ValueError("meta deve estar entre 0 e 100")
-        return value
+        tipo_valor = info.data.get("tipo_valor") or IndicatorValueType.PERCENTUAL
+        return cls._validate_by_type(value, tipo_valor, "meta")
 
 
 class IndicatorCreate(IndicatorBase):
@@ -127,26 +140,33 @@ class IndicatorUpdate(BaseModel):
     nome_indicador: Optional[str] = Field(None, max_length=255)
     valor: Optional[float]
     meta: Optional[float]
+    tipo_valor: Optional[IndicatorValueType] = None
     periodo_referencia: Optional[str] = Field(None, max_length=100)
     observacoes: Optional[str]
 
     @field_validator("valor")
     @classmethod
-    def _validate_valor(cls, value: Optional[float]) -> Optional[float]:
+    def _validate_valor(cls, value: Optional[float], info: ValidationInfo) -> Optional[float]:
         if value is None:
             return value
-        if value < 0 or value > 100:
-            raise ValueError("valor deve estar entre 0 e 100")
-        return value
+        tipo_valor = info.data.get("tipo_valor")
+        if tipo_valor is None:
+            if value < 0:
+                raise ValueError("valor deve ser maior ou igual a 0")
+            return value
+        return IndicatorBase._validate_by_type(value, tipo_valor, "valor")
 
     @field_validator("meta")
     @classmethod
-    def _validate_meta(cls, value: Optional[float]) -> Optional[float]:
+    def _validate_meta(cls, value: Optional[float], info: ValidationInfo) -> Optional[float]:
         if value is None:
             return value
-        if value < 0 or value > 100:
-            raise ValueError("meta deve estar entre 0 e 100")
-        return value
+        tipo_valor = info.data.get("tipo_valor")
+        if tipo_valor is None:
+            if value < 0:
+                raise ValueError("meta deve ser maior ou igual a 0")
+            return value
+        return IndicatorBase._validate_by_type(value, tipo_valor, "meta")
 
 
 class IndicatorOut(IndicatorBase):

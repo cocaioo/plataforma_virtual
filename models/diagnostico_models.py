@@ -135,6 +135,7 @@ class Indicator(Base):
     nome_indicador = Column(String(255), nullable=False)
     valor = Column(Numeric(18, 4), nullable=False)
     meta = Column(Numeric(18, 4), nullable=True)
+    tipo_valor = Column(String(40), nullable=True, default="PERCENTUAL")
     periodo_referencia = Column(String(100), nullable=False)
     observacoes = Column(Text, nullable=True)
 

@@ -7,6 +7,8 @@ load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
+Base = declarative_base()
+
 
 def _normalize_database_url(url: str) -> str:
     if url.startswith("postgres://"):
@@ -61,21 +63,26 @@ if not DATABASE_URL.startswith("sqlite"):
         "pool_recycle": 3600,
     })
 
-engine = create_async_engine(DATABASE_URL, **engine_kwargs)
+engine = None
+AsyncSessionLocal = None
 
-#Fábrica de sessõe
-AsyncSessionLocal = sessionmaker(
-    engine,
-    class_=AsyncSession,
-    expire_on_commit=False,
-    autoflush=False,
-    autocommit=False,
-)
+if os.getenv("SKIP_ASYNC_ENGINE") != "1":
+    engine = create_async_engine(DATABASE_URL, **engine_kwargs)
 
-Base = declarative_base()
+    # Fábrica de sessões
+    AsyncSessionLocal = sessionmaker(
+        engine,
+        class_=AsyncSession,
+        expire_on_commit=False,
+        autoflush=False,
+        autocommit=False,
+    )
 
-#Função parar criar e fornecer sessões para a rota.
+
+# Função para criar e fornecer sessões para a rota.
 async def get_db():
+    if AsyncSessionLocal is None:
+        raise RuntimeError("Async engine not initialized")
     async with AsyncSessionLocal() as session:
         try:
             yield session

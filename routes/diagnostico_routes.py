@@ -460,7 +460,22 @@ async def list_ubs_indicators(
         .where(Indicator.ubs_id == ubs.id)
         .order_by(Indicator.nome_indicador, Indicator.created_at.desc())
     )
-    return resultado.scalars().all()
+    indicators = resultado.scalars().all()
+    return [
+        IndicatorOut(
+            id=ind.id,
+            ubs_id=ind.ubs_id,
+            nome_indicador=ind.nome_indicador,
+            valor=float(ind.valor),
+            meta=float(ind.meta) if ind.meta is not None else None,
+            tipo_valor=ind.tipo_valor,
+            periodo_referencia=ind.periodo_referencia,
+            observacoes=ind.observacoes,
+            created_at=ind.created_at,
+            updated_at=ind.updated_at,
+        )
+        for ind in indicators
+    ]
 
 
 @diagnostico_router.post("/{ubs_id}/indicators", response_model=IndicatorOut, status_code=status.HTTP_201_CREATED)
@@ -477,6 +492,7 @@ async def create_ubs_indicator(
         nome_indicador=payload.nome_indicador,
         valor=payload.valor,
         meta=payload.meta,
+        tipo_valor=payload.tipo_valor,
         periodo_referencia=payload.periodo_referencia,
         observacoes=payload.observacoes,
         created_by=current_user.id
@@ -691,6 +707,7 @@ async def get_full_diagnosis(
             nome_indicador=ind.nome_indicador,
             valor=float(ind.valor),
             meta=float(ind.meta) if ind.meta is not None else None,
+            tipo_valor=ind.tipo_valor,
             periodo_referencia=ind.periodo_referencia,
             observacoes=ind.observacoes,
             created_at=ind.created_at,
