@@ -113,8 +113,6 @@ class IndicatorBase(BaseModel):
     def _validate_by_type(value: float, tipo_valor: IndicatorValueType, field_name: str) -> float:
         if value < 0:
             raise ValueError(f"{field_name} deve ser maior ou igual a 0")
-        if tipo_valor == IndicatorValueType.PERCENTUAL and value > 100:
-            raise ValueError(f"{field_name} deve estar entre 0 e 100")
         return value
 
     @field_validator("valor")
