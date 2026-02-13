@@ -20,18 +20,10 @@ depends_on = None
 
 
 def upgrade() -> None:
-    with op.batch_alter_table("indicators") as batch_op:
-        batch_op.add_column(
-            sa.Column(
-                "tipo_valor",
-                sa.String(40),
-                nullable=True,
-                server_default=sa.text("'PERCENTUAL'"),
-            )
-        )
-    op.execute("UPDATE indicators SET tipo_valor = 'PERCENTUAL' WHERE tipo_valor IS NULL")
+    # No-op: tipo_valor is already added by migration 20260211_0007
+    pass
 
 
 def downgrade() -> None:
-    with op.batch_alter_table("indicators") as batch_op:
-        batch_op.drop_column("tipo_valor")
+    # No-op: tipo_valor removal is handled by downgrade of 20260211_0007
+    pass
