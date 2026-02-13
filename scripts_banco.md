@@ -16,9 +16,9 @@ create table public.indicators (
   id serial not null,
   ubs_id integer not null,
   nome_indicador character varying(255) not null,
-  tipo_dado character varying(40) not null,
-  grau_precisao_valor character varying(40) not null,
   valor numeric(18, 4) not null,
+  meta numeric(18, 4) null,
+  tipo_valor character varying(40) null default 'PERCENTUAL',
   periodo_referencia character varying(100) not null,
   observacoes text null,
   created_at timestamp with time zone null default now(),
@@ -432,6 +432,21 @@ VALUES ('Recepção de Teste', 'recepcao@plataforma.com', '$pbkdf2-sha256$29000$
 Adiciona a coluna para controlar se o e-mail de boas-vindas manual já foi enviado.
 
 ```sql
-ALTER TABLE public.usuarios 
+ALTER TABLE public.usuarios
 ADD COLUMN welcome_email_sent boolean DEFAULT false;
+```
+
+### 2.8. Atualizar Tabela `indicators` (Simplificação de Indicadores Epidemiológicos) - **NOVO**
+Remove as colunas `tipo_dado` e `grau_precisao_valor` (que já não são utilizadas) e adiciona as novas colunas `meta` e `tipo_valor`.
+
+```sql
+-- Passo 1: Remover colunas obsoletas
+ALTER TABLE public.indicators
+DROP COLUMN IF EXISTS tipo_dado,
+DROP COLUMN IF EXISTS grau_precisao_valor;
+
+-- Passo 2: Adicionar novas colunas
+ALTER TABLE public.indicators
+ADD COLUMN meta numeric(18, 4) NULL,
+ADD COLUMN tipo_valor character varying(40) NULL DEFAULT 'PERCENTUAL';
 ```
