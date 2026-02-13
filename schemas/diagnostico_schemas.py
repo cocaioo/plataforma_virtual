@@ -103,9 +103,9 @@ class UBSServicesOut(BaseModel):
 
 class IndicatorBase(BaseModel):
     nome_indicador: str = Field(..., max_length=255)
+    tipo_valor: IndicatorValueType = Field(default=IndicatorValueType.PERCENTUAL)
     valor: float = Field(...)
     meta: Optional[float] = Field(None)
-    tipo_valor: IndicatorValueType = Field(default=IndicatorValueType.PERCENTUAL)
     periodo_referencia: str = Field(..., max_length=100)
     observacoes: Optional[str]
 
@@ -138,9 +138,9 @@ class IndicatorCreate(IndicatorBase):
 
 class IndicatorUpdate(BaseModel):
     nome_indicador: Optional[str] = Field(None, max_length=255)
+    tipo_valor: Optional[IndicatorValueType] = None
     valor: Optional[float]
     meta: Optional[float]
-    tipo_valor: Optional[IndicatorValueType] = None
     periodo_referencia: Optional[str] = Field(None, max_length=100)
     observacoes: Optional[str]
 
