@@ -1,7 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
+import { useNotifications } from '../components/ui/Notifications';
 
 const GestorSolicitacoes = () => {
+  const { notify, confirm, prompt } = useNotifications();
   const [solicitacoes, setSolicitacoes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -38,17 +40,33 @@ const GestorSolicitacoes = () => {
     setLoading(false);
   }, []);
 
-  const handleApprove = (id) => {
-    alert(`Aprovar solicitação ${id}`);
+  const handleApprove = async (id) => {
+    const confirmed = await confirm({
+      title: 'Aprovar solicitação',
+      message: `Deseja aprovar a solicitação ${id}?`,
+      confirmLabel: 'Aprovar',
+      cancelLabel: 'Cancelar',
+    });
+    if (!confirmed) return;
+    notify({ type: 'success', message: `Solicitação ${id} aprovada.` });
     // Lógica para aprovar
   };
 
-  const handleReject = (id) => {
-    const motivo = prompt('Qual o motivo da rejeição?');
-    if (motivo) {
-      alert(`Rejeitar solicitação ${id} com motivo: ${motivo}`);
-      // Lógica para rejeitar
+  const handleReject = async (id) => {
+    const motivo = await prompt({
+      title: 'Rejeitar solicitação',
+      message: 'Informe o motivo da rejeição.',
+      placeholder: 'Motivo',
+      confirmLabel: 'Rejeitar',
+      cancelLabel: 'Cancelar',
+    });
+    if (motivo === null) return;
+    if (!motivo.trim()) {
+      notify({ type: 'warning', message: 'Informe um motivo para a rejeição.' });
+      return;
     }
+    notify({ type: 'info', message: `Solicitação ${id} rejeitada: ${motivo}` });
+    // Lógica para rejeitar
   };
 
   if (loading) return <p>Carregando solicitações...</p>;

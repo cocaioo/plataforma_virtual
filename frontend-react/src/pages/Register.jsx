@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+import { useNotifications } from '../components/ui/Notifications';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -16,6 +17,7 @@ const Register = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const { notify } = useNotifications();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -58,7 +60,7 @@ const Register = () => {
       });
       // Redirect to login with success message implies we might want to show a toast or pass state
       // For now, simple redirect
-      alert('Cadastro realizado com sucesso! Faça login.');
+      notify({ type: 'success', message: 'Cadastro realizado com sucesso. Faça login.' });
       navigate('/login');
     } catch (err) {
       console.error(err);

@@ -6,8 +6,7 @@ import {
   BookOpenIcon, 
   LifebuoyIcon, 
   UsersIcon, 
-  ChartBarIcon,
-  ClipboardDocumentCheckIcon
+  ChartBarIcon
 } from '@heroicons/react/24/outline';
 
 const CardGrid = () => {
@@ -29,13 +28,6 @@ const CardGrid = () => {
       icon: ClockIcon,
       inDevelopment: false,
       allowed: ['USER', 'PROFISSIONAL', 'GESTOR', 'RECEPCAO']
-    },
-    {
-      title: 'Diagnóstico UBS',
-      to: '/diagnostico-ubs',
-      icon: ClipboardDocumentCheckIcon,
-      inDevelopment: true,
-      allowed: ['PROFISSIONAL', 'GESTOR']
     },
     {
       title: 'Materiais Educativos',

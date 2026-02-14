@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { agendamentoService } from '../../services/agendamentoService';
 import { TrashIcon } from '@heroicons/react/24/outline';
+import { useNotifications } from '../ui/Notifications';
 
 const BlockScheduleModal = ({ onClose, onSuccess }) => {
+  const { notify, confirm } = useNotifications();
   const [bloqueios, setBloqueios] = useState([]);
   const [profissionais, setProfissionais] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -54,7 +56,7 @@ const BlockScheduleModal = ({ onClose, onSuccess }) => {
     setLoading(true);
     try {
       if (!formData.profissional_id) {
-         alert("Selecione um profissional.");
+        notify({ type: 'warning', message: 'Selecione um profissional.' });
          setLoading(false);
          return;
       }
@@ -63,7 +65,7 @@ const BlockScheduleModal = ({ onClose, onSuccess }) => {
       const end = new Date(formData.data_fim + 'T23:59:59');
 
       if (end < start) {
-        alert("A data final deve ser igual ou posterior à data inicial.");
+        notify({ type: 'warning', message: 'A data final deve ser igual ou posterior à data inicial.' });
         setLoading(false);
         return;
       }
@@ -81,20 +83,26 @@ const BlockScheduleModal = ({ onClose, onSuccess }) => {
       loadBloqueios(formData.profissional_id);
       if (onSuccess) onSuccess(); 
     } catch (err) {
-      alert("Erro ao criar bloqueio: " + (err.message || "Erro desconhecido"));
+      notify({ type: 'error', message: `Erro ao criar bloqueio: ${err.message || 'Erro desconhecido'}` });
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Deseja realmente desbloquear estes dias?")) return;
+    const confirmed = await confirm({
+      title: 'Desbloquear agenda',
+      message: 'Deseja realmente desbloquear estes dias?',
+      confirmLabel: 'Desbloquear',
+      cancelLabel: 'Cancelar',
+    });
+    if (!confirmed) return;
     try {
       await agendamentoService.deleteBloqueio(id);
       loadBloqueios(formData.profissional_id);
       if (onSuccess) onSuccess();
     } catch (err) {
-      alert("Erro ao excluir bloqueio.");
+      notify({ type: 'error', message: 'Erro ao excluir bloqueio.' });
     }
   };
 

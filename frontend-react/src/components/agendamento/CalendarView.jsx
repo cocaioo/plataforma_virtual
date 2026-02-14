@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { agendamentoService } from '../../services/agendamentoService';
 import BlockScheduleModal from './BlockScheduleModal';
 import BookingForm from './BookingForm';
+import { useNotifications } from '../ui/Notifications';
 
 const CalendarView = ({ user }) => {
+  const { notify, confirm } = useNotifications();
   const [profissionais, setProfissionais] = useState([]);
   const [selectedProfissional, setSelectedProfissional] = useState('');
   const [agendamentos, setAgendamentos] = useState([]);
@@ -107,20 +109,26 @@ const CalendarView = ({ user }) => {
   const handleSendConfirmation = async (id) => {
       try {
           await agendamentoService.confirmarAgendamento(id);
-          alert("Confirmacao enviada.");
+        notify({ type: 'success', message: 'Confirmação enviada.' });
           loadAgenda();
       } catch(err) {
-          alert("Erro: " + err.message);
+          notify({ type: 'error', message: `Erro: ${err.message}` });
       }
   };
 
   const handleCancel = async (id) => {
-    if (!window.confirm("Deseja realmente cancelar este agendamento?")) return;
+    const confirmed = await confirm({
+      title: 'Cancelar agendamento',
+      message: 'Deseja realmente cancelar este agendamento?',
+      confirmLabel: 'Cancelar',
+      cancelLabel: 'Voltar',
+    });
+    if (!confirmed) return;
     try {
       await agendamentoService.atualizarAgendamento(id, { status: 'CANCELADO' });
       loadAgenda();
     } catch (err) {
-      alert("Erro ao cancelar: " + err.message);
+      notify({ type: 'error', message: `Erro ao cancelar: ${err.message}` });
     }
   };
 
@@ -137,7 +145,7 @@ const CalendarView = ({ user }) => {
           <BlockScheduleModal 
             onClose={() => setIsBlockModalOpen(false)} 
             onSuccess={() => {
-                // setIsBlockModalOpen(false); // Mantem aberto para ver a lista ou fecha? O usuario pode querer gerenciar mais.
+                // setIsBlockModalOpen(false); // Mantém aberto para ver a lista ou fecha? O usuário pode querer gerenciar mais.
                 // Mas recarrega agenda se estivermos vendo a agenda do proprio
                 loadAgenda();
             }}
@@ -268,10 +276,10 @@ const CalendarView = ({ user }) => {
                                     onClick={() => handleSendConfirmation(apt.id)}
                                     className="text-blue-600 hover:underline"
                                   >
-                                      Enviar msg
+                                        Enviar mensagem
                                   </button>
                               ) : (
-                                  <span className="text-gray-400">Nao enviada</span>
+                                      <span className="text-gray-400">Não enviada</span>
                               )}
                           </td>
                           {canManage && (

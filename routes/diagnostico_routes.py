@@ -888,7 +888,7 @@ async def delete_ubs_attachment(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-# ----------------------- Exportação (PDF/LaTeX) -----------------------
+# ----------------------- Exportação (PDF/ReportLab) -----------------------
 
 
 @diagnostico_router.get("/{ubs_id}/export/pdf")
@@ -899,7 +899,7 @@ async def export_situational_report_pdf(
 ):
     """Exporta o relatório situacional em PDF.
 
-    Gera o PDF a partir do diagnóstico agregado ("/diagnosis") e compila via LaTeX.
+    Gera o PDF a partir do diagnóstico agregado ("/diagnosis") usando ReportLab.
     """
 
     diagnosis = await get_full_diagnosis(ubs_id=ubs_id, db=db, current_user=current_user)
@@ -931,6 +931,7 @@ async def export_situational_report_pdf(
             municipality="Municipio",
             reference_period=(diagnosis.ubs.periodo_referencia or ""),
             attachments=attachments_for_pdf,
+            attachments_base_dir=_UPLOADS_BASE_DIR,
         )
     except Exception as exc:
         logger.exception("Erro ao gerar PDF")

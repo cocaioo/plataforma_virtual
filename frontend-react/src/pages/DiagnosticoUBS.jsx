@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import { useDebounce } from '../hooks/useDebounce';
+import { useNotifications } from '../components/ui/Notifications';
 
 // --- Componentes Reutilizáveis ---
 
@@ -76,7 +77,7 @@ const NeedsSection = ({ ubsId, initialData }) => {
                 
                 <div className="text-right">
                     <button onClick={handleSave} disabled={status === 'saving'} className={`font-bold py-2 px-4 rounded-md shadow-sm text-white ${status === 'error' ? 'bg-red-600' : 'bg-blue-600 hover:bg-blue-700'}`}>
-                        {status === 'saving' ? 'Salvando...' : (status === 'success' ? 'Salvo!' : 'Salvar Seção')}
+                        {status === 'saving' ? 'Salvando...' : (status === 'success' ? 'Salvo!' : 'Salvar seção')}
                     </button>
                 </div>
             </div>
@@ -108,7 +109,7 @@ const TerritorySection = ({ ubsId, initialData }) => {
                  <TextAreaField label="Riscos e Vulnerabilidades" name="riscos_vulnerabilidades" value={data.riscos_vulnerabilidades} onChange={e => setData(p => ({...p, [e.target.name]: e.target.value}))} helpText="Mapeie áreas de risco, violência, saneamento precário, etc."/>
                 <div className="text-right">
                     <button onClick={handleSave} disabled={status === 'saving'} className={`font-bold py-2 px-4 rounded-md shadow-sm text-white ${status === 'error' ? 'bg-red-600' : 'bg-blue-600 hover:bg-blue-700'}`}>
-                        {status === 'saving' ? 'Salvando...' : (status === 'success' ? 'Salvo!' : 'Salvar Seção')}
+                        {status === 'saving' ? 'Salvando...' : (status === 'success' ? 'Salvo!' : 'Salvar seção')}
                     </button>
                 </div>
             </div>
@@ -117,6 +118,7 @@ const TerritorySection = ({ ubsId, initialData }) => {
 }
 
 const ProfessionalsSection = ({ ubsId, initialData, onUpdate }) => {
+    const { notify } = useNotifications();
     const [formData, setFormData] = useState({ cargo_funcao: '', quantidade: 1, tipo_vinculo: '' });
     
     const handleAdd = async (e) => {
@@ -125,7 +127,9 @@ const ProfessionalsSection = ({ ubsId, initialData, onUpdate }) => {
             await axios.post(`/api/ubs/${ubsId}/professionals`, formData, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
             setFormData({ cargo_funcao: '', quantidade: 1, tipo_vinculo: '' }); 
             onUpdate(); 
-        } catch(err) { alert("Erro ao adicionar profissional."); }
+        } catch(err) {
+            notify({ type: 'error', message: 'Erro ao adicionar profissional.' });
+        }
     }
 
     return (
@@ -133,7 +137,7 @@ const ProfessionalsSection = ({ ubsId, initialData, onUpdate }) => {
             <form onSubmit={handleAdd} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end p-4 border rounded-md bg-gray-50 mb-6">
                 <InputField label="Cargo/Função" name="cargo_funcao" value={formData.cargo_funcao} onChange={e => setFormData(p => ({...p, cargo_funcao: e.target.value}))} required/>
                 <InputField label="Quantidade" name="quantidade" type="number" value={formData.quantidade} onChange={e => setFormData(p => ({...p, quantidade: e.target.value}))} required/>
-                <InputField label="Vínculo" name="tipo_vinculo" value={formData.tipo_vinculo} onChange={e => setFormData(p => ({...p, tipo_vinculo: e.target.value}))} required placeholder="Ex: Estatutário"/>
+                <InputField label="Vínculo" name="tipo_vinculo" value={formData.tipo_vinculo} onChange={e => setFormData(p => ({...p, tipo_vinculo: e.target.value}))} required placeholder="Ex.: Estatutário"/>
                 <button type="submit" className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-3 rounded-md shadow-sm h-fit mb-4">+ Adicionar</button>
             </form>
             
@@ -163,6 +167,7 @@ const ProfessionalsSection = ({ ubsId, initialData, onUpdate }) => {
 }
 
 const AttachmentsSection = ({ ubsId, initialData, onUpdate }) => {
+    const { notify, confirm } = useNotifications();
     const [file, setFile] = useState(null);
     const [description, setDescription] = useState('');
     const [section, setSection] = useState('GERAL');
@@ -170,7 +175,10 @@ const AttachmentsSection = ({ ubsId, initialData, onUpdate }) => {
 
     const handleUpload = async (e) => {
         e.preventDefault();
-        if (!file) { alert("Selecione um arquivo."); return; }
+        if (!file) {
+            notify({ type: 'warning', message: 'Selecione um arquivo.' });
+            return;
+        }
         
         setIsUploading(true);
         const formData = new FormData();
@@ -184,9 +192,29 @@ const AttachmentsSection = ({ ubsId, initialData, onUpdate }) => {
             });
             setFile(null); setDescription('');
             onUpdate(); 
-        } catch(err) { alert("Erro ao enviar anexo."); }
+        } catch(err) {
+            notify({ type: 'error', message: 'Erro ao enviar anexo.' });
+        }
         finally { setIsUploading(false); }
     }
+
+    const handleDelete = async (attachmentId) => {
+        const confirmed = await confirm({
+            title: 'Remover anexo',
+            message: 'Deseja remover este anexo?',
+            confirmLabel: 'Remover',
+            cancelLabel: 'Cancelar',
+        });
+        if (!confirmed) return;
+        try {
+            await axios.delete(`/api/ubs/attachments/${attachmentId}`, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            onUpdate();
+        } catch (err) {
+            notify({ type: 'error', message: 'Erro ao remover o anexo.' });
+        }
+    };
 
     return (
         <SectionCard title="Anexos">
@@ -195,7 +223,7 @@ const AttachmentsSection = ({ ubsId, initialData, onUpdate }) => {
                     <label className="block text-sm font-medium text-gray-700">Arquivo</label>
                     <input type="file" onChange={e => setFile(e.target.files[0])} className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/>
                 </div>
-                <InputField label="Descrição" value={description} onChange={e => setDescription(e.target.value)} placeholder="Ex: Planta da UBS"/>
+                <InputField label="Descrição" value={description} onChange={e => setDescription(e.target.value)} placeholder="Ex.: Planta da UBS"/>
                 <div className="mb-4">
                     <label className="block text-sm font-medium text-gray-700">Seção do Relatório</label>
                     <select 
@@ -222,14 +250,23 @@ const AttachmentsSection = ({ ubsId, initialData, onUpdate }) => {
                              <span className="font-medium text-gray-900">{att.original_filename}</span>
                              <span className="text-gray-500 ml-2">({att.description || 'Sem descrição'}) - {att.section}</span>
                          </div>
-                         <a 
-                             href={`/api/ubs/attachments/${att.id}/download`} 
-                             target="_blank" 
-                             rel="noopener noreferrer"
-                             className="text-indigo-600 hover:text-indigo-900 text-sm font-medium"
-                         >
-                             Baixar
-                         </a>
+                         <div className="flex items-center gap-3">
+                             <a 
+                                 href={`/api/ubs/attachments/${att.id}/download`} 
+                                 target="_blank" 
+                                 rel="noopener noreferrer"
+                                 className="text-indigo-600 hover:text-indigo-900 text-sm font-medium"
+                             >
+                                 Baixar
+                             </a>
+                             <button
+                                 type="button"
+                                 onClick={() => handleDelete(att.id)}
+                                 className="text-red-600 hover:text-red-800 text-sm font-medium"
+                             >
+                                 Remover
+                             </button>
+                         </div>
                      </li>
                  ))}
                  {(!initialData || initialData.length === 0) && <li className="text-center py-4 text-gray-500">Nenhum anexo.</li>}
@@ -354,13 +391,13 @@ const DiagnosticoUBS = () => {
                     </div>
                 </div>
 
-                <SectionCard title="Identificação do Relatório">
+                <SectionCard title="Identificação do relatório">
                     <InputField label="Nome do relatório" name="nome_relatorio" value={generalData.nome_relatorio} onChange={handleAutoSaveChange} helpText="Um nome curto para fácil identificação." required/>
                 </SectionCard>
                 
-                <SectionCard title="Metadados do Relatório">
+                <SectionCard title="Metadados do relatório">
                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <InputField label="Período de Referência" name="periodo_referencia" value={generalData.periodo_referencia} onChange={handleAutoSaveChange} helpText="Ex: Jan/2023 a Jun/2023" />
+                        <InputField label="Período de referência" name="periodo_referencia" value={generalData.periodo_referencia} onChange={handleAutoSaveChange} helpText="Ex.: jan/2023 a jun/2023" />
                         <InputField label="Responsável (nome)" name="responsavel_nome" value={generalData.responsavel_nome} onChange={handleAutoSaveChange}/>
                         <InputField label="Responsável (cargo)" name="responsavel_cargo" value={generalData.responsavel_cargo} onChange={handleAutoSaveChange}/>
                         <InputField label="Responsável (contato)" name="responsavel_contato" value={generalData.responsavel_contato} onChange={handleAutoSaveChange}/>
@@ -368,11 +405,11 @@ const DiagnosticoUBS = () => {
                      </div>
                 </SectionCard>
 
-                <SectionCard title="Fluxo, Agenda e Acesso">
-                    <TextAreaField label="Fluxo, agenda e acesso" name="fluxo_agenda_acesso" value={generalData.fluxo_agenda_acesso} onChange={handleAutoSaveChange} helpText="Descreva como funciona acolhimento, agendamento, demanda espontânea, etc."/>
+                <SectionCard title="Fluxo, agenda e acesso">
+                    <TextAreaField label="Fluxo, agenda e acesso" name="fluxo_agenda_acesso" value={generalData.fluxo_agenda_acesso} onChange={handleAutoSaveChange} helpText="Descreva como funciona o acolhimento, o agendamento e a demanda espontânea, entre outros."/>
                 </SectionCard>
 
-                <SectionCard title="Informações Gerais da UBS">
+                <SectionCard title="Informações gerais da UBS">
                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <InputField label="Nome da UBS" name="nome_ubs" value={generalData.nome_ubs} onChange={handleAutoSaveChange} required/>
                         <InputField label="CNES" name="cnes" value={generalData.cnes} onChange={handleAutoSaveChange} required/>
@@ -385,12 +422,12 @@ const DiagnosticoUBS = () => {
                         <InputField label="Data da Última Reforma" name="data_ultima_reforma" type="date" value={generalData.data_ultima_reforma} onChange={handleAutoSaveChange}/>
                      </div>
                      <div className="mt-4">
-                        <TextAreaField label="Descritivos gerais" name="descritivos_gerais" value={generalData.descritivos_gerais} onChange={handleAutoSaveChange} helpText="Perfil de referência, localização estratégica, etc."/>
-                        <TextAreaField label="Observações gerais" name="observacoes_gerais" value={generalData.observacoes_gerais} onChange={handleAutoSaveChange} helpText="Histórico, mudanças recentes, projetos em andamento."/>
+                                <TextAreaField label="Descritivos gerais" name="descritivos_gerais" value={generalData.descritivos_gerais} onChange={handleAutoSaveChange} helpText="Perfil de referência, localização estratégica, entre outros."/>
+                                <TextAreaField label="Observações gerais" name="observacoes_gerais" value={generalData.observacoes_gerais} onChange={handleAutoSaveChange} helpText="Histórico, mudanças recentes e projetos em andamento."/>
                      </div>
                 </SectionCard>
                 
-                <SectionCard title="Serviços Oferecidos">
+                <SectionCard title="Serviços oferecidos">
                     <p className="text-sm text-gray-500 mb-4">Marque os serviços (apenas visualização - funcionalidade completa em breve).</p>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 mb-4">
                         {["Programa Saúde da Família", "Atendimento médico", "Atendimento de enfermagem", "Atendimento odontológico", "Vacina", "Pré-natal"].map(s => (
@@ -400,10 +437,10 @@ const DiagnosticoUBS = () => {
                             </label>
                         ))}
                     </div>
-                    <InputField label="Outros serviços (especificar)" name="outros_servicos" value={generalData.outros_servicos} onChange={handleAutoSaveChange} placeholder="Descreva outros serviços ofertados..."/>
+                    <InputField label="Outros serviços (especificar)" name="outros_servicos" value={generalData.outros_servicos} onChange={handleAutoSaveChange} placeholder="Descreva outros serviços ofertados."/>
                 </SectionCard>
 
-                <SectionCard title="Indicadores Epidemiológicos">
+                <SectionCard title="Indicadores epidemiológicos">
                     <div className="bg-yellow-50 p-4 rounded-md mb-4">
                         <p className="text-sm text-yellow-700">Funcionalidade em desenvolvimento. Abaixo, exemplos de indicadores.</p>
                     </div>

@@ -5,8 +5,10 @@ import {
   CheckCircleIcon,
   UserIcon
 } from '@heroicons/react/24/outline';
+import { useNotifications } from '../components/ui/Notifications';
 
 const Notificacoes = () => {
+  const { notify, confirm } = useNotifications();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -33,7 +35,13 @@ const Notificacoes = () => {
   }, []);
 
   const handleMarkAsSent = async (userId) => {
-    if (!window.confirm("Confirmar que o e-mail foi enviado? O usuário sairá desta lista.")) return;
+    const confirmed = await confirm({
+      title: 'Confirmar envio',
+      message: 'Confirmar que o e-mail foi enviado? O usuário sairá desta lista.',
+      confirmLabel: 'Confirmar',
+      cancelLabel: 'Cancelar',
+    });
+    if (!confirmed) return;
     
     try {
       const token = localStorage.getItem('token');
@@ -43,7 +51,7 @@ const Notificacoes = () => {
       // Remove da lista localmente
       setUsers(prev => prev.filter(u => u.id !== userId));
     } catch (err) {
-      alert("Erro ao atualizar status do usuário.");
+      notify({ type: 'error', message: 'Erro ao atualizar o status do usuário.' });
     }
   };
 

@@ -2,13 +2,15 @@ from __future__ import annotations
 
 from datetime import datetime
 from io import BytesIO
+from pathlib import Path
 from typing import Any, Optional
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import cm
-from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+from reportlab.lib.utils import ImageReader
+from reportlab.platypus import Image, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 PRIMARY = colors.HexColor("#0B1F2A")
 ACCENT = colors.HexColor("#2A9D8F")
@@ -114,14 +116,53 @@ def _boxed(text: str, style: ParagraphStyle) -> Table:
     return table
 
 
+def _resolve_attachment_path(storage_path: Optional[str], base_dir: Optional[Path]) -> Optional[Path]:
+    if not storage_path:
+        return None
+    path = Path(storage_path)
+    if not path.is_absolute():
+        if not base_dir:
+            return None
+        path = base_dir / storage_path
+    try:
+        resolved = path.resolve()
+    except Exception:
+        return None
+    if base_dir:
+        base = base_dir.resolve()
+        if resolved != base and base not in resolved.parents:
+            return None
+    if not resolved.exists():
+        return None
+    return resolved
+
+
+def _image_flowable(path: Path, max_width_cm: float = 16.5, max_height_cm: float = 12.0) -> Optional[Image]:
+    try:
+        reader = ImageReader(str(path))
+        width, height = reader.getSize()
+    except Exception:
+        return None
+    if not width or not height:
+        return None
+    max_width = max_width_cm * cm
+    max_height = max_height_cm * cm
+    scale = min(max_width / width, max_height / height, 1.0)
+    image = Image(str(path), width * scale, height * scale)
+    image.hAlign = "CENTER"
+    return image
+
+
 def generate_situational_report_pdf_simple(
     diagnosis,
     municipality: str = "",
     reference_period: str = "",
     attachments: Optional[list[dict]] = None,
+    attachments_base_dir: Optional[str | Path] = None,
 ) -> tuple[bytes, str]:
     ubs = diagnosis.ubs
     services = [s.name for s in (diagnosis.services.services or [])]
+    base_dir = Path(attachments_base_dir) if attachments_base_dir else None
 
     styles = getSampleStyleSheet()
     style_title = ParagraphStyle(
@@ -171,7 +212,7 @@ def generate_situational_report_pdf_simple(
 
     story = []
 
-    header_table = Table([[Paragraph("RELATORIO SITUACIONAL", style_title)]], colWidths=[16.5 * cm])
+    header_table = Table([[Paragraph("RELATÓRIO SITUACIONAL", style_title)]], colWidths=[16.5 * cm])
     header_table.setStyle(
         TableStyle(
             [
@@ -186,7 +227,7 @@ def generate_situational_report_pdf_simple(
     )
     story.append(header_table)
     story.append(Spacer(1, 6))
-    story.append(Paragraph(_escape_xml(municipality or "Municipio"), style_kicker))
+    story.append(Paragraph(_escape_xml(municipality or "Município"), style_kicker))
     if reference_period:
         story.append(Paragraph(_escape_xml(reference_period), style_kicker))
     story.append(Paragraph(f"Gerado em: {datetime.now().strftime('%d/%m/%Y %H:%M')}", style_kicker))
@@ -209,18 +250,18 @@ def generate_situational_report_pdf_simple(
     )
     story.append(summary_table)
 
-    story.append(Paragraph("1. Identificacao e Caracterizacao", style_h2))
+    story.append(Paragraph("1. Identificação e Caracterização", style_h2))
     table_data = [
         ["Campo", "Valor"],
-        ["Nome do relatorio", _escape_xml(ubs.nome_relatorio or "-")],
-        ["Periodo de referencia", _escape_xml(ubs.periodo_referencia or "-")],
+        ["Nome do relatório", _escape_xml(ubs.nome_relatorio or "-")],
+        ["Período de referência", _escape_xml(ubs.periodo_referencia or "-")],
         ["Habitantes ativos", _fmt(ubs.numero_habitantes_ativos)],
         ["Microareas", _fmt(ubs.numero_microareas)],
-        ["Familias cadastradas", _fmt(ubs.numero_familias_cadastradas)],
-        ["Domicilios", _fmt(ubs.numero_domicilios)],
-        ["Domicilios rurais", _fmt(ubs.domicilios_rurais)],
-        ["Data de inauguracao", _fmt(ubs.data_inauguracao)],
-        ["Data da ultima reforma", _fmt(ubs.data_ultima_reforma)],
+        ["Famílias cadastradas", _fmt(ubs.numero_familias_cadastradas)],
+        ["Domicílios", _fmt(ubs.numero_domicilios)],
+        ["Domicílios rurais", _fmt(ubs.domicilios_rurais)],
+        ["Data de inauguração", _fmt(ubs.data_inauguracao)],
+        ["Data da última reforma", _fmt(ubs.data_ultima_reforma)],
     ]
     info_table = Table(table_data, colWidths=[5.4 * cm, 10.6 * cm])
     info_table.setStyle(_zebra_style(len(table_data)))
@@ -230,10 +271,10 @@ def generate_situational_report_pdf_simple(
     story.append(Paragraph("Descritivos gerais", style_h2))
     story.append(_boxed(ubs.descritivos_gerais or "-", style_body))
     story.append(Spacer(1, 6))
-    story.append(Paragraph("Observacoes gerais", style_h2))
+    story.append(Paragraph("Observações gerais", style_h2))
     story.append(_boxed(ubs.observacoes_gerais or "-", style_body))
 
-    story.append(Paragraph("2. Servicos Oferecidos", style_h2))
+    story.append(Paragraph("2. Serviços Oferecidos", style_h2))
     if services:
         rows = _chunk(services, 2)
         services_data = [[_escape_xml(item) for item in row] + [""] * (2 - len(row)) for row in rows]
@@ -252,9 +293,9 @@ def generate_situational_report_pdf_simple(
     else:
         story.append(Paragraph("-", style_body))
     story.append(Spacer(1, 6))
-    story.append(Paragraph(f"Outros servicos: {_escape_xml(ubs.outros_servicos or '-')} ", style_body))
+    story.append(Paragraph(f"Outros serviços: {_escape_xml(ubs.outros_servicos or '-')} ", style_body))
 
-    story.append(Paragraph("3. Indicadores Epidemiologicos", style_h2))
+    story.append(Paragraph("3. Indicadores Epidemiológicos", style_h2))
     indicators = diagnosis.indicators_latest or []
     if indicators:
         ind_data = [[
@@ -262,7 +303,7 @@ def generate_situational_report_pdf_simple(
             Paragraph("Tipo", style_table_header),
             Paragraph("Valor", style_table_header),
             Paragraph("Meta", style_table_header),
-            Paragraph("Periodo", style_table_header),
+            Paragraph("Período", style_table_header),
         ]]
         for i in indicators:
             ind_data.append([
@@ -289,7 +330,7 @@ def generate_situational_report_pdf_simple(
     story.append(Paragraph("4. Recursos Humanos", style_h2))
     groups = diagnosis.professional_groups or []
     if groups:
-        g_data = [["Cargo/Funcao", "Qtd.", "Vinculo"]]
+        g_data = [["Cargo/Função", "Qtd.", "Vínculo"]]
         for g in groups:
             g_data.append([
                 _escape_xml(str(g.cargo_funcao)),
@@ -302,9 +343,9 @@ def generate_situational_report_pdf_simple(
     else:
         story.append(Paragraph("-", style_body))
 
-    story.append(Paragraph("5. Perfil do Territorio", style_h2))
+    story.append(Paragraph("5. Perfil do Território", style_h2))
     territory = diagnosis.territory_profile
-    story.append(Paragraph("Descricao do territorio", style_kicker))
+    story.append(Paragraph("Descrição do território", style_kicker))
     story.append(_boxed(getattr(territory, "descricao_territorio", "-"), style_body))
     story.append(Spacer(1, 6))
     story.append(Paragraph("Potencialidades", style_kicker))
@@ -321,24 +362,53 @@ def generate_situational_report_pdf_simple(
     story.append(Paragraph("Necessidades (equipamentos e insumos)", style_kicker))
     story.append(_boxed(getattr(needs, "necessidades_equipamentos_insumos", "-"), style_body))
     story.append(Spacer(1, 6))
-    story.append(Paragraph("Necessidades especificas dos ACS", style_kicker))
+    story.append(Paragraph("Necessidades específicas dos ACS", style_kicker))
     story.append(_boxed(getattr(needs, "necessidades_especificas_acs", "-"), style_body))
     story.append(Spacer(1, 6))
-    story.append(Paragraph("Infraestrutura e manutencao", style_kicker))
+    story.append(Paragraph("Infraestrutura e manutenção", style_kicker))
     story.append(_boxed(getattr(needs, "necessidades_infraestrutura_manutencao", "-"), style_body))
 
     if attachments:
         story.append(Paragraph("7. Anexos", style_h2))
-        a_data = [["Arquivo", "Secao", "Descricao"]]
+        image_attachments = []
+        other_attachments = []
         for a in attachments:
-            a_data.append([
-                _escape_xml(str(a.get("original_filename") or "-")),
-                _escape_xml(str(a.get("section") or "-")),
-                _escape_xml(str(a.get("description") or "-")),
-            ])
-        a_table = Table(a_data, colWidths=[6.4 * cm, 3.0 * cm, 6.2 * cm])
-        a_table.setStyle(_zebra_style(len(a_data)))
-        story.append(a_table)
+            content_type = str(a.get("content_type") or "").lower()
+            if content_type.startswith("image/"):
+                image_attachments.append(a)
+            else:
+                other_attachments.append(a)
+
+        for a in image_attachments:
+            section = str(a.get("section") or "-")
+            description = str(a.get("description") or "-")
+            storage_path = str(a.get("storage_path") or "")
+            resolved = _resolve_attachment_path(storage_path, base_dir)
+
+            story.append(Paragraph(_escape_xml(f"Seção: {section}"), style_kicker))
+            if description and description != "-":
+                story.append(Paragraph(_escape_xml(f"Descrição: {description}"), style_body))
+
+            if resolved:
+                image = _image_flowable(resolved)
+                if image:
+                    story.append(Spacer(1, 4))
+                    story.append(image)
+                else:
+                    story.append(Paragraph("Imagem inválida para renderização.", style_body))
+            else:
+                story.append(Paragraph("Imagem não encontrada no servidor.", style_body))
+            story.append(Spacer(1, 8))
+
+        if other_attachments:
+            story.append(Paragraph("Outros anexos", style_kicker))
+            for a in other_attachments:
+                section = _escape_xml(str(a.get("section") or "-"))
+                description = _escape_xml(str(a.get("description") or "-"))
+                story.append(Paragraph(f"Seção: {section}", style_body))
+                if description and description != "-":
+                    story.append(Paragraph(f"Descrição: {description}", style_body))
+                story.append(Spacer(1, 4))
 
     buffer = BytesIO()
     doc = SimpleDocTemplate(
@@ -348,7 +418,7 @@ def generate_situational_report_pdf_simple(
         rightMargin=2.0 * cm,
         topMargin=2.0 * cm,
         bottomMargin=2.0 * cm,
-        title="Relatorio Situacional UBS",
+        title="Relatório Situacional UBS",
         author="Plataforma Digital",
     )
     doc.build(story)

@@ -3,8 +3,10 @@ import { agendamentoService } from '../services/agendamentoService';
 import AppointmentList from '../components/agendamento/AppointmentList';
 import BookingForm from '../components/agendamento/BookingForm';
 import CalendarView from '../components/agendamento/CalendarView';
+import { useNotifications } from '../components/ui/Notifications';
 
 const Agendamento = () => {
+  const { notify, confirm } = useNotifications();
   const [activeTab, setActiveTab] = useState('meus'); // meus, novo, agenda_geral
   const [meusAgendamentos, setMeusAgendamentos] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -38,12 +40,18 @@ const Agendamento = () => {
   };
 
   const handleCancel = async (id) => {
-    if (!window.confirm("Tem certeza que deseja cancelar?")) return;
+    const confirmed = await confirm({
+      title: 'Cancelar agendamento',
+      message: 'Tem certeza de que deseja cancelar?',
+      confirmLabel: 'Cancelar',
+      cancelLabel: 'Voltar',
+    });
+    if (!confirmed) return;
     try {
       await agendamentoService.atualizarAgendamento(id, { status: 'CANCELADO' });
       loadMeusAgendamentos();
     } catch (err) {
-      alert("Erro ao cancelar: " + err.message);
+      notify({ type: 'error', message: `Erro ao cancelar: ${err.message}` });
     }
   };
 

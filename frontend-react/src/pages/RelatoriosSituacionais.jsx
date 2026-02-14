@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useDebounce } from '../hooks/useDebounce';
+import { useNotifications } from '../components/ui/Notifications';
 import { 
     PencilSquareIcon, 
     TrashIcon, 
@@ -70,37 +71,38 @@ const TextAreaField = ({ label, name, value, onChange, helpText, placeholder, ..
 // --- SEÇÕES DO FORMULÁRIO ---
 
 const IndicatorsSection = ({ ubsId, initialData, onUpdate }) => {
+    const { notify, confirm } = useNotifications();
     const currentYear = new Date().getFullYear();
     const yearOptions = [currentYear - 1, currentYear, currentYear + 1];
     const indicatorPresetGroups = [
         {
             title: "Bloco 1: eSF e eAP",
             items: [
-                { name: "Mais acesso a APS - Proporcao de atendimentos programados", desc: "Acompanha o acesso oportuno a agenda programada." },
-                { name: "Cuidado da pessoa com diabetes - Cobertura de monitoramento", desc: "Monitora acompanhamento regular de diabetes." },
-                { name: "Cuidado da pessoa com hipertensao - Cobertura de afericoes", desc: "Avalia monitoramento de hipertensos." },
-                { name: "Cuidado da gestante e puerperio - Consultas adequadas", desc: "Verifica pre-natal conforme protocolo." },
-                { name: "Cuidado da mulher - Citopatologico e mamografia", desc: "Avalia cobertura de exames preventivos." },
-                { name: "Cuidado da pessoa idosa - Avaliacoes", desc: "Acompanha avaliacoes periodicas de idosos." },
-                { name: "Cuidado no desenvolvimento infantil - Acompanhamento", desc: "Monitora acompanhamento de criancas." },
+                { name: "Mais acesso a APS - Proporção de atendimentos programados", desc: "Acompanha o acesso oportuno à agenda programada." },
+                { name: "Cuidado da pessoa com diabetes - Cobertura de monitoramento", desc: "Monitora o acompanhamento regular de diabetes." },
+                { name: "Cuidado da pessoa com hipertensão - Cobertura de aferições", desc: "Avalia o monitoramento de pessoas com hipertensão." },
+                { name: "Cuidado da gestante e puerpério - Consultas adequadas", desc: "Verifica o pré-natal conforme o protocolo." },
+                { name: "Cuidado da mulher - Citopatológico e mamografia", desc: "Avalia a cobertura de exames preventivos." },
+                { name: "Cuidado da pessoa idosa - Avaliações", desc: "Acompanha avaliações periódicas de pessoas idosas." },
+                { name: "Cuidado no desenvolvimento infantil - Acompanhamento", desc: "Monitora o acompanhamento de crianças." },
             ],
         },
         {
             title: "Bloco 2: eMulti",
             items: [
-                { name: "Acoes interprofissionais eMulti - Proporcao de acoes coletivas", desc: "Registra atividades interprofissionais." },
-                { name: "Media de atendimentos por pessoa assistida pela eMulti", desc: "Mede consultas por usuario assistido." },
+                { name: "Ações interprofissionais eMulti - Proporção de ações coletivas", desc: "Registra atividades interprofissionais." },
+                { name: "Média de atendimentos por pessoa assistida pela eMulti", desc: "Mede consultas por usuário assistido." },
             ],
         },
         {
             title: "Bloco 3: eSB",
             items: [
-                { name: "Escovacao supervisionada (faixa escolar)", desc: "Cobertura em escolas." },
-                { name: "Primeira consulta odontologica programada", desc: "Proporcao de primeiras consultas." },
-                { name: "Tratamento odontologico concluido", desc: "Relacao entre iniciados e concluidos." },
-                { name: "Tratamento restaurador atraumatico", desc: "Cobertura de procedimentos minimamente invasivos." },
-                { name: "Procedimentos odontologicos preventivos", desc: "Proporcao de acoes preventivas." },
-                { name: "Taxa de exodontias realizadas", desc: "Taxa de extracoes odontologicas." },
+                { name: "Escovação supervisionada (faixa escolar)", desc: "Cobertura em escolas." },
+                { name: "Primeira consulta odontológica programada", desc: "Proporção de primeiras consultas." },
+                { name: "Tratamento odontológico concluído", desc: "Relação entre iniciados e concluídos." },
+                { name: "Tratamento restaurador atraumático", desc: "Cobertura de procedimentos minimamente invasivos." },
+                { name: "Procedimentos odontológicos preventivos", desc: "Proporção de ações preventivas." },
+                { name: "Taxa de exodontias realizadas", desc: "Taxa de extrações odontológicas." },
             ],
         },
     ];
@@ -149,21 +151,31 @@ const IndicatorsSection = ({ ubsId, initialData, onUpdate }) => {
             });
             setFormData({ nome_indicador: '', valor: '', meta: '', tipo_valor: 'PERCENTUAL', periodo_quadrimestre: '', periodo_ano: '', observacoes: '' });
             onUpdate();
-        } catch(err) { alert("Erro ao salvar indicador."); }
+        } catch(err) {
+            notify({ type: 'error', message: 'Erro ao salvar o indicador.' });
+        }
     }
 
     const handleDelete = async (indicatorId) => {
-        if (!window.confirm("Deseja excluir este indicador?")) return;
+        const confirmed = await confirm({
+            title: 'Excluir indicador',
+            message: 'Deseja excluir este indicador?',
+            confirmLabel: 'Excluir',
+            cancelLabel: 'Cancelar',
+        });
+        if (!confirmed) return;
         try {
             await axios.delete(`/api/ubs/indicators/${indicatorId}`, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
             });
             onUpdate();
-        } catch(err) { alert("Erro ao excluir indicador."); }
+        } catch(err) {
+            notify({ type: 'error', message: 'Erro ao excluir o indicador.' });
+        }
     }
 
     return (
-        <SectionCard title="Indicadores epidemiologicos" subtitle="Preencha ou atualize os principais indicadores. Use os atalhos para acelerar." disabled={!ubsId} lockedMessage="Salve o rascunho para habilitar indicadores">
+        <SectionCard title="Indicadores epidemiológicos" subtitle="Preencha ou atualize os principais indicadores. Use os atalhos para acelerar." disabled={!ubsId} lockedMessage="Salve o rascunho para habilitar os indicadores">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
                 {initialData && initialData.map(ind => (
                     <div key={ind.id} className="p-4 border rounded bg-white shadow-sm border-blue-100 relative group">
@@ -176,7 +188,7 @@ const IndicatorsSection = ({ ubsId, initialData, onUpdate }) => {
                         </button>
                         <h4 className="font-bold text-gray-700 text-sm pr-6">{ind.nome_indicador}</h4>
                         <p className="text-xl font-bold text-blue-600 mt-1">{formatIndicatorValue(ind.valor, ind.tipo_valor)}</p>
-                        <p className="text-xs text-gray-500 mt-1">Periodo: {ind.periodo_referencia || "-"}</p>
+                        <p className="text-xs text-gray-500 mt-1">Período: {ind.periodo_referencia || "-"}</p>
                         <p className="text-xs text-gray-500">Meta: {formatIndicatorValue(ind.meta, ind.tipo_valor)}</p>
                         <p className="text-xs text-gray-400">Tipo: {(valueTypeOptions.find(option => option.value === ind.tipo_valor) || valueTypeOptions[0]).label}</p>
                     </div>
@@ -255,7 +267,7 @@ const IndicatorsSection = ({ ubsId, initialData, onUpdate }) => {
                             helpText="Opcional. Use para comparar com a meta da equipe."
                         />
                         <div className="mb-4">
-                            <label className="block text-sm font-medium text-gray-700">Periodo (trimestre) *</label>
+                            <label className="block text-sm font-medium text-gray-700">Período (trimestre) *</label>
                             <select
                                 value={formData.periodo_quadrimestre}
                                 onChange={e => setFormData(p => ({...p, periodo_quadrimestre: e.target.value}))}
@@ -268,7 +280,7 @@ const IndicatorsSection = ({ ubsId, initialData, onUpdate }) => {
                                 <option value="Q3">Q3</option>
                                 <option value="Q4">Q4</option>
                             </select>
-                            <p className="mt-2 text-xs text-gray-500 italic">Use o trimestre do periodo analisado.</p>
+                            <p className="mt-2 text-xs text-gray-500 italic">Use o trimestre do período analisado.</p>
                         </div>
                         <div className="mb-4">
                             <label className="block text-sm font-medium text-gray-700">Ano *</label>
@@ -298,6 +310,7 @@ const IndicatorsSection = ({ ubsId, initialData, onUpdate }) => {
 }
 
 const ProfessionalsSection = ({ ubsId, initialData, onUpdate }) => {
+    const { notify, confirm } = useNotifications();
     const [formData, setFormData] = useState({ cargo_funcao: '', quantidade: '', tipo_vinculo: '', observacoes: '' });
     
     const handleAdd = async (e) => {
@@ -317,18 +330,29 @@ const ProfessionalsSection = ({ ubsId, initialData, onUpdate }) => {
         } catch(err) { 
             console.error(err);
             const msg = err.response?.data?.detail;
-            alert("Erro ao adicionar profissional: " + (Array.isArray(msg) ? "Verifique os dados informados." : msg || "Erro desconhecido")); 
+            notify({
+                type: 'error',
+                message: `Erro ao adicionar profissional: ${Array.isArray(msg) ? 'Verifique os dados informados.' : msg || 'Erro desconhecido.'}`,
+            });
         }
     }
 
     const handleDelete = async (profId) => {
-        if (!window.confirm("Deseja excluir este profissional da equipe?")) return;
+        const confirmed = await confirm({
+            title: 'Excluir profissional',
+            message: 'Deseja excluir este profissional da equipe?',
+            confirmLabel: 'Excluir',
+            cancelLabel: 'Cancelar',
+        });
+        if (!confirmed) return;
         try {
             await axios.delete(`/api/ubs/professionals/${profId}`, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
             });
             onUpdate();
-        } catch(err) { alert("Erro ao excluir profissional."); }
+        } catch(err) {
+            notify({ type: 'error', message: 'Erro ao excluir o profissional.' });
+        }
     }
 
     return (
@@ -383,6 +407,7 @@ const ProfessionalsSection = ({ ubsId, initialData, onUpdate }) => {
 }
 
 const AttachmentsSection = ({ ubsId, initialData, onUpdate }) => {
+    const { notify, confirm } = useNotifications();
     const [file, setFile] = useState(null);
     const [description, setDescription] = useState('');
     const [section, setSection] = useState('PROBLEMAS');
@@ -390,7 +415,10 @@ const AttachmentsSection = ({ ubsId, initialData, onUpdate }) => {
 
     const handleUpload = async (e) => {
         e.preventDefault();
-        if (!file) { alert("Selecione um arquivo."); return; }
+        if (!file) {
+            notify({ type: 'warning', message: 'Selecione um arquivo.' });
+            return;
+        }
         setIsUploading(true);
         const formData = new FormData();
         formData.append('files', file);
@@ -401,12 +429,32 @@ const AttachmentsSection = ({ ubsId, initialData, onUpdate }) => {
                 headers: { 'Content-Type': 'multipart/form-data', Authorization: `Bearer ${localStorage.getItem('token')}` }
             });
             setFile(null); setDescription(''); onUpdate(); 
-        } catch(err) { alert("Erro ao enviar anexo."); }
+        } catch(err) {
+            notify({ type: 'error', message: 'Erro ao enviar anexo.' });
+        }
         finally { setIsUploading(false); }
     }
 
+    const handleDelete = async (attachmentId) => {
+        const confirmed = await confirm({
+            title: 'Remover anexo',
+            message: 'Deseja remover este anexo?',
+            confirmLabel: 'Remover',
+            cancelLabel: 'Cancelar',
+        });
+        if (!confirmed) return;
+        try {
+            await axios.delete(`/api/ubs/attachments/${attachmentId}`, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            onUpdate();
+        } catch (err) {
+            notify({ type: 'error', message: 'Erro ao remover o anexo.' });
+        }
+    };
+
     return (
-        <SectionCard title="Anexos" subtitle="Envie fotos/arquivos relacionados (ex.: registros fotográficos)." disabled={!ubsId} lockedMessage="Salve o rascunho para habilitar anexos.">
+        <SectionCard title="Anexos" subtitle="Envie fotos e arquivos relacionados (ex.: registros fotográficos)." disabled={!ubsId} lockedMessage="Salve o rascunho para habilitar os anexos.">
              <form onSubmit={handleUpload} className="p-4 border rounded-md bg-gray-50 mb-6 space-y-4">
                 <input type="file" onChange={e => setFile(e.target.files[0])} className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-blue-50 file:text-blue-700"/>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -423,7 +471,7 @@ const AttachmentsSection = ({ ubsId, initialData, onUpdate }) => {
                             <option value="GERAL">Identificação</option>
                         </select>
                     </div>
-                    <InputField label="Legenda/descrição (opcional)" value={description} onChange={e => setDescription(e.target.value)} placeholder="Ex: Foto da janela quebrada"/>
+                    <InputField label="Legenda/descrição (opcional)" value={description} onChange={e => setDescription(e.target.value)} placeholder="Ex.: Foto da janela quebrada"/>
                 </div>
                 <button type="submit" disabled={isUploading} className="bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700 disabled:opacity-50 transition-colors">
                     {isUploading ? 'Enviando...' : 'Enviar anexos'}
@@ -434,8 +482,15 @@ const AttachmentsSection = ({ ubsId, initialData, onUpdate }) => {
                  {initialData && initialData.map(att => (
                      <li key={att.id} className="py-3 flex justify-between items-center text-sm">
                          <span>{att.original_filename} <span className="text-gray-500">({att.description || att.section})</span></span>
-                         <div className="flex gap-2">
+                         <div className="flex gap-3">
                             <a href={`/api/ubs/attachments/${att.id}/download`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Baixar</a>
+                            <button
+                                type="button"
+                                onClick={() => handleDelete(att.id)}
+                                className="text-red-600 hover:underline"
+                            >
+                                Remover
+                            </button>
                          </div>
                      </li>
                  ))}
@@ -448,6 +503,7 @@ const AttachmentsSection = ({ ubsId, initialData, onUpdate }) => {
 // --- MODAL DE RELATÓRIO COMPLETO ---
 
 const FullReportModal = ({ isOpen, onClose, reportId, onRefresh }) => {
+    const { notify, confirm } = useNotifications();
     const [id, setId] = useState(reportId);
     const [reportData, setReportData] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -546,7 +602,8 @@ const FullReportModal = ({ isOpen, onClose, reportId, onRefresh }) => {
 
     const handleCreateDraft = async () => {
         if (!generalData.nome_ubs || !generalData.cnes || !generalData.area_atuacao) {
-            alert("Preencha os campos obrigatórios (*) para começar."); return;
+            notify({ type: 'warning', message: 'Preencha os campos obrigatórios (*) para começar.' });
+            return;
         }
         try {
             const payload = preparePayload(generalData);
@@ -554,18 +611,35 @@ const FullReportModal = ({ isOpen, onClose, reportId, onRefresh }) => {
             setId(response.data.id);
             fetchFullData(response.data.id);
             if(onRefresh) onRefresh();
-        } catch (err) { alert("Erro ao criar rascunho."); }
+        } catch (err) {
+            notify({ type: 'error', message: 'Erro ao criar o rascunho.' });
+        }
     };
 
     const handleSubmitFinal = async () => {
-        if (!window.confirm("Deseja concluir a edição?")) return;
+        const confirmed = await confirm({
+            title: 'Concluir edição',
+            message: 'Deseja concluir a edição?',
+            confirmLabel: 'Concluir',
+            cancelLabel: 'Cancelar',
+        });
+        if (!confirmed) return;
         try {
             await axios.post(`/api/ubs/${id}/submit`, { confirm: true }, { headers: { Authorization: `Bearer ${getToken()}` } });
-            alert("Enviado com sucesso!"); if(onRefresh) onRefresh(); onClose();
+            notify({ type: 'success', message: 'Enviado com sucesso.' });
+            if(onRefresh) onRefresh();
+            onClose();
         } catch (err) {
             const errors = err.response?.data?.detail?.errors;
-            if (errors) alert("Faltam itens obrigatórios:\n- " + errors.map(e => e.message).join("\n- "));
-            else alert("Erro ao concluir.");
+            if (errors) {
+                notify({
+                    type: 'warning',
+                    message: `Faltam itens obrigatórios: ${errors.map(e => e.message).join('; ')}`,
+                    duration: 6000,
+                });
+            } else {
+                notify({ type: 'error', message: 'Erro ao concluir.' });
+            }
         }
     };
 
@@ -581,7 +655,7 @@ const FullReportModal = ({ isOpen, onClose, reportId, onRefresh }) => {
         } catch (err) { 
             console.error(err);
             const msg = err.response?.data?.detail?.errors?.[0]?.message || err.response?.data?.detail || "Erro desconhecido";
-            alert("Erro ao salvar seção: " + msg); 
+            notify({ type: 'error', message: `Erro ao salvar seção: ${msg}` });
         }
     }
 
@@ -607,21 +681,21 @@ const FullReportModal = ({ isOpen, onClose, reportId, onRefresh }) => {
                 <div className="p-8 overflow-y-auto custom-scrollbar flex-1">
                     
                     <SectionCard title="Identificação do relatório" subtitle="Defina um nome para este relatório situacional, para facilitar a identificação na lista de rascunhos e relatórios finalizados.">
-                        <InputField label="Nome do relatório" name="nome_relatorio" value={generalData?.nome_relatorio} onChange={handleGeneralChange} required placeholder="Ex: Diagnóstico Situacional UBS Adalto Pereira Saraçayo - 2025" />
+                        <InputField label="Nome do relatório" name="nome_relatorio" value={generalData?.nome_relatorio} onChange={handleGeneralChange} required placeholder="Ex.: Diagnóstico Situacional UBS Adalto Pereira Saraçayo - 2025" />
                     </SectionCard>
 
                     <SectionCard title="Metadados do relatório" subtitle="Campos para refletir o cabeçalho do relatório (período, equipe e responsável).">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <InputField label="Período de referência (mês/ano)" name="periodo_referencia" value={generalData?.periodo_referencia} onChange={handleGeneralChange} placeholder="Ex: Março/2025" />
-                            <InputField label="Identificação da equipe (ESF nº)" name="identificacao_equipe" value={generalData?.identificacao_equipe} onChange={handleGeneralChange} placeholder="Ex: ESF 41" />
-                            <InputField label="Responsável (nome)" name="responsavel_nome" value={generalData?.responsavel_nome} onChange={handleGeneralChange} placeholder="Ex: Maria da Silva" />
-                            <InputField label="Responsável (cargo)" name="responsavel_cargo" value={generalData?.responsavel_cargo} onChange={handleGeneralChange} placeholder="Ex: Enfermeira / Gerente" />
-                            <InputField label="Responsável (contato)" name="responsavel_contato" value={generalData?.responsavel_contato} onChange={handleGeneralChange} placeholder="Ex: telefone/email" />
+                            <InputField label="Período de referência (mês/ano)" name="periodo_referencia" value={generalData?.periodo_referencia} onChange={handleGeneralChange} placeholder="Ex.: Março/2025" />
+                            <InputField label="Identificação da equipe (ESF nº)" name="identificacao_equipe" value={generalData?.identificacao_equipe} onChange={handleGeneralChange} placeholder="Ex.: ESF 41" />
+                            <InputField label="Responsável (nome)" name="responsavel_nome" value={generalData?.responsavel_nome} onChange={handleGeneralChange} placeholder="Ex.: Maria da Silva" />
+                            <InputField label="Responsável (cargo)" name="responsavel_cargo" value={generalData?.responsavel_cargo} onChange={handleGeneralChange} placeholder="Ex.: Enfermeira / Gerente" />
+                            <InputField label="Responsável (contato)" name="responsavel_contato" value={generalData?.responsavel_contato} onChange={handleGeneralChange} placeholder="Ex.: telefone/e-mail" />
                         </div>
                     </SectionCard>
 
                     <SectionCard title="Fluxo, agenda e acesso">
-                        <TextAreaField label="Fluxo/agenda/acesso" name="fluxo_agenda_acesso" value={generalData?.fluxo_agenda_acesso} onChange={handleGeneralChange} placeholder="Descreva como funciona acolhimento, agendamento, demanda espontânea, gargalos, acesso a exames/encaminhamentos, etc." />
+                        <TextAreaField label="Fluxo, agenda e acesso" name="fluxo_agenda_acesso" value={generalData?.fluxo_agenda_acesso} onChange={handleGeneralChange} placeholder="Descreva como funciona o acolhimento, o agendamento, a demanda espontânea, os gargalos e o acesso a exames/encaminhamentos, entre outros." />
                     </SectionCard>
 
                     <AttachmentsSection ubsId={id} initialData={reportData?.attachments} onUpdate={() => fetchFullData(id)} />
@@ -630,19 +704,19 @@ const FullReportModal = ({ isOpen, onClose, reportId, onRefresh }) => {
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             <InputField label="Nome da UBS" name="nome_ubs" value={generalData?.nome_ubs} onChange={handleGeneralChange} required placeholder="ESF 18 – Adalto Pereira Saraçayo" />
                             <InputField label="CNES" name="cnes" value={generalData?.cnes} onChange={handleGeneralChange} required placeholder="0000000" />
-                            <InputField label="Área de atuação (bairros/localidades)" name="area_atuacao" value={generalData?.area_atuacao} onChange={handleGeneralChange} required placeholder="Ex: Alto São Pedro, Nova Alvorada, Centro" />
-                            <InputField label="Número de habitantes ativos" name="numero_habitantes_ativos" type="number" value={generalData?.numero_habitantes_ativos} onChange={handleGeneralChange} required placeholder="Ex: 4.800" />
-                            <InputField label="Número de microáreas" name="numero_microareas" type="number" value={generalData?.numero_microareas} onChange={handleGeneralChange} required placeholder="Ex: 8" />
-                            <InputField label="Número de famílias cadastradas" name="numero_familias_cadastradas" type="number" value={generalData?.numero_familias_cadastradas} onChange={handleGeneralChange} required placeholder="Ex: 1.000" />
-                            <InputField label="Número de domicílios" name="numero_domicilios" type="number" value={generalData?.numero_domicilios} onChange={handleGeneralChange} required placeholder="Ex: 2.000" />
-                            <InputField label="Domicílios rurais" name="domicilios_rurais" type="number" value={generalData?.domicilios_rurais} onChange={handleGeneralChange} placeholder="Ex: 15" />
+                            <InputField label="Área de atuação (bairros/localidades)" name="area_atuacao" value={generalData?.area_atuacao} onChange={handleGeneralChange} required placeholder="Ex.: Alto São Pedro, Nova Alvorada, Centro" />
+                            <InputField label="Número de habitantes ativos" name="numero_habitantes_ativos" type="number" value={generalData?.numero_habitantes_ativos} onChange={handleGeneralChange} required placeholder="Ex.: 4.800" />
+                            <InputField label="Número de microáreas" name="numero_microareas" type="number" value={generalData?.numero_microareas} onChange={handleGeneralChange} required placeholder="Ex.: 8" />
+                            <InputField label="Número de famílias cadastradas" name="numero_familias_cadastradas" type="number" value={generalData?.numero_familias_cadastradas} onChange={handleGeneralChange} required placeholder="Ex.: 1.000" />
+                            <InputField label="Número de domicílios" name="numero_domicilios" type="number" value={generalData?.numero_domicilios} onChange={handleGeneralChange} required placeholder="Ex.: 2.000" />
+                            <InputField label="Domicílios rurais" name="domicilios_rurais" type="number" value={generalData?.domicilios_rurais} onChange={handleGeneralChange} placeholder="Ex.: 15" />
                             <InputField label="Data de inauguração" name="data_inauguracao" type="date" value={generalData?.data_inauguracao} onChange={handleGeneralChange} />
                             <InputField label="Data da última reforma" name="data_ultima_reforma" type="date" value={generalData?.data_ultima_reforma} onChange={handleGeneralChange} />
-                            <InputField label="Gestão / modelo de atenção" name="gestao_modelo_atencao" value={generalData?.gestao_modelo_atencao} onChange={handleGeneralChange} placeholder="Ex: ESF, UBS tradicional, mista" />
+                            <InputField label="Gestão / modelo de atenção" name="gestao_modelo_atencao" value={generalData?.gestao_modelo_atencao} onChange={handleGeneralChange} placeholder="Ex.: ESF, UBS tradicional, mista" />
                         </div>
                         <div className="mt-4">
-                            <TextAreaField label="Descritivos gerais" name="descritivos_gerais" value={generalData?.descritivos_gerais} onChange={handleGeneralChange} placeholder="Perfil de referência – por exemplo, população prioritária, localização estratégica, etc." />
-                            <TextAreaField label="Observações gerais" name="observacoes_gerais" value={generalData?.observacoes_gerais} onChange={handleGeneralChange} placeholder="Informações adicionais sobre a UBS, histórico, mudanças recentes na área de abrangência, projetos em andamento…" />
+                            <TextAreaField label="Descritivos gerais" name="descritivos_gerais" value={generalData?.descritivos_gerais} onChange={handleGeneralChange} placeholder="Perfil de referência – por exemplo, população prioritária, localização estratégica, entre outros." />
+                            <TextAreaField label="Observações gerais" name="observacoes_gerais" value={generalData?.observacoes_gerais} onChange={handleGeneralChange} placeholder="Informações adicionais sobre a UBS, histórico, mudanças recentes na área de abrangência e projetos em andamento." />
                         </div>
                     </SectionCard>
 
@@ -656,7 +730,7 @@ const FullReportModal = ({ isOpen, onClose, reportId, onRefresh }) => {
                             ))}
                         </div>
                         <div className="mt-4">
-                            <InputField label="Outros serviços (especificar)" name="outros_servicos" value={generalData?.outros_servicos} onChange={handleGeneralChange} placeholder="Descreva outros serviços ofertados não listados acima…" />
+                            <InputField label="Outros serviços (especificar)" name="outros_servicos" value={generalData?.outros_servicos} onChange={handleGeneralChange} placeholder="Descreva outros serviços ofertados não listados acima." />
                         </div>
                     </SectionCard>
 
@@ -670,22 +744,22 @@ const FullReportModal = ({ isOpen, onClose, reportId, onRefresh }) => {
                                 label="Descrição do território *" 
                                 value={reportData?.territory?.descricao_territorio} 
                                 onChange={e => setReportData(p => ({...p, territory: {...p.territory, descricao_territorio: e.target.value}}))}
-                                placeholder="Descreva as principais características do território: perfil socioeconômico, infraestrutura urbana, áreas de risco, etc." 
+                                placeholder="Descreva as principais características do território: perfil socioeconômico, infraestrutura urbana, áreas de risco, entre outras." 
                             />
                             <TextAreaField 
                                 label="Potencialidades do território" 
                                 value={reportData?.territory?.potencialidades_territorio} 
                                 onChange={e => setReportData(p => ({...p, territory: {...p.territory, potencialidades_territorio: e.target.value}}))}
-                                placeholder="Registre parcerias existentes, lideranças comunitárias ativas, redes de apoio, etc." 
+                                placeholder="Registre parcerias existentes, lideranças comunitárias ativas e redes de apoio." 
                             />
                             <TextAreaField 
                                 label="Riscos e vulnerabilidades" 
                                 value={reportData?.territory?.riscos_vulnerabilidades} 
                                 onChange={e => setReportData(p => ({...p, territory: {...p.territory, riscos_vulnerabilidades: e.target.value}}))}
-                                placeholder="Informe situações de vulnerabilidade: alagamentos, violência, descarte irregular de lixo, etc." 
+                                placeholder="Informe situações de vulnerabilidade: alagamentos, violência, descarte irregular de lixo, entre outras." 
                             />
                             <div className="flex justify-end">
-                                <button onClick={() => handleSectionPut('territory', reportData?.territory || { descricao_territorio: '', potencialidades_territorio: '', riscos_vulnerabilidades: '' })} className="bg-indigo-600 text-white px-6 py-2 rounded font-bold hover:bg-indigo-700">Salvar Seção</button>
+                                <button onClick={() => handleSectionPut('territory', reportData?.territory || { descricao_territorio: '', potencialidades_territorio: '', riscos_vulnerabilidades: '' })} className="bg-indigo-600 text-white px-6 py-2 rounded font-bold hover:bg-indigo-700">Salvar seção</button>
                             </div>
                         </div>
                     </SectionCard>
@@ -696,28 +770,28 @@ const FullReportModal = ({ isOpen, onClose, reportId, onRefresh }) => {
                                 label="Problemas identificados *" 
                                 value={reportData?.needs?.problemas_identificados} 
                                 onChange={e => setReportData(p => ({...p, needs: {...p.needs, problemas_identificados: e.target.value}}))}
-                                placeholder="Descreva detalhadamente: deficiência de espaço físico, sobrecarga, filas, rotatividade de profissionais, etc." 
+                                placeholder="Descreva detalhadamente: deficiência de espaço físico, sobrecarga, filas, rotatividade de profissionais, entre outros." 
                             />
                             <TextAreaField 
                                 label="Necessidades de equipamentos e insumos" 
                                 value={reportData?.needs?.necessidades_equipamentos_insumos} 
                                 onChange={e => setReportData(p => ({...p, needs: {...p.needs, necessidades_equipamentos_insumos: e.target.value}}))}
-                                placeholder="Liste computadores, mobiliários, balanças, oxímetros, materiais de limpeza, EPIs, etc." 
+                                placeholder="Liste computadores, mobiliários, balanças, oxímetros, materiais de limpeza e EPIs." 
                             />
                             <TextAreaField 
                                 label="Necessidades específicas dos ACS" 
                                 value={reportData?.needs?.necessidades_especificas_acs} 
                                 onChange={e => setReportData(p => ({...p, needs: {...p.needs, necessidades_especificas_acs: e.target.value}}))}
-                                placeholder="EPIs, materiais de campo (pranchetas, tablets), uniforme, crachá, capacitações, etc." 
+                                placeholder="EPIs, materiais de campo (pranchetas, tablets), uniforme, crachá e capacitações." 
                             />
                             <TextAreaField 
                                 label="Necessidades de infraestrutura e manutenção" 
                                 value={reportData?.needs?.necessidades_infraestrutura_manutencao} 
                                 onChange={e => setReportData(p => ({...p, needs: {...p.needs, necessidades_infraestrutura_manutencao: e.target.value}}))}
-                                placeholder="Reforma de telhado, substituição de portas, acessibilidade, adequação elétrica, pintura, etc." 
+                                placeholder="Reforma de telhado, substituição de portas, acessibilidade, adequação elétrica e pintura." 
                             />
                             <div className="flex justify-end">
-                                <button onClick={() => handleSectionPut('needs', reportData?.needs || { problemas_identificados: '', necessidades_equipamentos_insumos: '', necessidades_especificas_acs: '', necessidades_infraestrutura_manutencao: '' })} className="bg-indigo-600 text-white px-6 py-2 rounded font-bold hover:bg-indigo-700">Salvar Seção</button>
+                                <button onClick={() => handleSectionPut('needs', reportData?.needs || { problemas_identificados: '', necessidades_equipamentos_insumos: '', necessidades_especificas_acs: '', necessidades_infraestrutura_manutencao: '' })} className="bg-indigo-600 text-white px-6 py-2 rounded font-bold hover:bg-indigo-700">Salvar seção</button>
                             </div>
                         </div>
                     </SectionCard>
@@ -737,7 +811,12 @@ const FullReportModal = ({ isOpen, onClose, reportId, onRefresh }) => {
                     <button onClick={onClose} className="px-6 py-2 bg-gray-500 text-white rounded font-bold hover:bg-gray-600 transition-colors">Fechar</button>
                     {id && (
                         <>
-                            <button onClick={() => alert("Rascunho salvo automaticamente.")} className="px-6 py-2 bg-indigo-50 text-indigo-700 rounded font-bold border border-indigo-200">Salvar rascunho</button>
+                            <button
+                                onClick={() => notify({ type: 'info', message: 'Rascunho salvo automaticamente.' })}
+                                className="px-6 py-2 bg-indigo-50 text-indigo-700 rounded font-bold border border-indigo-200"
+                            >
+                                Salvar rascunho
+                            </button>
                             <button onClick={handleSubmitFinal} className="px-6 py-2 bg-green-600 text-white rounded font-bold shadow hover:bg-green-700 transition-colors">Enviar diagnóstico</button>
                         </>
                     )}
@@ -750,6 +829,7 @@ const FullReportModal = ({ isOpen, onClose, reportId, onRefresh }) => {
 // --- PÁGINA DE LISTAGEM ---
 
 const RelatoriosSituacionais = () => {
+    const { notify, confirm } = useNotifications();
   const [relatorios, setRelatorios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -773,7 +853,7 @@ const RelatoriosSituacionais = () => {
       setError('');
     } catch (err) { 
         if(err.response?.status === 401) setError('Não autorizado. Faça login novamente.');
-        else setError('Erro ao carregar relatórios.'); 
+        else setError('Erro ao carregar os relatórios.'); 
     } 
     finally { setLoading(false); }
   };
@@ -781,12 +861,20 @@ const RelatoriosSituacionais = () => {
   useEffect(() => { fetchRelatorios(); }, []);
   
   const handleDelete = async (id) => {
-    if (!window.confirm('Deletar relatório?')) return;
+        const confirmed = await confirm({
+            title: 'Excluir relatório',
+            message: 'Deseja excluir este relatório?',
+            confirmLabel: 'Excluir',
+            cancelLabel: 'Cancelar',
+        });
+        if (!confirmed) return;
     try {
       const token = localStorage.getItem('token');
       await axios.delete(`/api/ubs/${id}`, { headers: { Authorization: `Bearer ${token}` } });
       setRelatorios(prev => prev.filter(r => r.id !== id));
-    } catch (err) { alert('Erro ao deletar.'); }
+        } catch (err) {
+            notify({ type: 'error', message: 'Erro ao excluir o relatório.' });
+        }
   };
 
   const handleExport = (id) => {
@@ -797,7 +885,7 @@ const RelatoriosSituacionais = () => {
         const link = document.createElement('a'); link.href = url;
         link.setAttribute('download', `relatorio_${id}.pdf`);
         document.body.appendChild(link); link.click();
-    }).catch(() => alert('Erro ao exportar.'));
+        }).catch(() => notify({ type: 'error', message: 'Erro ao exportar o relatório.' }));
   };
 
   return (
