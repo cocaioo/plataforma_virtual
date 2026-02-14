@@ -44,7 +44,7 @@ const CardGrid = () => {
       allowed: ['USER', 'PROFISSIONAL', 'GESTOR', 'RECEPCAO']
     },
     {
-      title: 'Mapa de problemas e Intervencoes',
+      title: 'Mapa de problemas e Intervenções',
       to: '/mapa-problemas-intervencoes',
       icon: ChartBarIcon,
       inDevelopment: false,

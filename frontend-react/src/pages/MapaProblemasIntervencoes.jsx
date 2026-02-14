@@ -13,7 +13,7 @@ const GUT_OPTIONS = [1, 2, 3, 4, 5];
 const STATUS_OPTIONS = [
   { value: 'PLANEJADO', label: 'Planejado', tone: 'bg-slate-100 text-slate-700' },
   { value: 'EM_ANDAMENTO', label: 'Em andamento', tone: 'bg-amber-100 text-amber-800' },
-  { value: 'CONCLUIDO', label: 'Concluido', tone: 'bg-emerald-100 text-emerald-700' },
+  { value: 'CONCLUIDO', label: 'Concluído', tone: 'bg-emerald-100 text-emerald-700' },
 ];
 
 const gutScore = (g, u, t) => Number(g || 0) * Number(u || 0) * Number(t || 0);
@@ -120,7 +120,7 @@ const MapaProblemasIntervencoes = () => {
       }
       setInterventionEditForm(null);
     } catch (error) {
-      notify({ type: 'error', message: 'Erro ao carregar intervencoes.' });
+      notify({ type: 'error', message: 'Erro ao carregar intervenções.' });
     }
   };
 
@@ -135,7 +135,7 @@ const MapaProblemasIntervencoes = () => {
       });
       setActions(data || []);
     } catch (error) {
-      notify({ type: 'error', message: 'Erro ao carregar acoes.' });
+      notify({ type: 'error', message: 'Erro ao carregar ações.' });
     }
   };
 
@@ -262,11 +262,11 @@ const MapaProblemasIntervencoes = () => {
         requiresAuth: true,
         body: interventionForm,
       });
-      notify({ type: 'success', message: 'Intervencao criada.' });
+      notify({ type: 'success', message: 'Intervenção criada.' });
       setInterventionForm(emptyInterventionForm);
       await loadInterventions(selectedProblem.id);
     } catch (error) {
-      notify({ type: 'error', message: 'Erro ao criar intervencao.' });
+      notify({ type: 'error', message: 'Erro ao criar intervenção.' });
     }
   };
 
@@ -278,10 +278,10 @@ const MapaProblemasIntervencoes = () => {
         requiresAuth: true,
         body: interventionEditForm,
       });
-      notify({ type: 'success', message: 'Intervencao atualizada.' });
+      notify({ type: 'success', message: 'Intervenção atualizada.' });
       await loadInterventions(selectedProblem.id);
     } catch (error) {
-      notify({ type: 'error', message: 'Erro ao atualizar intervencao.' });
+      notify({ type: 'error', message: 'Erro ao atualizar intervenção.' });
     }
   };
 
@@ -298,10 +298,10 @@ const MapaProblemasIntervencoes = () => {
         method: 'DELETE',
         requiresAuth: true,
       });
-      notify({ type: 'success', message: 'Intervencao removida.' });
+      notify({ type: 'success', message: 'Intervenção removida.' });
       await loadInterventions(selectedProblem.id);
     } catch (error) {
-      notify({ type: 'error', message: 'Erro ao remover intervencao.' });
+      notify({ type: 'error', message: 'Erro ao remover intervenção.' });
     }
   };
 
@@ -314,11 +314,11 @@ const MapaProblemasIntervencoes = () => {
         requiresAuth: true,
         body: actionForm,
       });
-      notify({ type: 'success', message: 'Acao registrada.' });
+      notify({ type: 'success', message: 'Ação registrada.' });
       setActionForm(emptyActionForm);
       await loadActions(selectedIntervention.id);
     } catch (error) {
-      notify({ type: 'error', message: 'Erro ao registrar acao.' });
+      notify({ type: 'error', message: 'Erro ao registrar ação.' });
     }
   };
 
@@ -335,11 +335,11 @@ const MapaProblemasIntervencoes = () => {
           observacoes: actionEditForm.observacoes,
         },
       });
-      notify({ type: 'success', message: 'Acao atualizada.' });
+      notify({ type: 'success', message: 'Ação atualizada.' });
       setActionEditForm(null);
       await loadActions(selectedIntervention.id);
     } catch (error) {
-      notify({ type: 'error', message: 'Erro ao atualizar acao.' });
+      notify({ type: 'error', message: 'Erro ao atualizar ação.' });
     }
   };
 
@@ -356,10 +356,10 @@ const MapaProblemasIntervencoes = () => {
         method: 'DELETE',
         requiresAuth: true,
       });
-      notify({ type: 'success', message: 'Acao removida.' });
+      notify({ type: 'success', message: 'Ação removida.' });
       await loadActions(selectedIntervention.id);
     } catch (error) {
-      notify({ type: 'error', message: 'Erro ao remover acao.' });
+      notify({ type: 'error', message: 'Erro ao remover ação.' });
     }
   };
 
@@ -409,17 +409,17 @@ const MapaProblemasIntervencoes = () => {
           <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
-                mapa estrategico
+                mapa estratégico
               </p>
               <h1
                 className="mt-2 text-3xl font-semibold text-slate-900"
                 style={{ fontFamily: '"Fraunces", serif' }}
               >
-                Mapa de problemas e intervencoes
+                Mapa de problemas e intervenções
               </h1>
               <p className="mt-3 max-w-2xl text-sm text-slate-600">
-                Priorize desafios com a matriz GUT e organize intervencoes com acoes,
-                responsaveis e prazos. Use o fluxo abaixo para manter tudo visivel em um so lugar.
+                Priorize desafios com a matriz GUT e organize intervenções com ações,
+                responsáveis e prazos. Use o fluxo abaixo para manter tudo visível em um só lugar.
               </p>
             </div>
             <div className="flex flex-col gap-3 rounded-2xl bg-slate-900 px-6 py-5 text-white shadow-lg">
@@ -433,7 +433,7 @@ const MapaProblemasIntervencoes = () => {
               <div className="flex items-center gap-3">
                 <ClipboardDocumentCheckIcon className="h-6 w-6 text-emerald-300" />
                 <div>
-                  <p className="text-xs uppercase text-slate-300">Prioritarios</p>
+                  <p className="text-xs uppercase text-slate-300">Prioritários</p>
                   <p className="text-2xl font-semibold">{problemStats.prioridade}</p>
                 </div>
               </div>
@@ -462,7 +462,7 @@ const MapaProblemasIntervencoes = () => {
               </select>
 
               <div className="mt-6 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-xs text-slate-500">
-                Crie ao menos um problema para liberar o plano de intervencao.
+                Crie ao menos um problema para liberar o plano de intervenção.
               </div>
             </div>
 
@@ -471,7 +471,7 @@ const MapaProblemasIntervencoes = () => {
               <form className="mt-4 space-y-4" onSubmit={handleCreateProblem}>
                 <input
                   className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-slate-400 focus:outline-none"
-                  placeholder="Titulo do problema"
+                  placeholder="Título do problema"
                   value={problemForm.titulo}
                   onChange={(event) =>
                     setProblemForm((prev) => ({ ...prev, titulo: event.target.value }))
@@ -481,7 +481,7 @@ const MapaProblemasIntervencoes = () => {
                 <textarea
                   className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-slate-400 focus:outline-none"
                   rows={3}
-                  placeholder="Descricao resumida"
+                  placeholder="Descrição resumida"
                   value={problemForm.descricao}
                   onChange={(event) =>
                     setProblemForm((prev) => ({ ...prev, descricao: event.target.value }))
@@ -508,7 +508,7 @@ const MapaProblemasIntervencoes = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="text-slate-500">Urgencia</label>
+                    <label className="text-slate-500">Urgência</label>
                     <select
                       className="mt-1 w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
                       value={problemForm.gut_urgencia}
@@ -527,7 +527,7 @@ const MapaProblemasIntervencoes = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="text-slate-500">Tendencia</label>
+                    <label className="text-slate-500">Tendência</label>
                     <select
                       className="mt-1 w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
                       value={problemForm.gut_tendencia}
@@ -608,7 +608,7 @@ const MapaProblemasIntervencoes = () => {
                             problem.id === selectedProblemId ? 'text-slate-200' : 'text-slate-500'
                           }`}
                         >
-                          {problem.descricao || 'Sem descricao'}
+                          {problem.descricao || 'Sem descrição'}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
@@ -620,7 +620,7 @@ const MapaProblemasIntervencoes = () => {
                                 : 'bg-amber-100 text-amber-800'
                             }`}
                           >
-                            Prioritario
+                            Prioritário
                           </span>
                         )}
                         <span
@@ -665,7 +665,7 @@ const MapaProblemasIntervencoes = () => {
                     onChange={(event) =>
                       setProblemEditForm((prev) => ({ ...prev, descricao: event.target.value }))
                     }
-                    placeholder="Descricao"
+                    placeholder="Descrição"
                   />
                   <div className="grid grid-cols-3 gap-3 lg:col-span-2">
                     {['gut_gravidade', 'gut_urgencia', 'gut_tendencia'].map((field) => (
@@ -699,7 +699,7 @@ const MapaProblemasIntervencoes = () => {
                         }))
                       }
                     />
-                    Prioritario
+                    Prioritário
                   </label>
                   <div className="flex items-center justify-end lg:col-span-2">
                     <span className={`rounded-full px-3 py-1 text-xs font-semibold ${scoreTone(problemEditScore)}`}>
@@ -712,14 +712,14 @@ const MapaProblemasIntervencoes = () => {
                   className="mt-4 inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
                 >
                   <PencilSquareIcon className="h-4 w-4" />
-                  Salvar alteracoes
+                  Salvar alterações
                 </button>
               </div>
             )}
 
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                <h3 className="text-base font-semibold text-slate-900">Intervencoes</h3>
+                <h3 className="text-base font-semibold text-slate-900">Intervenções</h3>
                 <p className="text-sm text-slate-500">
                   {selectedProblem
                     ? 'Defina objetivos e metas para o problema selecionado.'
@@ -728,7 +728,7 @@ const MapaProblemasIntervencoes = () => {
 
                 {interventions.length === 0 && (
                   <div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-xs text-slate-500">
-                    Nenhuma intervencao registrada.
+                    Nenhuma intervenção registrada.
                   </div>
                 )}
 
@@ -763,7 +763,7 @@ const MapaProblemasIntervencoes = () => {
                 >
                   <input
                     className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-                    placeholder="Objetivo da intervencao"
+                    placeholder="Objetivo da intervenção"
                     value={interventionForm.objetivo}
                     onChange={(event) =>
                       setInterventionForm((prev) => ({ ...prev, objetivo: event.target.value }))
@@ -782,7 +782,7 @@ const MapaProblemasIntervencoes = () => {
                   />
                   <input
                     className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-                    placeholder="Responsavel"
+                    placeholder="Responsável"
                     value={interventionForm.responsavel}
                     onChange={(event) =>
                       setInterventionForm((prev) => ({ ...prev, responsavel: event.target.value }))
@@ -809,17 +809,17 @@ const MapaProblemasIntervencoes = () => {
                     disabled={!selectedProblem}
                   >
                     <PlusIcon className="h-4 w-4" />
-                    Adicionar intervencao
+                    Adicionar intervenção
                   </button>
                 </form>
               </div>
 
               <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                <h3 className="text-base font-semibold text-slate-900">Detalhes e acoes</h3>
+                <h3 className="text-base font-semibold text-slate-900">Detalhes e ações</h3>
                 <p className="text-sm text-slate-500">
                   {selectedIntervention
-                    ? 'Atualize status e acompanhe as acoes planejadas.'
-                    : 'Selecione uma intervencao para editar.'}
+                    ? 'Atualize status e acompanhe as ações planejadas.'
+                    : 'Selecione uma intervenção para editar.'}
                 </p>
 
                 {selectedIntervention && interventionEditForm ? (
@@ -873,7 +873,7 @@ const MapaProblemasIntervencoes = () => {
                         className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
                       >
                         <PencilSquareIcon className="h-4 w-4" />
-                        Salvar intervencao
+                        Salvar intervenção
                       </button>
                       <button
                         onClick={() => handleDeleteIntervention(selectedIntervention.id)}
@@ -885,14 +885,14 @@ const MapaProblemasIntervencoes = () => {
                   </div>
                 ) : (
                   <div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-xs text-slate-500">
-                    Selecione uma intervencao para editar.
+                    Selecione uma intervenção para editar.
                   </div>
                 )}
 
                 <div className="mt-6 border-t border-slate-100 pt-5">
-                  <h4 className="text-sm font-semibold text-slate-900">Acoes</h4>
+                  <h4 className="text-sm font-semibold text-slate-900">Ações</h4>
                   {actions.length === 0 && (
-                    <p className="mt-2 text-xs text-slate-500">Nenhuma acao registrada.</p>
+                    <p className="mt-2 text-xs text-slate-500">Nenhuma ação registrada.</p>
                   )}
                   <div className="mt-3 space-y-2">
                     {actions.map((action) => (
@@ -911,7 +911,7 @@ const MapaProblemasIntervencoes = () => {
                           </span>
                         </div>
                         <p className="mt-1 text-xs text-slate-500">
-                          Prazo: {action.prazo || 'Nao informado'}
+                          Prazo: {action.prazo || 'Não informado'}
                         </p>
                         {action.observacoes && (
                           <p className="mt-1 text-xs text-slate-400">{action.observacoes}</p>
@@ -944,7 +944,7 @@ const MapaProblemasIntervencoes = () => {
 
                   {actionEditForm && (
                     <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
-                      <h5 className="text-xs font-semibold text-slate-700">Editar acao</h5>
+                      <h5 className="text-xs font-semibold text-slate-700">Editar ação</h5>
                       <div className="mt-3 space-y-2">
                         <input
                           className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
@@ -984,7 +984,7 @@ const MapaProblemasIntervencoes = () => {
                               observacoes: event.target.value,
                             }))
                           }
-                          placeholder="Observacoes"
+                          placeholder="Observações"
                         />
                       </div>
                       <div className="mt-3 flex items-center justify-between">
@@ -992,7 +992,7 @@ const MapaProblemasIntervencoes = () => {
                           onClick={handleUpdateAction}
                           className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white"
                         >
-                          Salvar acao
+                          Salvar ação
                         </button>
                         <button
                           onClick={() => setActionEditForm(null)}
@@ -1007,7 +1007,7 @@ const MapaProblemasIntervencoes = () => {
                   <form className="mt-4 space-y-2" onSubmit={handleCreateAction}>
                     <input
                       className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                      placeholder="Nova acao"
+                      placeholder="Nova ação"
                       value={actionForm.acao}
                       onChange={(event) =>
                         setActionForm((prev) => ({ ...prev, acao: event.target.value }))
@@ -1041,7 +1041,7 @@ const MapaProblemasIntervencoes = () => {
                     <textarea
                       className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
                       rows={2}
-                      placeholder="Observacoes"
+                      placeholder="Observações"
                       value={actionForm.observacoes}
                       onChange={(event) =>
                         setActionForm((prev) => ({ ...prev, observacoes: event.target.value }))
@@ -1054,7 +1054,7 @@ const MapaProblemasIntervencoes = () => {
                       disabled={!selectedIntervention}
                     >
                       <PlusIcon className="h-4 w-4" />
-                      Adicionar acao
+                      Adicionar ação
                     </button>
                   </form>
                 </div>
