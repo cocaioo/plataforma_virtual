@@ -9,7 +9,6 @@ class Usuario(Base):
     email = Column(String(200), nullable=False, unique=True)
     senha = Column(String(255), nullable=False)
     cpf = Column(String(14), nullable=False, unique=True)
-    telefone = Column(String(20), nullable=True)
     # USER | PROFISSIONAL | GESTOR | RECEPCAO | ACS
     role = Column(String(20), nullable=False, default="USER")
     welcome_email_sent = Column(Boolean, default=False, nullable=True)

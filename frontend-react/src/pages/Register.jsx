@@ -8,7 +8,6 @@ const Register = () => {
     nome: '',
     email: '',
     cpf: '',
-    telefone: '',
     password: '',
     confirmPassword: '',
     role: 'USER'
@@ -55,7 +54,6 @@ const Register = () => {
         email: formData.email,
         senha: formData.password,
         cpf: formData.cpf,
-        telefone: formData.telefone || null,
         role: formData.role
       });
       // Redirect to login with success message implies we might want to show a toast or pass state
@@ -163,25 +161,6 @@ const Register = () => {
               </div>
             </div>
 
-            <div>
-              <label htmlFor="telefone" className="block text-sm font-medium text-gray-700">
-                Celular (para confirmação)
-              </label>
-              <div className="mt-1">
-                <input
-                  id="telefone"
-                  name="telefone"
-                  type="text"
-                  placeholder="(00) 00000-0000"
-                  value={formData.telefone}
-                  onChange={handleChange}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                />
-              </div>
-              <p className="mt-1 text-xs text-gray-500">
-                Opcional, mas necessario para receber confirmacoes por mensagem.
-              </p>
-            </div>
 
             <div>
               <label htmlFor="role" className="block text-sm font-medium text-gray-700">

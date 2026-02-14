@@ -30,7 +30,6 @@ class UsuarioCreate(BaseModel):
     email: EmailStr
     senha: str = Field(..., min_length=8, max_length=100)
     cpf: str = Field(..., min_length=11, max_length=14)
-    telefone: str | None = Field(None, max_length=20)
     role: Literal["USER", "GESTOR", "RECEPCAO", "ACS"] = "USER"
     
     @field_validator('nome')
@@ -62,15 +61,6 @@ class UsuarioCreate(BaseModel):
             raise ValueError('Senha deve conter pelo menos um número')
         return v
 
-    @field_validator('telefone')
-    @classmethod
-    def validate_telefone(cls, v: str | None):
-        if v is None:
-            return v
-        digits = ''.join(ch for ch in v if ch.isdigit())
-        if len(digits) < 8:
-            raise ValueError('Telefone deve ter ao menos 8 digitos')
-        return v
 
 
 class UsuarioLogin(BaseModel):
@@ -83,26 +73,11 @@ class UsuarioOut(BaseModel):
     nome: str
     email: EmailStr
     cpf: str
-    telefone: str | None = None
     is_profissional: bool
     role: str
 
     class Config:
         from_attributes = True
-
-
-class UsuarioTelefoneUpdate(BaseModel):
-    telefone: str | None = Field(None, max_length=20)
-
-    @field_validator("telefone")
-    @classmethod
-    def validate_telefone(cls, v: str | None):
-        if v is None:
-            return v
-        digits = ''.join(ch for ch in v if ch.isdigit())
-        if len(digits) < 8:
-            raise ValueError('Telefone deve ter ao menos 8 digitos')
-        return v
 
 
 @auth_router.get("/me", response_model=UsuarioOut)
@@ -123,7 +98,6 @@ async def get_me(
         "nome": current_user.nome,
         "email": current_user.email,
         "cpf": current_user.cpf,
-        "telefone": current_user.telefone,
         "is_profissional": is_prof,
         "role": role,
     }
@@ -248,7 +222,6 @@ async def register_user(
         email=payload.email,
         senha=hash_password(payload.senha),
         cpf=payload.cpf,
-        telefone=payload.telefone,
         role=payload.role,
         welcome_email_sent=False # Default explicit
     )
@@ -261,7 +234,6 @@ async def register_user(
         nome=usuario.nome,
         email=usuario.email,
         cpf=usuario.cpf,
-        telefone=usuario.telefone,
         is_profissional=False,
         role=usuario.role or "USER",
     )
@@ -329,23 +301,10 @@ async def login_user(request: Request, payload: UsuarioLogin, db: AsyncSession =
             "nome": usuario.nome,
             "email": usuario.email,
             "cpf": usuario.cpf,
-            "telefone": usuario.telefone,
             "is_profissional": is_profissional,
             "role": role,
         }
     }
-
-
-@auth_router.patch("/me/telefone", response_model=UsuarioOut)
-async def update_my_phone(
-    payload: UsuarioTelefoneUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: Usuario = Depends(get_current_active_user),
-):
-    current_user.telefone = payload.telefone
-    await db.commit()
-    await db.refresh(current_user)
-    return UsuarioOut.from_orm(current_user)
 
 
 @auth_router.post("/professional-requests", response_model=ProfessionalRequestOut, status_code=status.HTTP_201_CREATED)

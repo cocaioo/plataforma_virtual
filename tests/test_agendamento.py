@@ -12,14 +12,13 @@ from models.agendamento_models import Agendamento, BloqueioAgenda, StatusAgendam
 from utils.jwt_handler import create_access_token
 
 
-async def _create_user(session: AsyncSession, email: str, role: str = "USER", telefone: str | None = None) -> Usuario:
+async def _create_user(session: AsyncSession, email: str, role: str = "USER") -> Usuario:
     user = Usuario(
         nome="Usuario Teste",
         email=email,
         senha="hashed",
         cpf=str(abs(hash(email)) % 10**11).zfill(11),
         role=role,
-        telefone=telefone,
         ativo=True,
     )
     session.add(user)
