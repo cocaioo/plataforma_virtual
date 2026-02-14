@@ -17,7 +17,7 @@ const Agendamento = () => {
   const userJson = localStorage.getItem('user');
   const user = userJson ? JSON.parse(userJson) : null;
   
-  const isStaff = user?.role === 'PROFISSIONAL' || user?.role === 'GESTOR';
+  const isStaff = ['PROFISSIONAL', 'GESTOR', 'RECEPCAO', 'ACS'].includes(user?.role);
 
   useEffect(() => {
     if (activeTab === 'meus') {

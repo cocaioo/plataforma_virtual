@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { agendamentoService } from '../../services/agendamentoService';
-import AppointmentList from './AppointmentList';
 import BlockScheduleModal from './BlockScheduleModal';
+import BookingForm from './BookingForm';
 
 const CalendarView = ({ user }) => {
   const [profissionais, setProfissionais] = useState([]);
@@ -9,6 +9,11 @@ const CalendarView = ({ user }) => {
   const [agendamentos, setAgendamentos] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isBlockModalOpen, setIsBlockModalOpen] = useState(false);
+  const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
+  const [selectedApt, setSelectedApt] = useState(null);
+
+  const canManage = ['PROFISSIONAL', 'GESTOR', 'RECEPCAO'].includes(user?.role);
+  const canConfirm = ['GESTOR', 'RECEPCAO'].includes(user?.role);
   
   // Helper to get start of week (Sunday)
   const getStartOfWeek = (date) => {
@@ -102,11 +107,26 @@ const CalendarView = ({ user }) => {
   const handleSendConfirmation = async (id) => {
       try {
           await agendamentoService.confirmarAgendamento(id);
-          alert("Confirmação enviada (simulação).");
+          alert("Confirmacao enviada.");
           loadAgenda();
       } catch(err) {
           alert("Erro: " + err.message);
       }
+  };
+
+  const handleCancel = async (id) => {
+    if (!window.confirm("Deseja realmente cancelar este agendamento?")) return;
+    try {
+      await agendamentoService.atualizarAgendamento(id, { status: 'CANCELADO' });
+      loadAgenda();
+    } catch (err) {
+      alert("Erro ao cancelar: " + err.message);
+    }
+  };
+
+  const handleRescheduleClick = (apt) => {
+    setSelectedApt(apt);
+    setIsRescheduleModalOpen(true);
   };
 
   return (
@@ -122,6 +142,27 @@ const CalendarView = ({ user }) => {
                 loadAgenda();
             }}
           />
+        </div>
+      )}
+
+      {isRescheduleModalOpen && selectedApt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 overflow-y-auto">
+          <div className="relative w-full max-w-lg">
+            <BookingForm
+              initialData={selectedApt}
+              title="Reagendar Consulta"
+              submitLabel="Confirmar Reagendamento"
+              onSuccess={() => {
+                setIsRescheduleModalOpen(false);
+                setSelectedApt(null);
+                loadAgenda();
+              }}
+              onCancel={() => {
+                setIsRescheduleModalOpen(false);
+                setSelectedApt(null);
+              }}
+            />
+          </div>
         </div>
       )}
 
@@ -168,13 +209,15 @@ const CalendarView = ({ user }) => {
           </div>
         </div>
         
-        <button 
+        {canManage && (
+          <button 
             onClick={() => setIsBlockModalOpen(true)}
             className="w-full xl:w-auto bg-red-100 text-red-700 px-4 py-2 rounded hover:bg-red-200 text-sm font-medium flex items-center justify-center"
-        >
+          >
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
             Gerenciar Bloqueios
-        </button>
+          </button>
+        )}
       </div>
 
       {loading ? (
@@ -192,6 +235,9 @@ const CalendarView = ({ user }) => {
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Paciente</th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Confirmação</th>
+                         {canManage && (
+                           <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Ações</th>
+                         )}
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
@@ -205,7 +251,11 @@ const CalendarView = ({ user }) => {
                           </td>
                            <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                apt.status === 'AGENDADO' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                                apt.status === 'AGENDADO' ? 'bg-green-100 text-green-800' :
+                                apt.status === 'REAGENDADO' ? 'bg-yellow-100 text-yellow-800' :
+                                apt.status === 'CANCELADO' ? 'bg-red-100 text-red-800' :
+                                apt.status === 'REALIZADO' ? 'bg-blue-100 text-blue-800' :
+                                'bg-gray-100 text-gray-800'
                             }`}>
                               {apt.status}
                             </span>
@@ -213,15 +263,37 @@ const CalendarView = ({ user }) => {
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                               {apt.confirmacao_enviada ? (
                                   <span className="text-green-600">Enviada em {new Date(apt.confirmacao_enviada).toLocaleDateString()}</span>
-                              ) : (
+                              ) : canConfirm ? (
                                   <button 
                                     onClick={() => handleSendConfirmation(apt.id)}
                                     className="text-blue-600 hover:underline"
                                   >
                                       Enviar msg
                                   </button>
+                              ) : (
+                                  <span className="text-gray-400">Nao enviada</span>
                               )}
                           </td>
+                          {canManage && (
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                              {['AGENDADO', 'REAGENDADO'].includes(apt.status) && (
+                                <>
+                                  <button
+                                    onClick={() => handleRescheduleClick(apt)}
+                                    className="text-indigo-600 hover:text-indigo-900 mr-4"
+                                  >
+                                    Reagendar
+                                  </button>
+                                  <button
+                                    onClick={() => handleCancel(apt.id)}
+                                    className="text-red-600 hover:text-red-900"
+                                  >
+                                    Cancelar
+                                  </button>
+                                </>
+                              )}
+                            </td>
+                          )}
                         </tr>
                       ))}
                     </tbody>

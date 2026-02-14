@@ -4,6 +4,8 @@ import { ExclamationTriangleIcon, CheckCircleIcon } from '@heroicons/react/24/ou
 
 const BookingForm = ({ onSuccess, onCancel, initialData = null, title = "Agendar Nova Consulta", submitLabel = "Confirmar Agendamento" }) => {
   const [profissionais, setProfissionais] = useState([]);
+  const [especialidades, setEspecialidades] = useState([]);
+  const [selectedEspecialidade, setSelectedEspecialidade] = useState('');
   const [loading, setLoading] = useState(true);
   
   // Se for reagendamento, extrai data e hora da data_hora original
@@ -34,14 +36,46 @@ const BookingForm = ({ onSuccess, onCancel, initialData = null, title = "Agendar
     loadProfissionais();
   }, []);
 
+  useEffect(() => {
+    if (initialData && profissionais.length && !selectedEspecialidade) {
+      const prof = profissionais.find(p => p.id === initialData.profissional_id);
+      if (prof?.cargo) {
+        setSelectedEspecialidade(prof.cargo);
+      }
+    }
+  }, [initialData, profissionais, selectedEspecialidade]);
+
   const loadProfissionais = async () => {
     try {
-      const data = await agendamentoService.getProfissionais();
-      setProfissionais(data || []);
+      const [especialidadesData, profissionaisData] = await Promise.all([
+        agendamentoService.getEspecialidades(),
+        agendamentoService.getProfissionais()
+      ]);
+      setEspecialidades(especialidadesData || []);
+      setProfissionais(profissionaisData || []);
     } catch (err) {
       setError("Erro ao carregar profissionais.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleEspecialidadeChange = async (e) => {
+    const value = e.target.value;
+    setSelectedEspecialidade(value);
+    setFormData(prev => ({ ...prev, profissional_id: '' }));
+
+    if (!value) {
+      const data = await agendamentoService.getProfissionais();
+      setProfissionais(data || []);
+      return;
+    }
+
+    try {
+      const data = await agendamentoService.getProfissionais(value);
+      setProfissionais(data || []);
+    } catch (err) {
+      setError("Erro ao filtrar profissionais.");
     }
   };
 
@@ -68,8 +102,7 @@ const BookingForm = ({ onSuccess, onCancel, initialData = null, title = "Agendar
         await agendamentoService.atualizarAgendamento(initialData.id, {
           profissional_id: parseInt(formData.profissional_id),
           data_hora: dataHora.toISOString(),
-          observacoes: formData.observacoes,
-          status: 'AGENDADO'
+          observacoes: formData.observacoes
         });
         setSuccessMsg("Consulta reagendada com sucesso!");
       } else {
@@ -94,6 +127,9 @@ const BookingForm = ({ onSuccess, onCancel, initialData = null, title = "Agendar
 
   // Calcula data mínima (hoje)
   const today = new Date().toISOString().split('T')[0];
+  const maxDateObj = new Date();
+  maxDateObj.setDate(maxDateObj.getDate() + 14);
+  const maxDate = maxDateObj.toISOString().split('T')[0];
 
   if (loading) return <p className="p-4 text-center">Carregando...</p>;
 
@@ -120,7 +156,26 @@ const BookingForm = ({ onSuccess, onCancel, initialData = null, title = "Agendar
       
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-1">Profissional / Especialidade</label>
+          <label className="block text-sm font-semibold text-gray-700 mb-1">Especialidade</label>
+          <select
+            name="especialidade"
+            value={selectedEspecialidade}
+            onChange={handleEspecialidadeChange}
+            disabled={!!initialData}
+            className={`mt-1 block w-full pl-3 pr-10 py-2.5 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-lg ${initialData ? 'bg-gray-50' : ''}`}
+            required={!initialData}
+          >
+            <option value="">Selecione uma especialidade</option>
+            {especialidades.map(especialidade => (
+              <option key={especialidade} value={especialidade}>
+                {especialidade}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-1">Profissional</label>
           <select
             name="profissional_id"
             value={formData.profissional_id}
@@ -145,6 +200,7 @@ const BookingForm = ({ onSuccess, onCancel, initialData = null, title = "Agendar
               type="date"
               name="data"
               min={today}
+              max={maxDate}
               value={formData.data}
               onChange={handleChange}
               className="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"

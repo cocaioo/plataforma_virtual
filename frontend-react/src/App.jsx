@@ -41,7 +41,7 @@ function App() {
           } />
           
           <Route path="/agendamento" element={
-            <ProtectedRoute allowedRoles={['USER', 'PROFISSIONAL', 'GESTOR', 'RECEPCAO']}>
+            <ProtectedRoute allowedRoles={['USER', 'PROFISSIONAL', 'GESTOR', 'RECEPCAO', 'ACS']}>
               <Agendamento />
             </ProtectedRoute>
           } />

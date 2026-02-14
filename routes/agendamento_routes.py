@@ -18,6 +18,15 @@ from utils.deps import get_current_user
 
 agendamento_router = APIRouter(tags=["Agendamentos"])
 
+STAFF_ROLES = {"PROFISSIONAL", "GESTOR", "RECEPCAO"}
+AGENDA_VIEW_ROLES = {"PROFISSIONAL", "GESTOR", "RECEPCAO", "ACS"}
+
+
+def _validate_two_week_window(target: datetime, now_utc: datetime) -> None:
+    max_date = now_utc + timedelta(days=14)
+    if target > max_date:
+        raise HTTPException(status_code=400, detail="Data invalida (maior que 2 semanas).")
+
 # --- Auxiliares ---
 async def check_availability(
     db: AsyncSession, 
@@ -29,7 +38,7 @@ async def check_availability(
     query = select(Agendamento).where(
         Agendamento.profissional_id == profissional_id,
         Agendamento.data_hora == data_hora,
-        Agendamento.status == StatusAgendamento.AGENDADO
+        Agendamento.status.in_([StatusAgendamento.AGENDADO, StatusAgendamento.REAGENDADO])
     )
     if exclude_agendamento_id:
         query = query.where(Agendamento.id != exclude_agendamento_id)
@@ -92,6 +101,8 @@ async def criar_agendamento(
     if agendamento_in.data_hora < now_utc:
         raise HTTPException(status_code=400, detail="Data inválida (passado).")
 
+    _validate_two_week_window(agendamento_in.data_hora, now_utc)
+
     # Verificar disponibilidade
     disponivel = await check_availability(db, agendamento_in.profissional_id, agendamento_in.data_hora)
     if not disponivel:
@@ -127,7 +138,7 @@ async def atualizar_agendamento(
     # Nota: Simplificando. Se o usuário for profissional, assume que pode gerenciar.
     # Idealmente checar se ele é O profissional da consulta ou admin.
     is_owner = agendamento.paciente_id == current_user.id
-    is_staff = current_user.role in ["PROFISSIONAL", "GESTOR", "RECEPCAO"]
+    is_staff = current_user.role in STAFF_ROLES
     
     if not (is_owner or is_staff):
         raise HTTPException(status_code=403, detail="Sem permissão")
@@ -137,6 +148,8 @@ async def atualizar_agendamento(
         now_utc = datetime.now(timezone.utc)
         if agendamento_update.data_hora < now_utc:
              raise HTTPException(status_code=400, detail="Data inválida (passado).")
+
+        _validate_two_week_window(agendamento_update.data_hora, now_utc)
              
         disponivel = await check_availability(
             db, agendamento.profissional_id, agendamento_update.data_hora, exclude_agendamento_id=agendamento.id
@@ -145,8 +158,8 @@ async def atualizar_agendamento(
             raise HTTPException(status_code=409, detail="Novo horário indisponível.")
         agendamento.data_hora = agendamento_update.data_hora
         if not agendamento_update.status:
-            # Se apenas mudou data, garante status AGENDADO (caso estivesse cancelado)
-            agendamento.status = StatusAgendamento.AGENDADO
+            # Se apenas mudou data, marca como reagendado
+            agendamento.status = StatusAgendamento.REAGENDADO
 
     if agendamento_update.status:
         agendamento.status = agendamento_update.status
@@ -165,9 +178,9 @@ async def confirmar_consulta(
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Recepcionista envia confirmação (simulação).
+    Recepcionista envia confirmação.
     """
-    if current_user.role not in ["PROFISSIONAL", "GESTOR", "RECEPCAO"]: 
+    if current_user.role not in STAFF_ROLES: 
         raise HTTPException(status_code=403, detail="Apenas funcionários podem enviar confirmações.")
         
     agendamento = await db.get(Agendamento, agendamento_id)
@@ -195,7 +208,7 @@ async def get_agenda_profissional(
     """
     # TODO: Refinar permissões se necessário. Por enquanto, logado pode ver disponibilidade?
     # Req: "A recepcionista, o profissional da saude e o agente comunitário de saúde podem ver..."
-    if current_user.role not in ["PROFISSIONAL", "GESTOR", "RECEPCAO"]:
+    if current_user.role not in AGENDA_VIEW_ROLES:
          raise HTTPException(status_code=403, detail="Acesso restrito a profissionais.")
 
     query = select(Agendamento).where(
@@ -254,7 +267,12 @@ async def criar_bloqueio(
         prof = await db.get(ProfissionalUbs, target_prof_id)
         if not prof:
              raise HTTPException(status_code=404, detail="Profissional não encontrado.")
-        # TODO: Adicionar verificação de permissão aqui (ex: apenas GESTOR ou o próprio pode bloquear outro)
+        if current_user.role != "GESTOR":
+            query_prof = select(ProfissionalUbs).where(ProfissionalUbs.usuario_id == current_user.id)
+            result = await db.execute(query_prof)
+            me_profissional = result.scalars().first()
+            if not me_profissional or me_profissional.id != target_prof_id:
+                raise HTTPException(status_code=403, detail="Sem permissão para bloquear a agenda de outro profissional.")
     
     novo_bloqueio = BloqueioAgenda(
         profissional_id=target_prof_id,
@@ -331,13 +349,27 @@ async def deletar_bloqueio(
     await db.commit()
     return None
 
+@agendamento_router.get("/agendamentos/especialidades", response_model=List[str])
+async def list_especialidades(
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    """Lista especialidades (cargos) ativas para agendamento."""
+    query = select(ProfissionalUbs.cargo).where(ProfissionalUbs.ativo == True).distinct().order_by(ProfissionalUbs.cargo)
+    result = await db.execute(query)
+    return [row[0] for row in result.all() if row[0]]
+
+
 @agendamento_router.get("/agendamentos/profissionais", response_model=List[dict])
 async def list_profissionais_ativos(
+    cargo: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
     current_user: Usuario = Depends(get_current_user)
 ):
     """Lista profissionais para agendamento."""
     query = select(ProfissionalUbs, Usuario).join(Usuario, ProfissionalUbs.usuario_id == Usuario.id).where(ProfissionalUbs.ativo == True)
+    if cargo:
+        query = query.where(ProfissionalUbs.cargo == cargo)
     result = await db.execute(query)
     profissionais = []
     for prof, user in result.all():

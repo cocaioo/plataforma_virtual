@@ -34,6 +34,12 @@ export const agendamentoService = {
     api.request(`/agenda/bloqueios/${id}`, { method: 'DELETE', requiresAuth: true }),
 
   // Listar Profissionais
-  getProfissionais: () => 
-    api.request('/agendamentos/profissionais', { requiresAuth: true }),
+  getProfissionais: (cargo = null) => {
+    const query = cargo ? `?cargo=${encodeURIComponent(cargo)}` : '';
+    return api.request(`/agendamentos/profissionais${query}`, { requiresAuth: true });
+  },
+
+  // Listar Especialidades
+  getEspecialidades: () =>
+    api.request('/agendamentos/especialidades', { requiresAuth: true }),
 };
