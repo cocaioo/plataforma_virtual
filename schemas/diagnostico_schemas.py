@@ -18,11 +18,17 @@ class IndicatorValueType(str, Enum):
     POR_1000 = "POR_1000"
 
 
+class InterventionStatus(str, Enum):
+    PLANEJADO = "PLANEJADO"
+    EM_ANDAMENTO = "EM_ANDAMENTO"
+    CONCLUIDO = "CONCLUIDO"
+
+
 class UBSBase(BaseModel):
     nome_relatorio: Optional[str] = Field(None, max_length=255)
     nome_ubs: Optional[str] = Field(None, max_length=255)
     cnes: Optional[str] = Field(None, max_length=32)
-    area_atuacao: Optional[str]
+    area_atuacao: Optional[str] = None
 
     numero_habitantes_ativos: Optional[int] = Field(None, ge=0)
     numero_microareas: Optional[int] = Field(None, ge=0)
@@ -30,13 +36,13 @@ class UBSBase(BaseModel):
     numero_domicilios: Optional[int] = Field(None, ge=0)
     domicilios_rurais: Optional[int] = Field(None, ge=0)
 
-    data_inauguracao: Optional[date]
-    data_ultima_reforma: Optional[date]
+    data_inauguracao: Optional[date] = None
+    data_ultima_reforma: Optional[date] = None
 
-    descritivos_gerais: Optional[str]
-    observacoes_gerais: Optional[str]
+    descritivos_gerais: Optional[str] = None
+    observacoes_gerais: Optional[str] = None
 
-    outros_servicos: Optional[str]
+    outros_servicos: Optional[str] = None
 
     # Metadados do relatório situacional
     periodo_referencia: Optional[str] = Field(None, max_length=50)
@@ -44,7 +50,7 @@ class UBSBase(BaseModel):
     responsavel_nome: Optional[str] = Field(None, max_length=255)
     responsavel_cargo: Optional[str] = Field(None, max_length=255)
     responsavel_contato: Optional[str] = Field(None, max_length=255)
-    fluxo_agenda_acesso: Optional[str]
+    fluxo_agenda_acesso: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -78,6 +84,95 @@ class UBSAttachmentOut(BaseModel):
     section: Optional[str] = None
     description: Optional[str] = None
     created_at: Optional[datetime]
+
+    class Config:
+        from_attributes = True
+
+
+class UBSProblemBase(BaseModel):
+    titulo: str = Field(..., max_length=255)
+    descricao: Optional[str] = None
+    gut_gravidade: int = Field(..., ge=1, le=5)
+    gut_urgencia: int = Field(..., ge=1, le=5)
+    gut_tendencia: int = Field(..., ge=1, le=5)
+    is_prioritario: bool = False
+
+
+class UBSProblemCreate(UBSProblemBase):
+    pass
+
+
+class UBSProblemUpdate(BaseModel):
+    titulo: Optional[str] = Field(None, max_length=255)
+    descricao: Optional[str] = None
+    gut_gravidade: Optional[int] = Field(None, ge=1, le=5)
+    gut_urgencia: Optional[int] = Field(None, ge=1, le=5)
+    gut_tendencia: Optional[int] = Field(None, ge=1, le=5)
+    is_prioritario: Optional[bool] = None
+
+
+class UBSProblemOut(UBSProblemBase):
+    id: int
+    ubs_id: int
+    gut_score: int
+    created_at: Optional[datetime]
+    updated_at: Optional[datetime]
+
+    class Config:
+        from_attributes = True
+
+
+class UBSInterventionBase(BaseModel):
+    objetivo: str
+    metas: Optional[str] = None
+    responsavel: Optional[str] = Field(None, max_length=255)
+    status: InterventionStatus = InterventionStatus.PLANEJADO
+
+
+class UBSInterventionCreate(UBSInterventionBase):
+    pass
+
+
+class UBSInterventionUpdate(BaseModel):
+    objetivo: Optional[str] = None
+    metas: Optional[str] = None
+    responsavel: Optional[str] = Field(None, max_length=255)
+    status: Optional[InterventionStatus] = None
+
+
+class UBSInterventionOut(UBSInterventionBase):
+    id: int
+    problem_id: int
+    created_at: Optional[datetime]
+    updated_at: Optional[datetime]
+
+    class Config:
+        from_attributes = True
+
+
+class UBSInterventionActionBase(BaseModel):
+    acao: str
+    prazo: Optional[date] = None
+    status: InterventionStatus = InterventionStatus.PLANEJADO
+    observacoes: Optional[str] = None
+
+
+class UBSInterventionActionCreate(UBSInterventionActionBase):
+    pass
+
+
+class UBSInterventionActionUpdate(BaseModel):
+    acao: Optional[str] = None
+    prazo: Optional[date] = None
+    status: Optional[InterventionStatus] = None
+    observacoes: Optional[str] = None
+
+
+class UBSInterventionActionOut(UBSInterventionActionBase):
+    id: int
+    intervention_id: int
+    created_at: Optional[datetime]
+    updated_at: Optional[datetime]
 
     class Config:
         from_attributes = True

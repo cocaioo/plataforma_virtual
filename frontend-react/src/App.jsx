@@ -6,6 +6,7 @@ import RelatoriosSituacionais from './pages/RelatoriosSituacionais';
 import GestorSolicitacoes from './pages/GestorSolicitacoes';
 import Agendamento from './pages/Agendamento';
 import Notificacoes from './pages/Notificacoes';
+import MapaProblemasIntervencoes from './pages/MapaProblemasIntervencoes';
 import NavBar from './components/NavBar';
 import { NotificationsProvider } from './components/ui/Notifications';
 
@@ -62,6 +63,12 @@ function App() {
             <Route path="/notificacoes" element={
               <ProtectedRoute allowedRoles={['GESTOR', 'RECEPCAO']}>
                 <Notificacoes />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/mapa-problemas-intervencoes" element={
+              <ProtectedRoute allowedRoles={['USER', 'PROFISSIONAL', 'GESTOR']}>
+                <MapaProblemasIntervencoes />
               </ProtectedRoute>
             } />
           </Routes>

@@ -44,10 +44,10 @@ const CardGrid = () => {
       allowed: ['USER', 'PROFISSIONAL', 'GESTOR', 'RECEPCAO']
     },
     {
-      title: 'Relatórios e Priorizações',
-      to: '#',
+      title: 'Mapa de problemas e Intervencoes',
+      to: '/mapa-problemas-intervencoes',
       icon: ChartBarIcon,
-      inDevelopment: true,
+      inDevelopment: false,
       allowed: ['USER', 'PROFISSIONAL', 'GESTOR']
     },
     {

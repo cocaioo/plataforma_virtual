@@ -1,3 +1,32 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Fraunces:wght@500;600;700&display=swap');
+
+@keyframes rise-fade {
+	0% {
+		opacity: 0;
+		transform: translateY(12px);
+	}
+	100% {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+.rise-fade {
+	animation: rise-fade 500ms ease-out both;
+}
+
+.stagger-1 {
+	animation-delay: 80ms;
+}
+
+.stagger-2 {
+	animation-delay: 160ms;
+}
+
+.stagger-3 {
+	animation-delay: 240ms;
+}

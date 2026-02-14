@@ -20,6 +20,9 @@ from models.diagnostico_models import (
     TerritoryProfile,
     UBSNeeds,
     UBSAttachment,
+    UBSProblem,
+    UBSIntervention,
+    UBSInterventionAction,
 )
 from models.auth_models import Usuario
 from schemas.diagnostico_schemas import (
@@ -43,6 +46,15 @@ from schemas.diagnostico_schemas import (
     UBSNeedsUpdate,
     UBSNeedsOut,
     UBSAttachmentOut,
+    UBSProblemCreate,
+    UBSProblemUpdate,
+    UBSProblemOut,
+    UBSInterventionCreate,
+    UBSInterventionUpdate,
+    UBSInterventionOut,
+    UBSInterventionActionCreate,
+    UBSInterventionActionUpdate,
+    UBSInterventionActionOut,
     UBSStatus,
     FullDiagnosisOut,
     UBSSubmissionMetadata,
@@ -72,6 +84,10 @@ def _sanitize_filename(name: str) -> str:
             allowed.append("_")
     cleaned = "".join(allowed).strip().replace(" ", "_")
     return cleaned or "arquivo"
+
+
+def _gut_score(gravidade: int, urgencia: int, tendencia: int) -> int:
+    return gravidade * urgencia * tendencia
 
 
 async def _get_ubs_or_404(
@@ -751,6 +767,296 @@ async def get_full_diagnosis(
         attachments=saida_anexos,
         submission=metadados_envio,
     )
+
+
+# ----------------------- Priorização de Problemas (GUT) -----------------------
+
+
+@diagnostico_router.get("/{ubs_id}/problems", response_model=List[UBSProblemOut])
+async def list_ubs_problems(
+    ubs_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(get_current_professional_user),
+):
+    ubs = await _get_ubs_or_404(ubs_id, current_user, db)
+    resultado = await db.execute(
+        select(UBSProblem)
+        .where(UBSProblem.ubs_id == ubs.id)
+        .order_by(UBSProblem.gut_score.desc(), UBSProblem.created_at.desc())
+    )
+    return resultado.scalars().all()
+
+
+@diagnostico_router.post(
+    "/{ubs_id}/problems",
+    response_model=UBSProblemOut,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_ubs_problem(
+    ubs_id: int,
+    payload: UBSProblemCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(get_current_professional_user),
+):
+    ubs = await _get_ubs_or_404(ubs_id, current_user, db)
+    score = _gut_score(payload.gut_gravidade, payload.gut_urgencia, payload.gut_tendencia)
+    problem = UBSProblem(
+        ubs_id=ubs.id,
+        titulo=payload.titulo,
+        descricao=payload.descricao,
+        gut_gravidade=payload.gut_gravidade,
+        gut_urgencia=payload.gut_urgencia,
+        gut_tendencia=payload.gut_tendencia,
+        gut_score=score,
+        is_prioritario=payload.is_prioritario,
+    )
+    db.add(problem)
+    await db.commit()
+    await db.refresh(problem)
+    return problem
+
+
+async def _get_problem_or_404(
+    problem_id: int,
+    current_user: Usuario,
+    db: AsyncSession,
+) -> UBSProblem:
+    resultado = await db.execute(
+        select(UBSProblem)
+        .join(UBS)
+        .where(
+            UBSProblem.id == problem_id,
+            UBS.is_deleted.is_(False),
+        )
+    )
+    problem = resultado.scalar_one_or_none()
+    if not problem:
+        raise HTTPException(status_code=404, detail="Problema não encontrado")
+    return problem
+
+
+@diagnostico_router.patch("/problems/{problem_id}", response_model=UBSProblemOut)
+async def update_ubs_problem(
+    problem_id: int,
+    payload: UBSProblemUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(get_current_professional_user),
+):
+    problem = await _get_problem_or_404(problem_id, current_user, db)
+    dados_atualizacao = payload.model_dump(exclude_unset=True)
+    for campo, valor in dados_atualizacao.items():
+        setattr(problem, campo, valor)
+
+    problem.gut_score = _gut_score(
+        problem.gut_gravidade,
+        problem.gut_urgencia,
+        problem.gut_tendencia,
+    )
+    await db.commit()
+    await db.refresh(problem)
+    return problem
+
+
+@diagnostico_router.delete("/problems/{problem_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_ubs_problem(
+    problem_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(get_current_professional_user),
+):
+    problem = await _get_problem_or_404(problem_id, current_user, db)
+    await db.delete(problem)
+    await db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# ----------------------- Plano de Intervenção -----------------------
+
+
+@diagnostico_router.get(
+    "/problems/{problem_id}/interventions",
+    response_model=List[UBSInterventionOut],
+)
+async def list_problem_interventions(
+    problem_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(get_current_professional_user),
+):
+    problem = await _get_problem_or_404(problem_id, current_user, db)
+    resultado = await db.execute(
+        select(UBSIntervention)
+        .where(UBSIntervention.problem_id == problem.id)
+        .order_by(UBSIntervention.created_at.desc())
+    )
+    return resultado.scalars().all()
+
+
+@diagnostico_router.post(
+    "/problems/{problem_id}/interventions",
+    response_model=UBSInterventionOut,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_problem_intervention(
+    problem_id: int,
+    payload: UBSInterventionCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(get_current_professional_user),
+):
+    problem = await _get_problem_or_404(problem_id, current_user, db)
+    intervention = UBSIntervention(
+        problem_id=problem.id,
+        objetivo=payload.objetivo,
+        metas=payload.metas,
+        responsavel=payload.responsavel,
+        status=payload.status.value if hasattr(payload.status, "value") else payload.status,
+    )
+    db.add(intervention)
+    await db.commit()
+    await db.refresh(intervention)
+    return intervention
+
+
+async def _get_intervention_or_404(
+    intervention_id: int,
+    current_user: Usuario,
+    db: AsyncSession,
+) -> UBSIntervention:
+    resultado = await db.execute(
+        select(UBSIntervention)
+        .join(UBSProblem)
+        .join(UBS)
+        .where(
+            UBSIntervention.id == intervention_id,
+            UBS.is_deleted.is_(False),
+        )
+    )
+    intervention = resultado.scalar_one_or_none()
+    if not intervention:
+        raise HTTPException(status_code=404, detail="Intervenção não encontrada")
+    return intervention
+
+
+@diagnostico_router.patch("/interventions/{intervention_id}", response_model=UBSInterventionOut)
+async def update_intervention(
+    intervention_id: int,
+    payload: UBSInterventionUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(get_current_professional_user),
+):
+    intervention = await _get_intervention_or_404(intervention_id, current_user, db)
+    dados_atualizacao = payload.model_dump(exclude_unset=True)
+    if "status" in dados_atualizacao and hasattr(dados_atualizacao["status"], "value"):
+        dados_atualizacao["status"] = dados_atualizacao["status"].value
+    for campo, valor in dados_atualizacao.items():
+        setattr(intervention, campo, valor)
+    await db.commit()
+    await db.refresh(intervention)
+    return intervention
+
+
+@diagnostico_router.delete("/interventions/{intervention_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_intervention(
+    intervention_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(get_current_professional_user),
+):
+    intervention = await _get_intervention_or_404(intervention_id, current_user, db)
+    await db.delete(intervention)
+    await db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@diagnostico_router.get(
+    "/interventions/{intervention_id}/actions",
+    response_model=List[UBSInterventionActionOut],
+)
+async def list_intervention_actions(
+    intervention_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(get_current_professional_user),
+):
+    intervention = await _get_intervention_or_404(intervention_id, current_user, db)
+    resultado = await db.execute(
+        select(UBSInterventionAction)
+        .where(UBSInterventionAction.intervention_id == intervention.id)
+        .order_by(UBSInterventionAction.created_at.desc())
+    )
+    return resultado.scalars().all()
+
+
+@diagnostico_router.post(
+    "/interventions/{intervention_id}/actions",
+    response_model=UBSInterventionActionOut,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_intervention_action(
+    intervention_id: int,
+    payload: UBSInterventionActionCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(get_current_professional_user),
+):
+    intervention = await _get_intervention_or_404(intervention_id, current_user, db)
+    action = UBSInterventionAction(
+        intervention_id=intervention.id,
+        acao=payload.acao,
+        prazo=payload.prazo,
+        status=payload.status.value if hasattr(payload.status, "value") else payload.status,
+        observacoes=payload.observacoes,
+    )
+    db.add(action)
+    await db.commit()
+    await db.refresh(action)
+    return action
+
+
+async def _get_action_or_404(
+    action_id: int,
+    current_user: Usuario,
+    db: AsyncSession,
+) -> UBSInterventionAction:
+    resultado = await db.execute(
+        select(UBSInterventionAction)
+        .join(UBSIntervention)
+        .join(UBSProblem)
+        .join(UBS)
+        .where(
+            UBSInterventionAction.id == action_id,
+            UBS.is_deleted.is_(False),
+        )
+    )
+    action = resultado.scalar_one_or_none()
+    if not action:
+        raise HTTPException(status_code=404, detail="Ação não encontrada")
+    return action
+
+
+@diagnostico_router.patch("/intervention-actions/{action_id}", response_model=UBSInterventionActionOut)
+async def update_intervention_action(
+    action_id: int,
+    payload: UBSInterventionActionUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(get_current_professional_user),
+):
+    action = await _get_action_or_404(action_id, current_user, db)
+    dados_atualizacao = payload.model_dump(exclude_unset=True)
+    if "status" in dados_atualizacao and hasattr(dados_atualizacao["status"], "value"):
+        dados_atualizacao["status"] = dados_atualizacao["status"].value
+    for campo, valor in dados_atualizacao.items():
+        setattr(action, campo, valor)
+    await db.commit()
+    await db.refresh(action)
+    return action
+
+
+@diagnostico_router.delete("/intervention-actions/{action_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_intervention_action(
+    action_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(get_current_professional_user),
+):
+    action = await _get_action_or_404(action_id, current_user, db)
+    await db.delete(action)
+    await db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 # ----------------------- Anexos -----------------------

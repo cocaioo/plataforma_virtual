@@ -77,6 +77,10 @@ class UBS(Base):
         "UBSAttachment", back_populates="ubs", cascade="all, delete-orphan"
     )
 
+    problems = relationship(
+        "UBSProblem", back_populates="ubs", cascade="all, delete-orphan"
+    )
+
 
 class UBSAttachment(Base):
     __tablename__ = "ubs_attachments"
@@ -201,3 +205,63 @@ class UBSNeeds(Base):
     updated_by = Column(Integer, ForeignKey("usuarios.id"), nullable=True)
 
     ubs = relationship("UBS", back_populates="needs")
+
+
+class UBSProblem(Base):
+    __tablename__ = "ubs_problems"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    ubs_id = Column(Integer, ForeignKey("ubs.id", ondelete="CASCADE"), nullable=False)
+
+    titulo = Column(String(255), nullable=False)
+    descricao = Column(Text, nullable=True)
+    gut_gravidade = Column(Integer, nullable=False, default=1)
+    gut_urgencia = Column(Integer, nullable=False, default=1)
+    gut_tendencia = Column(Integer, nullable=False, default=1)
+    gut_score = Column(Integer, nullable=False, default=1)
+    is_prioritario = Column(Boolean, nullable=False, default=False)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    ubs = relationship("UBS", back_populates="problems")
+    interventions = relationship(
+        "UBSIntervention", back_populates="problem", cascade="all, delete-orphan"
+    )
+
+
+class UBSIntervention(Base):
+    __tablename__ = "ubs_interventions"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    problem_id = Column(Integer, ForeignKey("ubs_problems.id", ondelete="CASCADE"), nullable=False)
+
+    objetivo = Column(Text, nullable=False)
+    metas = Column(Text, nullable=True)
+    responsavel = Column(String(255), nullable=True)
+    status = Column(String(30), nullable=False, default="PLANEJADO")
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    problem = relationship("UBSProblem", back_populates="interventions")
+    actions = relationship(
+        "UBSInterventionAction", back_populates="intervention", cascade="all, delete-orphan"
+    )
+
+
+class UBSInterventionAction(Base):
+    __tablename__ = "ubs_intervention_actions"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    intervention_id = Column(Integer, ForeignKey("ubs_interventions.id", ondelete="CASCADE"), nullable=False)
+
+    acao = Column(Text, nullable=False)
+    prazo = Column(Date, nullable=True)
+    status = Column(String(30), nullable=False, default="PLANEJADO")
+    observacoes = Column(Text, nullable=True)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    intervention = relationship("UBSIntervention", back_populates="actions")
