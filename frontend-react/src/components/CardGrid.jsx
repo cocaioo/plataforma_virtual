@@ -4,6 +4,7 @@ import {
   ClipboardDocumentListIcon, 
   ClockIcon, 
   BookOpenIcon, 
+  CalendarIcon,
   LifebuoyIcon, 
   UsersIcon, 
   ChartBarIcon
@@ -12,7 +13,7 @@ import {
 const CardGrid = () => {
   const userJson = localStorage.getItem('user');
   const user = userJson ? JSON.parse(userJson) : null;
-  const role = user?.role || 'USER';
+  const role = (user?.role || 'USER').toUpperCase();
 
   const allCards = [
     {
@@ -28,13 +29,6 @@ const CardGrid = () => {
       icon: ClockIcon,
       inDevelopment: false,
       allowed: ['USER', 'PROFISSIONAL', 'GESTOR', 'RECEPCAO']
-    },
-    {
-      title: 'Materiais Educativos',
-      to: '#',
-      icon: BookOpenIcon,
-      inDevelopment: true,
-      allowed: ['USER', 'PROFISSIONAL', 'GESTOR']
     },
     {
       title: 'Suporte e Feedback',
@@ -58,6 +52,25 @@ const CardGrid = () => {
       allowed: ['GESTOR', 'RECEPCAO'] // Bloqueado para USER e PROFISSIONAL
     },
   ];
+
+  if (['PROFISSIONAL', 'GESTOR'].includes(role)) {
+    allCards.push(
+      {
+        title: 'Materiais Educativos',
+        to: '/materiais-educativos',
+        icon: BookOpenIcon,
+        inDevelopment: false,
+        allowed: ['PROFISSIONAL', 'GESTOR']
+      },
+      {
+        title: 'Cronograma e Calendario',
+        to: '/cronograma',
+        icon: CalendarIcon,
+        inDevelopment: false,
+        allowed: ['PROFISSIONAL', 'GESTOR']
+      }
+    );
+  }
 
   const filteredCards = allCards.filter(card => card.allowed.includes(role));
 

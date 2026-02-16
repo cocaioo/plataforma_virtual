@@ -174,12 +174,152 @@ create table public.ubs_services (
   constraint ubs_services_ubs_id_fkey foreign KEY (ubs_id) references ubs (id) on delete CASCADE
 ) TABLESPACE pg_default;
 
+create table public.ubs_problems (
+  id serial not null,
+  ubs_id integer not null,
+  titulo character varying(255) not null,
+  descricao text null,
+  gut_gravidade integer not null default 1,
+  gut_urgencia integer not null default 1,
+  gut_tendencia integer not null default 1,
+  gut_score integer not null default 1,
+  is_prioritario boolean not null default false,
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null,
+  constraint ubs_problems_pkey primary key (id),
+  constraint ubs_problems_ubs_id_fkey foreign KEY (ubs_id) references ubs (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+create table public.ubs_interventions (
+  id serial not null,
+  problem_id integer not null,
+  objetivo text not null,
+  metas text null,
+  responsavel character varying(255) null,
+  status character varying(30) not null default 'PLANEJADO',
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null,
+  constraint ubs_interventions_pkey primary key (id),
+  constraint ubs_interventions_problem_id_fkey foreign KEY (problem_id) references ubs_problems (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+create table public.ubs_intervention_actions (
+  id serial not null,
+  intervention_id integer not null,
+  acao text not null,
+  prazo date null,
+  status character varying(30) not null default 'PLANEJADO',
+  observacoes text null,
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null,
+  constraint ubs_intervention_actions_pkey primary key (id),
+  constraint ubs_intervention_actions_intervention_id_fkey foreign KEY (intervention_id) references ubs_interventions (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+create table public.professional_requests (
+  id serial not null,
+  user_id integer not null,
+  cargo character varying(100) not null,
+  registro_profissional character varying(50) not null,
+  status character varying(20) not null default 'PENDING',
+  rejection_reason character varying(255) null,
+  submitted_at timestamp with time zone not null default now(),
+  reviewed_at timestamp with time zone null,
+  reviewed_by_user_id integer null,
+  constraint professional_requests_pkey primary key (id),
+  constraint professional_requests_user_id_key unique (user_id),
+  constraint professional_requests_registro_profissional_key unique (registro_profissional),
+  constraint professional_requests_user_id_fkey foreign KEY (user_id) references usuarios (id),
+  constraint professional_requests_reviewed_by_user_id_fkey foreign KEY (reviewed_by_user_id) references usuarios (id)
+) TABLESPACE pg_default;
+
+create table public.agendamentos (
+  id serial not null,
+  paciente_id integer not null,
+  profissional_id integer not null,
+  data_hora timestamp with time zone not null,
+  status character varying(20) not null default 'AGENDADO',
+  observacoes text null,
+  confirmacao_enviada timestamp with time zone null,
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null,
+  constraint agendamentos_pkey primary key (id),
+  constraint agendamentos_paciente_id_fkey foreign KEY (paciente_id) references usuarios (id),
+  constraint agendamentos_profissional_id_fkey foreign KEY (profissional_id) references profissionais (id)
+) TABLESPACE pg_default;
+
+create table public.bloqueios_agenda (
+  id serial not null,
+  profissional_id integer not null,
+  data_inicio timestamp with time zone not null,
+  data_fim timestamp with time zone not null,
+  motivo character varying(255) null,
+  created_at timestamp with time zone null default now(),
+  constraint bloqueios_agenda_pkey primary key (id),
+  constraint bloqueios_agenda_profissional_id_fkey foreign KEY (profissional_id) references profissionais (id)
+) TABLESPACE pg_default;
+
+create table public.educational_materials (
+  id serial not null,
+  ubs_id integer not null,
+  titulo character varying(255) not null,
+  descricao text null,
+  categoria character varying(80) null,
+  publico_alvo character varying(80) null,
+  ativo boolean not null default true,
+  created_by integer null,
+  updated_by integer null,
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null,
+  constraint educational_materials_pkey primary key (id),
+  constraint educational_materials_created_by_fkey foreign KEY (created_by) references usuarios (id),
+  constraint educational_materials_updated_by_fkey foreign KEY (updated_by) references usuarios (id),
+  constraint educational_materials_ubs_id_fkey foreign KEY (ubs_id) references ubs (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+create table public.educational_material_files (
+  id serial not null,
+  material_id integer not null,
+  original_filename character varying(255) not null,
+  content_type character varying(100) null,
+  size_bytes integer not null default 0,
+  storage_path text not null,
+  created_at timestamp with time zone null default now(),
+  constraint educational_material_files_pkey primary key (id),
+  constraint educational_material_files_material_id_fkey foreign KEY (material_id) references educational_materials (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+create table public.cronograma_events (
+  id serial not null,
+  ubs_id integer not null,
+  titulo character varying(255) not null,
+  tipo character varying(30) not null default 'OUTRO',
+  local character varying(255) null,
+  inicio timestamp with time zone not null,
+  fim timestamp with time zone null,
+  dia_inteiro boolean not null default false,
+  observacoes text null,
+  recorrencia character varying(20) not null default 'NONE',
+  recorrencia_intervalo integer not null default 1,
+  recorrencia_fim date null,
+  created_by integer null,
+  updated_by integer null,
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null,
+  constraint cronograma_events_pkey primary key (id),
+  constraint cronograma_events_created_by_fkey foreign KEY (created_by) references usuarios (id),
+  constraint cronograma_events_updated_by_fkey foreign KEY (updated_by) references usuarios (id),
+  constraint cronograma_events_ubs_id_fkey foreign KEY (ubs_id) references ubs (id) on delete CASCADE
+) TABLESPACE pg_default;
+
 create table public.usuarios (
   id serial not null,
   nome character varying(100) not null,
   email character varying(200) not null,
   senha character varying(255) not null,
   cpf character varying(14) not null,
+  role character varying(20) not null default 'USER',
+  welcome_email_sent boolean default false,
   ativo boolean not null,
   tentativas_login integer not null,
   bloqueado_ate timestamp with time zone null,

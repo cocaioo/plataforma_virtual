@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request, BackgroundTasks
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 from typing import Literal
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
@@ -75,9 +75,7 @@ class UsuarioOut(BaseModel):
     cpf: str
     is_profissional: bool
     role: str
-
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 @auth_router.get("/me", response_model=UsuarioOut)
@@ -125,8 +123,7 @@ class ProfessionalRequestOut(BaseModel):
     reviewed_at: datetime | None = None
     reviewed_by_user_id: int | None = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserSummaryOut(BaseModel):
@@ -222,7 +219,7 @@ async def register_user(
         email=payload.email,
         senha=hash_password(payload.senha),
         cpf=payload.cpf,
-        role=payload.role,
+        role="USER",
         welcome_email_sent=False # Default explicit
     )
     db.add(usuario)

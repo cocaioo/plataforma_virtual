@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 from typing import Optional, List
 from models.agendamento_models import StatusAgendamento
@@ -31,8 +31,7 @@ class AgendamentoResponse(AgendamentoBase):
     nome_profissional: Optional[str] = None
     cargo_profissional: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # --- Schemas de Bloqueio de Agenda ---
 
@@ -49,5 +48,4 @@ class BloqueioAgendaResponse(BloqueioAgendaBase):
     profissional_id: int
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

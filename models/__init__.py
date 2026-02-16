@@ -11,3 +11,5 @@ from .diagnostico_models import (  # noqa: F401
     UBSNeeds,
 )
 from .agendamento_models import Agendamento, BloqueioAgenda # noqa: F401
+from .materiais_models import EducationalMaterial, EducationalMaterialFile  # noqa: F401
+from .cronograma_models import CronogramaEvent  # noqa: F401

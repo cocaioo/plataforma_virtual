@@ -53,11 +53,15 @@ app.add_middleware(
 from routes.auth_routes import auth_router
 from routes.diagnostico_routes import diagnostico_router
 from routes.agendamento_routes import agendamento_router
+from routes.materiais_routes import materiais_router
+from routes.cronograma_routes import cronograma_router
 
 # Incluindo as rotas (utilizando o prefixo /api para padronização)
 app.include_router(auth_router, prefix="/api")
 app.include_router(diagnostico_router, prefix="/api")
 app.include_router(agendamento_router, prefix="/api")
+app.include_router(materiais_router, prefix="/api")
+app.include_router(cronograma_router, prefix="/api")
 
 # Monta o diretório de assets estáticos do frontend
 assets_path = "frontend-react/dist/assets"

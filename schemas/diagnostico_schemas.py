@@ -4,7 +4,7 @@ from datetime import date, datetime
 from enum import Enum
 from typing import List, Optional
 
-from pydantic import BaseModel, Field, ValidationInfo, field_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator
 
 
 class UBSStatus(str, Enum):
@@ -52,8 +52,7 @@ class UBSBase(BaseModel):
     responsavel_contato: Optional[str] = Field(None, max_length=255)
     fluxo_agenda_acesso: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UBSCreate(UBSBase):
@@ -85,8 +84,7 @@ class UBSAttachmentOut(BaseModel):
     description: Optional[str] = None
     created_at: Optional[datetime]
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UBSProblemBase(BaseModel):
@@ -118,8 +116,7 @@ class UBSProblemOut(UBSProblemBase):
     created_at: Optional[datetime]
     updated_at: Optional[datetime]
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UBSInterventionBase(BaseModel):
@@ -146,8 +143,7 @@ class UBSInterventionOut(UBSInterventionBase):
     created_at: Optional[datetime]
     updated_at: Optional[datetime]
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UBSInterventionActionBase(BaseModel):
@@ -174,16 +170,14 @@ class UBSInterventionActionOut(UBSInterventionActionBase):
     created_at: Optional[datetime]
     updated_at: Optional[datetime]
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ServicesCatalogItem(BaseModel):
     id: int
     name: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UBSServicesPayload(BaseModel):
@@ -268,8 +262,7 @@ class IndicatorOut(IndicatorBase):
     created_at: Optional[datetime]
     updated_at: Optional[datetime]
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ProfessionalGroupBase(BaseModel):
@@ -296,8 +289,7 @@ class ProfessionalGroupOut(ProfessionalGroupBase):
     created_at: Optional[datetime]
     updated_at: Optional[datetime]
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class TerritoryProfileBase(BaseModel):
@@ -320,8 +312,7 @@ class TerritoryProfileOut(TerritoryProfileBase):
     id: int
     ubs_id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UBSNeedsBase(BaseModel):
@@ -346,8 +337,7 @@ class UBSNeedsOut(UBSNeedsBase):
     id: int
     ubs_id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PaginatedUBS(BaseModel):

@@ -36,3 +36,48 @@ CREATE TABLE IF NOT EXISTS ubs_intervention_actions (
 	created_at TIMESTAMPTZ DEFAULT NOW(),
 	updated_at TIMESTAMPTZ NULL
 );
+
+-- 2) Tabelas para Materiais Educativos
+CREATE TABLE IF NOT EXISTS educational_materials (
+	id SERIAL PRIMARY KEY,
+	ubs_id INTEGER NOT NULL REFERENCES ubs(id) ON DELETE CASCADE,
+	titulo VARCHAR(255) NOT NULL,
+	descricao TEXT NULL,
+	categoria VARCHAR(80) NULL,
+	publico_alvo VARCHAR(80) NULL,
+	ativo BOOLEAN NOT NULL DEFAULT TRUE,
+	created_by INTEGER NULL REFERENCES usuarios(id),
+	updated_by INTEGER NULL REFERENCES usuarios(id),
+	created_at TIMESTAMPTZ DEFAULT NOW(),
+	updated_at TIMESTAMPTZ NULL
+);
+
+CREATE TABLE IF NOT EXISTS educational_material_files (
+	id SERIAL PRIMARY KEY,
+	material_id INTEGER NOT NULL REFERENCES educational_materials(id) ON DELETE CASCADE,
+	original_filename VARCHAR(255) NOT NULL,
+	content_type VARCHAR(100) NULL,
+	size_bytes INTEGER NOT NULL DEFAULT 0,
+	storage_path TEXT NOT NULL,
+	created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 3) Tabela para Cronograma e Calendario
+CREATE TABLE IF NOT EXISTS cronograma_events (
+	id SERIAL PRIMARY KEY,
+	ubs_id INTEGER NOT NULL REFERENCES ubs(id) ON DELETE CASCADE,
+	titulo VARCHAR(255) NOT NULL,
+	tipo VARCHAR(30) NOT NULL DEFAULT 'OUTRO',
+	local VARCHAR(255) NULL,
+	inicio TIMESTAMPTZ NOT NULL,
+	fim TIMESTAMPTZ NULL,
+	dia_inteiro BOOLEAN NOT NULL DEFAULT FALSE,
+	observacoes TEXT NULL,
+	recorrencia VARCHAR(20) NOT NULL DEFAULT 'NONE',
+	recorrencia_intervalo INTEGER NOT NULL DEFAULT 1,
+	recorrencia_fim DATE NULL,
+	created_by INTEGER NULL REFERENCES usuarios(id),
+	updated_by INTEGER NULL REFERENCES usuarios(id),
+	created_at TIMESTAMPTZ DEFAULT NOW(),
+	updated_at TIMESTAMPTZ NULL
+);
