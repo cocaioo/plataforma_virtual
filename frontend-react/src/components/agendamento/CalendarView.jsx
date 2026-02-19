@@ -44,7 +44,7 @@ const CalendarView = ({ user }) => {
   const loadProfissionais = async () => {
     try {
       const data = await agendamentoService.getProfissionais();
-      setProfissionais(data || []);
+      setProfissionais(Array.isArray(data) ? data : []);
       // Se for profissional, auto-seleciona (lógica simplificada)
       // Idealmente o backend diria qual ID é o meu
     } catch (err) {
@@ -183,7 +183,7 @@ const CalendarView = ({ user }) => {
             className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none sm:text-sm rounded-md"
           >
             <option value="">Selecione...</option>
-            {profissionais.map(p => (
+            {Array.isArray(profissionais) && profissionais.map(p => (
               <option key={p.id} value={p.id}>{p.nome} - {p.cargo}</option>
             ))}
           </select>
@@ -249,7 +249,7 @@ const CalendarView = ({ user }) => {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {agendamentos.map((apt) => (
+                      {Array.isArray(agendamentos) && agendamentos.map((apt) => (
                         <tr key={apt.id}>
                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             {new Date(apt.data_hora).toLocaleString('pt-BR')}

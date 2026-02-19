@@ -17,7 +17,12 @@ const Agendamento = () => {
   
   // Recupera usuário do localStorage (mockado ou real)
   const userJson = localStorage.getItem('user');
-  const user = userJson ? JSON.parse(userJson) : null;
+  let user = null;
+  try {
+    user = userJson ? JSON.parse(userJson) : null;
+  } catch {
+    user = null;
+  }
   
   const isStaff = ['PROFISSIONAL', 'GESTOR', 'RECEPCAO', 'ACS'].includes(user?.role);
 

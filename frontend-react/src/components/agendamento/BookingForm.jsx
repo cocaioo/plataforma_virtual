@@ -51,8 +51,8 @@ const BookingForm = ({ onSuccess, onCancel, initialData = null, title = "Agendar
         agendamentoService.getEspecialidades(),
         agendamentoService.getProfissionais()
       ]);
-      setEspecialidades(especialidadesData || []);
-      setProfissionais(profissionaisData || []);
+      setEspecialidades(Array.isArray(especialidadesData) ? especialidadesData : []);
+      setProfissionais(Array.isArray(profissionaisData) ? profissionaisData : []);
     } catch (err) {
       setError("Erro ao carregar profissionais.");
     } finally {
@@ -67,13 +67,13 @@ const BookingForm = ({ onSuccess, onCancel, initialData = null, title = "Agendar
 
     if (!value) {
       const data = await agendamentoService.getProfissionais();
-      setProfissionais(data || []);
+      setProfissionais(Array.isArray(data) ? data : []);
       return;
     }
 
     try {
       const data = await agendamentoService.getProfissionais(value);
-      setProfissionais(data || []);
+      setProfissionais(Array.isArray(data) ? data : []);
     } catch (err) {
       setError("Erro ao filtrar profissionais.");
     }
@@ -166,7 +166,7 @@ const BookingForm = ({ onSuccess, onCancel, initialData = null, title = "Agendar
             required={!initialData}
           >
             <option value="">Selecione uma especialidade</option>
-            {especialidades.map(especialidade => (
+            {Array.isArray(especialidades) && especialidades.map(especialidade => (
               <option key={especialidade} value={especialidade}>
                 {especialidade}
               </option>
@@ -185,7 +185,7 @@ const BookingForm = ({ onSuccess, onCancel, initialData = null, title = "Agendar
             required
           >
             <option value="">Selecione um profissional</option>
-            {profissionais.map(p => (
+            {Array.isArray(profissionais) && profissionais.map(p => (
               <option key={p.id} value={p.id}>
                 {p.cargo} - {p.nome}
               </option>
