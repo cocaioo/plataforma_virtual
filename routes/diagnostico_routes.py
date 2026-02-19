@@ -63,9 +63,6 @@ from schemas.diagnostico_schemas import (
     UBSSubmitRequest,
 )
 from utils.deps import get_current_professional_user, get_current_active_user
-from services.reporting.simple_situational_report_pdf import (
-    generate_situational_report_pdf_simple,
-)
 
 
 diagnostico_router = APIRouter(prefix="/ubs", tags=["diagnostico"])
@@ -1232,6 +1229,10 @@ async def export_situational_report_pdf(
         for a in attachments
     ]
     try:
+        from services.reporting.simple_situational_report_pdf import (
+            generate_situational_report_pdf_simple,
+        )
+
         pdf_bytes, filename_base = generate_situational_report_pdf_simple(
             diagnosis,
             municipality="Municipio",
