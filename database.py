@@ -58,9 +58,10 @@ engine_kwargs = {
 if not DATABASE_URL.startswith("sqlite"):
     engine_kwargs.update({
         "pool_pre_ping": True,
-        "pool_size": 5,
-        "max_overflow": 10,
-        "pool_recycle": 3600,
+        "pool_size": 2,
+        "max_overflow": 3,
+        "pool_recycle": 1800,
+        "pool_timeout": 10,
     })
 
 engine = None
