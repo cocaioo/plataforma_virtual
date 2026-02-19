@@ -68,8 +68,9 @@ const MateriaisEducativos = () => {
     setIsLoading(true);
     try {
       const data = await api.request(`/materiais?ubs_id=${ubsId}`, { requiresAuth: true });
-      setMaterials(data || []);
+      setMaterials(Array.isArray(data) ? data : []);
     } catch (error) {
+      setMaterials([]);
       notify({ type: 'error', message: 'Erro ao carregar materiais.' });
     } finally {
       setIsLoading(false);

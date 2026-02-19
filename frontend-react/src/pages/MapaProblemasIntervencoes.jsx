@@ -103,14 +103,17 @@ const MapaProblemasIntervencoes = () => {
     if (!ubsId) return;
     try {
       const data = await api.request(`/ubs/${ubsId}/problems`, { requiresAuth: true });
-      setProblems(data || []);
-      if (data.length > 0) {
-        setSelectedProblemId(data[0].id);
+      const items = Array.isArray(data) ? data : [];
+      setProblems(items);
+      if (items.length > 0) {
+        setSelectedProblemId(items[0].id);
       } else {
         setSelectedProblemId(null);
       }
       setProblemEditForm(null);
     } catch (error) {
+      setProblems([]);
+      setSelectedProblemId(null);
       notify({ type: 'error', message: 'Erro ao carregar problemas.' });
     }
   };
@@ -125,14 +128,17 @@ const MapaProblemasIntervencoes = () => {
       const data = await api.request(`/ubs/problems/${problemId}/interventions`, {
         requiresAuth: true,
       });
-      setInterventions(data || []);
-      if (data.length > 0) {
-        setSelectedInterventionId(data[0].id);
+      const items = Array.isArray(data) ? data : [];
+      setInterventions(items);
+      if (items.length > 0) {
+        setSelectedInterventionId(items[0].id);
       } else {
         setSelectedInterventionId(null);
       }
       setInterventionEditForm(null);
     } catch (error) {
+      setInterventions([]);
+      setSelectedInterventionId(null);
       notify({ type: 'error', message: 'Erro ao carregar intervenções.' });
     }
   };
@@ -146,7 +152,7 @@ const MapaProblemasIntervencoes = () => {
       const data = await api.request(`/ubs/interventions/${interventionId}/actions`, {
         requiresAuth: true,
       });
-      setActions(data || []);
+      setActions(Array.isArray(data) ? data : []);
     } catch (error) {
       notify({ type: 'error', message: 'Erro ao carregar ações.' });
     }

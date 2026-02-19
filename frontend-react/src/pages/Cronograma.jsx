@@ -75,8 +75,9 @@ const Cronograma = () => {
       if (filters.start) params.append('start', new Date(filters.start).toISOString());
       if (filters.end) params.append('end', new Date(filters.end).toISOString());
       const data = await api.request(`/cronograma?${params.toString()}`, { requiresAuth: true });
-      setEvents(data || []);
+      setEvents(Array.isArray(data) ? data : []);
     } catch (error) {
+      setEvents([]);
       notify({ type: 'error', message: 'Erro ao carregar cronograma.' });
     } finally {
       setIsLoading(false);
