@@ -47,6 +47,14 @@ const emptyActionForm = {
   observacoes: '',
 };
 
+const MOCK_UBS_ADALTO = {
+  id: 3,
+  nome_ubs: 'ESF 41 - Adalto Parentes Sampaio',
+  cnes: '0000000',
+  area_atuacao: 'Baixa do Aragao, Parnaiba - PI',
+  status: 'DRAFT',
+};
+
 const MapaProblemasIntervencoes = () => {
   const { notify, confirm } = useNotifications();
   const [ubsList, setUbsList] = useState([]);
@@ -77,11 +85,16 @@ const MapaProblemasIntervencoes = () => {
   const loadUbs = async () => {
     try {
       const data = await api.request('/ubs?page=1&page_size=100', { requiresAuth: true });
-      setUbsList(data.items || []);
-      if ((data.items || []).length > 0) {
-        setSelectedUbsId(String(data.items[0].id));
+      const items = data.items || [];
+      const hasAdalto = items.some((u) => u.id === MOCK_UBS_ADALTO.id);
+      const merged = hasAdalto ? items : [MOCK_UBS_ADALTO, ...items];
+      setUbsList(merged);
+      if (merged.length > 0) {
+        setSelectedUbsId(String(merged[0].id));
       }
     } catch (error) {
+      setUbsList([MOCK_UBS_ADALTO]);
+      setSelectedUbsId(String(MOCK_UBS_ADALTO.id));
       notify({ type: 'error', message: 'Erro ao carregar UBS. Tente novamente.' });
     }
   };

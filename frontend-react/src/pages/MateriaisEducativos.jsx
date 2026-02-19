@@ -19,6 +19,14 @@ const buildDownloadUrl = (fileId) => {
   return `/api/materiais/files/${fileId}/download?token=${encodeURIComponent(token)}`;
 };
 
+const MOCK_UBS_ADALTO = {
+  id: 3,
+  nome_ubs: 'ESF 41 - Adalto Parentes Sampaio',
+  cnes: '0000000',
+  area_atuacao: 'Baixa do Aragao, Parnaiba - PI',
+  status: 'DRAFT',
+};
+
 const MateriaisEducativos = () => {
   const { notify, confirm } = useNotifications();
   const [ubsOptions, setUbsOptions] = useState([]);
@@ -42,11 +50,15 @@ const MateriaisEducativos = () => {
     try {
       const data = await api.request('/ubs?page=1&page_size=100', { requiresAuth: true });
       const items = data?.items || [];
-      setUbsOptions(items);
-      if (!selectedUbs && items.length > 0) {
-        setSelectedUbs(String(items[0].id));
+      const hasAdalto = items.some((u) => u.id === MOCK_UBS_ADALTO.id);
+      const merged = hasAdalto ? items : [MOCK_UBS_ADALTO, ...items];
+      setUbsOptions(merged);
+      if (!selectedUbs && merged.length > 0) {
+        setSelectedUbs(String(merged[0].id));
       }
     } catch (error) {
+      setUbsOptions([MOCK_UBS_ADALTO]);
+      if (!selectedUbs) setSelectedUbs(String(MOCK_UBS_ADALTO.id));
       notify({ type: 'error', message: 'Erro ao carregar UBS.' });
     }
   }, [notify, selectedUbs]);
