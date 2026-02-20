@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNotifications } from '../components/ui/Notifications';
+import { suporteFeedbackService } from '../services/suporteFeedbackService';
 import {
   ChevronDownIcon,
   QuestionMarkCircleIcon,
@@ -98,8 +99,8 @@ const SuporteFeedback = () => {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Simula o envio do formulário (apenas frontend)
-  const handleSubmit = (e) => {
+  // Envia o formulário para o backend
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!form.assunto) {
@@ -113,16 +114,25 @@ const SuporteFeedback = () => {
 
     setEnviando(true);
 
-    // Simula delay de rede
-    setTimeout(() => {
+    try {
+      await suporteFeedbackService.enviarFeedback({
+        assunto: form.assunto,
+        mensagem: form.mensagem.trim(),
+      });
       setForm({ assunto: '', mensagem: '' });
-      setEnviando(false);
       notify({
         type: 'success',
         message: 'Mensagem enviada com sucesso! Obrigado pelo seu feedback.',
         duration: 5000,
       });
-    }, 800);
+    } catch (err) {
+      notify({
+        type: 'error',
+        message: 'Erro ao enviar mensagem. Tente novamente.',
+      });
+    } finally {
+      setEnviando(false);
+    }
   };
 
   return (

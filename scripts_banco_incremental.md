@@ -82,3 +82,13 @@ CREATE TABLE IF NOT EXISTS cronograma_events (
 	updated_at TIMESTAMPTZ NULL
 );
 
+-- 4) Tabela para Suporte e Feedback
+CREATE TABLE IF NOT EXISTS suporte_feedback (
+	id SERIAL PRIMARY KEY,
+	usuario_id INTEGER NOT NULL REFERENCES usuarios(id),
+	assunto VARCHAR(50) NOT NULL,
+	mensagem TEXT NOT NULL,
+	status VARCHAR(20) NOT NULL DEFAULT 'PENDENTE',
+	created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
