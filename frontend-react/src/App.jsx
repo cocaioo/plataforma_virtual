@@ -10,6 +10,8 @@ import Notificacoes from './pages/Notificacoes';
 import MapaProblemasIntervencoes from './pages/MapaProblemasIntervencoes';
 import MateriaisEducativos from './pages/MateriaisEducativos';
 import Cronograma from './pages/Cronograma';
+import SuporteFeedback from './pages/SuporteFeedback';
+import GerenciarMensagens from './pages/GerenciarMensagens';
 import NavBar from './components/NavBar';
 import { NotificationsProvider } from './components/ui/Notifications';
 
@@ -91,6 +93,18 @@ function App() {
               <Route path="/cronograma" element={
                 <ProtectedRoute allowedRoles={['PROFISSIONAL', 'GESTOR']}>
                   <Cronograma />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/suporte-feedback" element={
+                <ProtectedRoute allowedRoles={['USER', 'PROFISSIONAL', 'GESTOR', 'RECEPCAO']}>
+                  <SuporteFeedback />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/gerenciar-mensagens" element={
+                <ProtectedRoute allowedRoles={['RECEPCAO']}>
+                  <GerenciarMensagens />
                 </ProtectedRoute>
               } />
             </Routes>

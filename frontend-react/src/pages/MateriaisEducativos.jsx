@@ -3,7 +3,7 @@ import { api } from '../services/api';
 import { useNotifications } from '../components/ui/Notifications';
 
 const BASE_API = import.meta.env.PROD
-  ? ''
+  ? '/api'
   : import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 
 const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024;

@@ -32,9 +32,9 @@ const CardGrid = () => {
     },
     {
       title: 'Suporte e Feedback',
-      to: '#',
+      to: '/suporte-feedback',
       icon: LifebuoyIcon,
-      inDevelopment: true,
+      inDevelopment: false,
       allowed: ['USER', 'PROFISSIONAL', 'GESTOR', 'RECEPCAO']
     },
     {

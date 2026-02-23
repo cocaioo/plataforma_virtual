@@ -329,6 +329,17 @@ create table public.usuarios (
   constraint usuarios_cpf_key unique (cpf),
   constraint usuarios_email_key unique (email)
 ) TABLESPACE pg_default;
+
+create table public.suporte_feedback (
+  id serial not null,
+  usuario_id integer not null,
+  assunto character varying(50) not null,
+  mensagem text not null,
+  status character varying(20) not null default 'PENDENTE',
+  created_at timestamp with time zone null default now(),
+  constraint suporte_feedback_pkey primary key (id),
+  constraint suporte_feedback_usuario_id_fkey foreign KEY (usuario_id) references usuarios (id)
+) TABLESPACE pg_default;
 ```
 
 ---
@@ -589,4 +600,21 @@ DROP COLUMN IF EXISTS grau_precisao_valor;
 ALTER TABLE public.indicators
 ADD COLUMN meta numeric(18, 4) NULL,
 ADD COLUMN tipo_valor character varying(40) NULL DEFAULT 'PERCENTUAL';
+```
+
+### 2.9. Criar Tabela `suporte_feedback` (Módulo Suporte e Feedback) - **NOVO**
+Tabela para armazenar mensagens de suporte e feedback enviadas pelos usuários.
+
+```sql
+CREATE TABLE public.suporte_feedback (
+    id serial NOT NULL,
+    usuario_id integer NOT NULL,
+    assunto character varying(50) NOT NULL,
+    mensagem text NOT NULL,
+    status character varying(20) NOT NULL DEFAULT 'PENDENTE',
+    created_at timestamp with time zone NULL DEFAULT now(),
+
+    CONSTRAINT suporte_feedback_pkey PRIMARY KEY (id),
+    CONSTRAINT suporte_feedback_usuario_id_fkey FOREIGN KEY (usuario_id) REFERENCES public.usuarios (id)
+) TABLESPACE pg_default;
 ```
