@@ -13,3 +13,5 @@ from .diagnostico_models import (  # noqa: F401
 from .agendamento_models import Agendamento, BloqueioAgenda # noqa: F401
 from .materiais_models import EducationalMaterial, EducationalMaterialFile  # noqa: F401
 from .cronograma_models import CronogramaEvent  # noqa: F401
+from .suporte_feedback_models import SuporteFeedback  # noqa: F401
+from .gestao_equipes_models import Microarea, AgenteSaude  # noqa: F401
