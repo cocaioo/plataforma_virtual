@@ -12,6 +12,7 @@ import MateriaisEducativos from './pages/MateriaisEducativos';
 import Cronograma from './pages/Cronograma';
 import SuporteFeedback from './pages/SuporteFeedback';
 import GerenciarMensagens from './pages/GerenciarMensagens';
+import GestaoEquipesMicroareas from './pages/GestaoEquipesMicroareas';
 import NavBar from './components/NavBar';
 import { NotificationsProvider } from './components/ui/Notifications';
 
@@ -105,6 +106,12 @@ function App() {
               <Route path="/gerenciar-mensagens" element={
                 <ProtectedRoute allowedRoles={['RECEPCAO']}>
                   <GerenciarMensagens />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/gestao-equipes" element={
+                <ProtectedRoute allowedRoles={['GESTOR', 'RECEPCAO']}>
+                  <GestaoEquipesMicroareas />
                 </ProtectedRoute>
               } />
             </Routes>
