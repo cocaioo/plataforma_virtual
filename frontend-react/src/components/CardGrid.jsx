@@ -46,10 +46,10 @@ const CardGrid = () => {
     },
     {
       title: 'Gestão de Equipes e Microáreas',
-      to: '#',
+      to: '/gestao-equipes',
       icon: UsersIcon,
-      inDevelopment: true,
-      allowed: ['GESTOR', 'RECEPCAO'] // Bloqueado para USER e PROFISSIONAL
+      inDevelopment: false,
+      allowed: ['GESTOR', 'RECEPCAO']
     },
   ];
 

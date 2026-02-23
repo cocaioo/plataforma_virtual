@@ -340,6 +340,32 @@ create table public.suporte_feedback (
   constraint suporte_feedback_pkey primary key (id),
   constraint suporte_feedback_usuario_id_fkey foreign KEY (usuario_id) references usuarios (id)
 ) TABLESPACE pg_default;
+
+create table public.microareas (
+  id serial not null,
+  ubs_id integer not null,
+  nome character varying(100) not null,
+  status character varying(20) not null default 'COBERTA',
+  populacao integer not null default 0,
+  familias integer not null default 0,
+  geojson jsonb null,
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null,
+  constraint microareas_pkey primary key (id),
+  constraint microareas_ubs_id_fkey foreign KEY (ubs_id) references ubs (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+create table public.agentes_saude (
+  id serial not null,
+  usuario_id integer not null,
+  microarea_id integer not null,
+  ativo boolean not null default true,
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null,
+  constraint agentes_saude_pkey primary key (id),
+  constraint agentes_saude_usuario_id_fkey foreign KEY (usuario_id) references usuarios (id),
+  constraint agentes_saude_microarea_id_fkey foreign KEY (microarea_id) references microareas (id) on delete CASCADE
+) TABLESPACE pg_default;
 ```
 
 ---
@@ -617,4 +643,98 @@ CREATE TABLE public.suporte_feedback (
     CONSTRAINT suporte_feedback_pkey PRIMARY KEY (id),
     CONSTRAINT suporte_feedback_usuario_id_fkey FOREIGN KEY (usuario_id) REFERENCES public.usuarios (id)
 ) TABLESPACE pg_default;
+```
+
+### 2.10. Criar Tabelas `microareas` e `agentes_saude` (Módulo Gestão de Equipes e Microáreas) - **NOVO**
+Tabelas para o módulo de gestão de equipes, microáreas e agentes comunitários de saúde.
+
+```sql
+-- Tabela de microáreas do território
+CREATE TABLE public.microareas (
+    id serial NOT NULL,
+    ubs_id integer NOT NULL,
+    nome character varying(100) NOT NULL,
+    status character varying(20) NOT NULL DEFAULT 'COBERTA',
+    populacao integer NOT NULL DEFAULT 0,
+    familias integer NOT NULL DEFAULT 0,
+    geojson jsonb NULL,
+    created_at timestamp with time zone NULL DEFAULT now(),
+    updated_at timestamp with time zone NULL,
+
+    CONSTRAINT microareas_pkey PRIMARY KEY (id),
+    CONSTRAINT microareas_ubs_id_fkey FOREIGN KEY (ubs_id) REFERENCES public.ubs (id) ON DELETE CASCADE
+) TABLESPACE pg_default;
+
+-- Tabela de agentes comunitários de saúde
+CREATE TABLE public.agentes_saude (
+    id serial NOT NULL,
+    usuario_id integer NOT NULL,
+    microarea_id integer NOT NULL,
+    ativo boolean NOT NULL DEFAULT true,
+    created_at timestamp with time zone NULL DEFAULT now(),
+    updated_at timestamp with time zone NULL,
+
+    CONSTRAINT agentes_saude_pkey PRIMARY KEY (id),
+    CONSTRAINT agentes_saude_usuario_id_fkey FOREIGN KEY (usuario_id) REFERENCES public.usuarios (id),
+    CONSTRAINT agentes_saude_microarea_id_fkey FOREIGN KEY (microarea_id) REFERENCES public.microareas (id) ON DELETE CASCADE
+) TABLESPACE pg_default;
+```
+
+### 2.11. Seed Data - Microáreas e Agentes de Saúde (Parnaíba - PI) - **NOVO**
+Popula as tabelas com dados fictícios de 7 microáreas (5 cobertas + 2 descobertas) e 5 agentes de saúde para a UBS Adalto Parentes Sampaio. **Pré-requisito:** a UBS com id=3 deve existir na tabela `ubs`.
+
+```sql
+-- =============================================
+-- MICROÁREAS (7 total: 5 cobertas, 2 descobertas)
+-- =============================================
+INSERT INTO public.microareas (ubs_id, nome, status, populacao, familias) VALUES
+(3, 'Microárea 01 - Baixa do Aragão', 'COBERTA', 2100, 210),
+(3, 'Microárea 02 - Centro', 'COBERTA', 1850, 185),
+(3, 'Microárea 03 - Piauí', 'COBERTA', 2300, 230),
+(3, 'Microárea 04 - Frei Higino', 'COBERTA', 1950, 195),
+(3, 'Microárea 05 - Pindorama', 'COBERTA', 2200, 220),
+(3, 'Microárea 06 - São José', 'DESCOBERTA', 1100, 110),
+(3, 'Microárea 07 - Rodoviária', 'DESCOBERTA', 950, 95);
+
+-- =============================================
+-- USUÁRIOS ACS (Agentes Comunitários de Saúde)
+-- Senha padrão: Plataforma123
+-- =============================================
+INSERT INTO public.usuarios (nome, email, senha, cpf, role, ativo, tentativas_login, welcome_email_sent, created_at, updated_at) VALUES
+('Maria José da Silva', 'maria.silva.acs@plataforma.com', '$pbkdf2-sha256$29000$3VvL.X/PuVeqFYJQ6v3fmw$DeWP4kJ4JIgk3lpxXsRXEagRvrprhj82aahb1egA1Es', '712.345.678-01', 'ACS', TRUE, 0, TRUE, NOW(), NOW()),
+('Francisco Alves de Sousa', 'francisco.sousa.acs@plataforma.com', '$pbkdf2-sha256$29000$3VvL.X/PuVeqFYJQ6v3fmw$DeWP4kJ4JIgk3lpxXsRXEagRvrprhj82aahb1egA1Es', '823.456.789-02', 'ACS', TRUE, 0, TRUE, NOW(), NOW()),
+('Ana Cláudia Ferreira', 'ana.ferreira.acs@plataforma.com', '$pbkdf2-sha256$29000$3VvL.X/PuVeqFYJQ6v3fmw$DeWP4kJ4JIgk3lpxXsRXEagRvrprhj82aahb1egA1Es', '934.567.890-03', 'ACS', TRUE, 0, TRUE, NOW(), NOW()),
+('José Ribamar Costa', 'jose.costa.acs@plataforma.com', '$pbkdf2-sha256$29000$3VvL.X/PuVeqFYJQ6v3fmw$DeWP4kJ4JIgk3lpxXsRXEagRvrprhj82aahb1egA1Es', '145.678.901-04', 'ACS', TRUE, 0, TRUE, NOW(), NOW()),
+('Francisca das Chagas Lima', 'francisca.lima.acs@plataforma.com', '$pbkdf2-sha256$29000$3VvL.X/PuVeqFYJQ6v3fmw$DeWP4kJ4JIgk3lpxXsRXEagRvrprhj82aahb1egA1Es', '256.789.012-05', 'ACS', TRUE, 0, TRUE, NOW(), NOW());
+
+-- =============================================
+-- AGENTES DE SAÚDE (vinculando usuários às microáreas)
+-- NOTA: Os IDs dos usuários e microáreas dependem da ordem de inserção.
+-- Ajuste os IDs conforme necessário após executar os INSERTs acima.
+-- Use as queries abaixo para vincular corretamente:
+-- =============================================
+INSERT INTO public.agentes_saude (usuario_id, microarea_id, ativo)
+SELECT u.id, m.id, TRUE
+FROM public.usuarios u, public.microareas m
+WHERE u.email = 'maria.silva.acs@plataforma.com' AND m.nome = 'Microárea 01 - Baixa do Aragão';
+
+INSERT INTO public.agentes_saude (usuario_id, microarea_id, ativo)
+SELECT u.id, m.id, TRUE
+FROM public.usuarios u, public.microareas m
+WHERE u.email = 'francisco.sousa.acs@plataforma.com' AND m.nome = 'Microárea 02 - Centro';
+
+INSERT INTO public.agentes_saude (usuario_id, microarea_id, ativo)
+SELECT u.id, m.id, TRUE
+FROM public.usuarios u, public.microareas m
+WHERE u.email = 'ana.ferreira.acs@plataforma.com' AND m.nome = 'Microárea 03 - Piauí';
+
+INSERT INTO public.agentes_saude (usuario_id, microarea_id, ativo)
+SELECT u.id, m.id, TRUE
+FROM public.usuarios u, public.microareas m
+WHERE u.email = 'jose.costa.acs@plataforma.com' AND m.nome = 'Microárea 04 - Frei Higino';
+
+INSERT INTO public.agentes_saude (usuario_id, microarea_id, ativo)
+SELECT u.id, m.id, TRUE
+FROM public.usuarios u, public.microareas m
+WHERE u.email = 'francisca.lima.acs@plataforma.com' AND m.nome = 'Microárea 05 - Pindorama';
 ```
