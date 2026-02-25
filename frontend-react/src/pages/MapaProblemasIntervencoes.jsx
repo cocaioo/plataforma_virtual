@@ -7,6 +7,7 @@ import {
   PencilSquareIcon,
 } from '@heroicons/react/24/outline';
 import { api } from '../services/api';
+import { ubsService } from '../services/ubsService';
 import { useNotifications } from '../components/ui/Notifications';
 
 const GUT_OPTIONS = [1, 2, 3, 4, 5];
@@ -47,18 +48,10 @@ const emptyActionForm = {
   observacoes: '',
 };
 
-const MOCK_UBS_ADALTO = {
-  id: 3,
-  nome_ubs: 'ESF 41 - Adalto Parentes Sampaio',
-  cnes: '0000000',
-  area_atuacao: 'Baixa do Aragao, Parnaiba - PI',
-  status: 'DRAFT',
-};
-
 const MapaProblemasIntervencoes = () => {
   const { notify, confirm } = useNotifications();
-  const [ubsList, setUbsList] = useState([]);
-  const [selectedUbsId, setSelectedUbsId] = useState('');
+  const [ubsInfo, setUbsInfo] = useState(null);
+  const [ubsId, setUbsId] = useState('');
   const [problems, setProblems] = useState([]);
   const [selectedProblemId, setSelectedProblemId] = useState(null);
   const [interventions, setInterventions] = useState([]);
@@ -84,18 +77,13 @@ const MapaProblemasIntervencoes = () => {
 
   const loadUbs = async () => {
     try {
-      const data = await api.request('/ubs?page=1&page_size=100', { requiresAuth: true });
-      const items = data.items || [];
-      const hasAdalto = items.some((u) => u.id === MOCK_UBS_ADALTO.id);
-      const merged = hasAdalto ? items : [MOCK_UBS_ADALTO, ...items];
-      setUbsList(merged);
-      if (merged.length > 0) {
-        setSelectedUbsId(String(merged[0].id));
-      }
+      const data = await ubsService.getSingleUbs();
+      setUbsInfo(data);
+      setUbsId(data ? String(data.id) : '');
     } catch (error) {
-      setUbsList([MOCK_UBS_ADALTO]);
-      setSelectedUbsId(String(MOCK_UBS_ADALTO.id));
-      notify({ type: 'error', message: 'Erro ao carregar UBS. Tente novamente.' });
+      setUbsInfo(null);
+      setUbsId('');
+      notify({ type: 'error', message: 'Erro ao carregar UBS.' });
     }
   };
 
@@ -163,9 +151,9 @@ const MapaProblemasIntervencoes = () => {
   }, []);
 
   useEffect(() => {
-    if (!selectedUbsId) return;
-    loadProblems(selectedUbsId);
-  }, [selectedUbsId]);
+    if (!ubsId) return;
+    loadProblems(ubsId);
+  }, [ubsId]);
 
   useEffect(() => {
     if (!selectedProblemId) {
@@ -210,9 +198,12 @@ const MapaProblemasIntervencoes = () => {
 
   const handleCreateProblem = async (event) => {
     event.preventDefault();
-    if (!selectedUbsId) return;
+    if (!ubsId) {
+      notify({ type: 'warning', message: 'Configure uma UBS antes de registrar problemas.' });
+      return;
+    }
     try {
-      await api.request(`/ubs/${selectedUbsId}/problems`, {
+      await api.request(`/ubs/${ubsId}/problems`, {
         method: 'POST',
         requiresAuth: true,
         body: {
@@ -225,7 +216,7 @@ const MapaProblemasIntervencoes = () => {
       });
       notify({ type: 'success', message: 'Problema registrado.' });
       setProblemForm(emptyProblemForm);
-      await loadProblems(selectedUbsId);
+      await loadProblems(ubsId);
     } catch (error) {
       notify({ type: 'error', message: 'Erro ao salvar problema.' });
     }
@@ -246,7 +237,7 @@ const MapaProblemasIntervencoes = () => {
         },
       });
       notify({ type: 'success', message: 'Problema atualizado.' });
-      await loadProblems(selectedUbsId);
+      await loadProblems(ubsId);
     } catch (error) {
       notify({ type: 'error', message: 'Erro ao atualizar problema.' });
     }
@@ -266,7 +257,7 @@ const MapaProblemasIntervencoes = () => {
         requiresAuth: true,
       });
       notify({ type: 'success', message: 'Problema removido.' });
-      await loadProblems(selectedUbsId);
+      await loadProblems(ubsId);
     } catch (error) {
       notify({ type: 'error', message: 'Erro ao remover problema.' });
     }
@@ -463,22 +454,23 @@ const MapaProblemasIntervencoes = () => {
         <section className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-12">
           <div className="lg:col-span-4 rise-fade stagger-1">
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <h2 className="text-lg font-semibold text-slate-900">Selecione a UBS</h2>
+              <h2 className="text-lg font-semibold text-slate-900">UBS ativa</h2>
               <p className="mt-2 text-sm text-slate-500">
-                Escolha a unidade para visualizar e registrar problemas.
+                Os registros abaixo pertencem a esta unidade.
               </p>
-              <select
-                className="mt-4 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-slate-400 focus:outline-none"
-                value={selectedUbsId}
-                onChange={(event) => setSelectedUbsId(event.target.value)}
-              >
-                {ubsList.length === 0 && <option value="">Nenhuma UBS encontrada</option>}
-                {ubsList.map((ubs) => (
-                  <option key={ubs.id} value={ubs.id}>
-                    {ubs.nome_ubs || `UBS ${ubs.id}`}
-                  </option>
-                ))}
-              </select>
+              {ubsInfo ? (
+                <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-sm font-semibold text-slate-900">
+                    {ubsInfo.nome_ubs || `UBS ${ubsInfo.id}`}
+                  </p>
+                  <p className="text-xs text-slate-500">CNES: {ubsInfo.cnes || 'Nao informado'}</p>
+                  <p className="text-xs text-slate-500">
+                    Area: {ubsInfo.area_atuacao || 'Nao informada'}
+                  </p>
+                </div>
+              ) : (
+                <p className="mt-4 text-sm text-red-600">Nenhuma UBS configurada.</p>
+              )}
 
               <div className="mt-6 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-xs text-slate-500">
                 Crie ao menos um problema para liberar o plano de intervenção.

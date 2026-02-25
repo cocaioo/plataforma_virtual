@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
   BellIcon, 
@@ -13,11 +14,13 @@ import {
   LifebuoyIcon,
   EnvelopeIcon
 } from '@heroicons/react/24/outline';
+import { ubsService } from '../services/ubsService';
 
 const NavBar = ({ isDark, onToggleTheme }) => {
   const location = useLocation();
   const userJson = localStorage.getItem('user');
   const user = userJson ? JSON.parse(userJson) : null;
+  const [hasUbs, setHasUbs] = useState(null);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -30,6 +33,23 @@ const NavBar = ({ isDark, onToggleTheme }) => {
   const isActive = (path) => location.pathname === path;
   const role = (user.role || 'USER').toUpperCase();
   const roleLabel = role.toLowerCase();
+  const canSetupUbs = ['PROFISSIONAL', 'GESTOR'].includes(role);
+
+  useEffect(() => {
+    let active = true;
+    const loadUbs = async () => {
+      if (!canSetupUbs) return;
+      try {
+        const data = await ubsService.getSingleUbs();
+        if (active) setHasUbs(Boolean(data));
+      } catch (error) {
+        if (active) setHasUbs(false);
+      }
+    };
+
+    loadUbs();
+    return () => { active = false; };
+  }, [canSetupUbs]);
 
   return (
     <nav className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 sticky top-0 z-30 w-full transition-all duration-300">
@@ -85,6 +105,20 @@ const NavBar = ({ isDark, onToggleTheme }) => {
                 >
                   <CalendarIcon className="w-5 h-5 mr-2" />
                   Cronograma
+                </Link>
+              )}
+
+              {canSetupUbs && (
+                <Link
+                  to="/setup-ubs"
+                  className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    isActive('/setup-ubs')
+                      ? 'bg-blue-50 text-blue-700 dark:bg-slate-800 dark:text-blue-300'
+                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white'
+                  }`}
+                >
+                  <ClipboardDocumentListIcon className="w-5 h-5 mr-2" />
+                  {hasUbs ? 'Editar UBS' : 'Configurar UBS'}
                 </Link>
               )}
               

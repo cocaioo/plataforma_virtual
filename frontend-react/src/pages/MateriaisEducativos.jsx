@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { api } from '../services/api';
+import { ubsService } from '../services/ubsService';
 import { useNotifications } from '../components/ui/Notifications';
 
 const BASE_API = import.meta.env.PROD
@@ -19,18 +20,10 @@ const buildDownloadUrl = (fileId) => {
   return `/api/materiais/files/${fileId}/download?token=${encodeURIComponent(token)}`;
 };
 
-const MOCK_UBS_ADALTO = {
-  id: 3,
-  nome_ubs: 'ESF 41 - Adalto Parentes Sampaio',
-  cnes: '0000000',
-  area_atuacao: 'Baixa do Aragao, Parnaiba - PI',
-  status: 'DRAFT',
-};
-
 const MateriaisEducativos = () => {
   const { notify, confirm } = useNotifications();
-  const [ubsOptions, setUbsOptions] = useState([]);
-  const [selectedUbs, setSelectedUbs] = useState('');
+  const [ubsInfo, setUbsInfo] = useState(null);
+  const [ubsId, setUbsId] = useState('');
   const [materials, setMaterials] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -48,20 +41,15 @@ const MateriaisEducativos = () => {
 
   const loadUbs = useCallback(async () => {
     try {
-      const data = await api.request('/ubs?page=1&page_size=100', { requiresAuth: true });
-      const items = data?.items || [];
-      const hasAdalto = items.some((u) => u.id === MOCK_UBS_ADALTO.id);
-      const merged = hasAdalto ? items : [MOCK_UBS_ADALTO, ...items];
-      setUbsOptions(merged);
-      if (!selectedUbs && merged.length > 0) {
-        setSelectedUbs(String(merged[0].id));
-      }
+      const data = await ubsService.getSingleUbs();
+      setUbsInfo(data);
+      setUbsId(data ? String(data.id) : '');
     } catch (error) {
-      setUbsOptions([MOCK_UBS_ADALTO]);
-      if (!selectedUbs) setSelectedUbs(String(MOCK_UBS_ADALTO.id));
+      setUbsInfo(null);
+      setUbsId('');
       notify({ type: 'error', message: 'Erro ao carregar UBS.' });
     }
-  }, [notify, selectedUbs]);
+  }, [notify]);
 
   const loadMaterials = useCallback(async (ubsId) => {
     if (!ubsId) return;
@@ -82,20 +70,20 @@ const MateriaisEducativos = () => {
   }, [loadUbs]);
 
   useEffect(() => {
-    loadMaterials(selectedUbs);
-  }, [loadMaterials, selectedUbs]);
+    loadMaterials(ubsId);
+  }, [loadMaterials, ubsId]);
 
   const handleCreate = async (event) => {
     event.preventDefault();
-    if (!selectedUbs) {
-      notify({ type: 'warning', message: 'Selecione uma UBS.' });
+    if (!ubsId) {
+      notify({ type: 'warning', message: 'Configure uma UBS antes de cadastrar materiais.' });
       return;
     }
 
     setIsSubmitting(true);
     try {
       const formData = new FormData();
-      formData.append('ubs_id', selectedUbs);
+      formData.append('ubs_id', ubsId);
       formData.append('titulo', form.titulo);
       formData.append('descricao', form.descricao || '');
       formData.append('categoria', form.categoria || '');
@@ -124,7 +112,7 @@ const MateriaisEducativos = () => {
 
       setForm({ titulo: '', descricao: '', categoria: '', publico_alvo: '', ativo: true });
       setCreateFile(null);
-      await loadMaterials(selectedUbs);
+      await loadMaterials(ubsId);
       notify({ type: 'success', message: 'Material criado com sucesso.' });
     } catch (error) {
       notify({ type: 'error', message: 'Erro ao criar material.' });
@@ -144,7 +132,7 @@ const MateriaisEducativos = () => {
 
     try {
       await api.request(`/materiais/${materialId}`, { method: 'DELETE', requiresAuth: true });
-      await loadMaterials(selectedUbs);
+      await loadMaterials(ubsId);
       notify({ type: 'success', message: 'Material removido.' });
     } catch (error) {
       notify({ type: 'error', message: 'Erro ao remover material.' });
@@ -180,7 +168,7 @@ const MateriaisEducativos = () => {
       }
 
       setFileInputs((prev) => ({ ...prev, [materialId]: null }));
-      await loadMaterials(selectedUbs);
+      await loadMaterials(ubsId);
       notify({ type: 'success', message: 'Arquivo enviado.' });
     } catch (error) {
       notify({ type: 'error', message: 'Erro ao enviar arquivo.' });
@@ -200,7 +188,7 @@ const MateriaisEducativos = () => {
 
     try {
       await api.request(`/materiais/files/${fileId}`, { method: 'DELETE', requiresAuth: true });
-      await loadMaterials(selectedUbs);
+      await loadMaterials(ubsId);
       notify({ type: 'success', message: 'Arquivo removido.' });
     } catch (error) {
       notify({ type: 'error', message: 'Erro ao remover arquivo.' });
@@ -212,27 +200,20 @@ const MateriaisEducativos = () => {
       <div className="bg-white dark:bg-slate-900 shadow-md rounded-lg p-6 mb-8">
         <h1 className="text-2xl font-semibold text-gray-800 dark:text-white">Materiais Educativos</h1>
         <p className="text-gray-600 dark:text-slate-300 mt-2">
-          Centralize orientacoes, documentos oficiais e anexos por UBS.
+          Centralize orientacoes, documentos oficiais e anexos da UBS.
         </p>
       </div>
 
       <div className="bg-white dark:bg-slate-900 shadow-md rounded-lg p-6 mb-8">
         <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">Novo material</h2>
+        {ubsInfo ? (
+          <p className="text-sm text-gray-600 dark:text-slate-300 mb-4">
+            UBS: <strong>{ubsInfo.nome_ubs}</strong>
+          </p>
+        ) : (
+          <p className="text-sm text-red-600 mb-4">Nenhuma UBS configurada.</p>
+        )}
         <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">UBS</label>
-            <select
-              value={selectedUbs}
-              onChange={(e) => setSelectedUbs(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-gray-900 dark:text-slate-100"
-            >
-              {ubsOptions.map((ubs) => (
-                <option key={ubs.id} value={ubs.id}>
-                  {ubs.nome_ubs}
-                </option>
-              ))}
-            </select>
-          </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">Titulo</label>
             <input

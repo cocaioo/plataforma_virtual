@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func as sqlfunc
-from typing import List
+from typing import List, Optional
 
 from database import get_db
 from models.auth_models import Usuario
@@ -14,8 +14,10 @@ from schemas.gestao_equipes_schemas import (
     AgenteSaudeUpdate,
     AgenteSaudeOut,
     KpisTerritorioOut,
+    AcsUserOut,
 )
 from utils.deps import get_current_user
+from models.diagnostico_models import UBS
 
 gestao_equipes_router = APIRouter(tags=["Gestão de Equipes e Microáreas"])
 
@@ -37,18 +39,22 @@ def _ensure_allowed(current_user: Usuario):
 async def get_kpis(
     current_user: Usuario = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
+    ubs_id: Optional[int] = Query(None, ge=1),
 ):
     """Retorna KPIs calculados dinamicamente a partir das microáreas."""
     _ensure_allowed(current_user)
 
-    result = await db.execute(
-        select(
-            sqlfunc.coalesce(sqlfunc.sum(Microarea.populacao), 0).label("populacao"),
-            sqlfunc.coalesce(sqlfunc.sum(Microarea.familias), 0).label("familias"),
-            sqlfunc.count(Microarea.id).label("total"),
-            sqlfunc.count(sqlfunc.nullif(Microarea.status, "COBERTA")).label("descobertas"),
-        )
+    stmt = select(
+        sqlfunc.coalesce(sqlfunc.sum(Microarea.populacao), 0).label("populacao"),
+        sqlfunc.coalesce(sqlfunc.sum(Microarea.familias), 0).label("familias"),
+        sqlfunc.count(Microarea.id).label("total"),
+        sqlfunc.count(sqlfunc.nullif(Microarea.status, "COBERTA")).label("descobertas"),
     )
+
+    if ubs_id:
+        stmt = stmt.where(Microarea.ubs_id == ubs_id)
+
+    result = await db.execute(stmt)
     row = result.one()
 
     total = row.total or 0
@@ -73,13 +79,17 @@ async def get_kpis(
 async def listar_agentes(
     current_user: Usuario = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
+    ubs_id: Optional[int] = Query(None, ge=1),
 ):
     """Lista todos os agentes de saúde com dados da microárea."""
     _ensure_allowed(current_user)
 
-    result = await db.execute(
-        select(AgenteSaude).order_by(AgenteSaude.id)
-    )
+    stmt = select(AgenteSaude)
+    if ubs_id:
+        stmt = stmt.join(Microarea, AgenteSaude.microarea_id == Microarea.id).where(
+            Microarea.ubs_id == ubs_id
+        )
+    result = await db.execute(stmt.order_by(AgenteSaude.id))
     agentes = result.scalars().all()
 
     response = []
@@ -106,13 +116,15 @@ async def listar_agentes(
 async def listar_microareas(
     current_user: Usuario = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
+    ubs_id: Optional[int] = Query(None, ge=1),
 ):
     """Lista todas as microáreas."""
     _ensure_allowed(current_user)
 
-    result = await db.execute(
-        select(Microarea).order_by(Microarea.id)
-    )
+    stmt = select(Microarea)
+    if ubs_id:
+        stmt = stmt.where(Microarea.ubs_id == ubs_id)
+    result = await db.execute(stmt.order_by(Microarea.id))
     return result.scalars().all()
 
 
@@ -131,6 +143,10 @@ async def criar_microarea(
 
     if payload.status not in ("COBERTA", "DESCOBERTA"):
         raise HTTPException(status_code=400, detail="Status deve ser COBERTA ou DESCOBERTA.")
+
+    ubs = await db.get(UBS, payload.ubs_id)
+    if not ubs:
+        raise HTTPException(status_code=404, detail="UBS não encontrada.")
 
     nova = Microarea(**payload.model_dump())
     db.add(nova)
@@ -190,6 +206,8 @@ async def criar_agente(
     usuario = await db.get(Usuario, payload.usuario_id)
     if not usuario:
         raise HTTPException(status_code=404, detail="Usuário não encontrado.")
+    if (usuario.role or "USER").upper() != "ACS":
+        raise HTTPException(status_code=400, detail="Usuário deve ter role ACS.")
 
     novo = AgenteSaude(**payload.model_dump())
     db.add(novo)
@@ -222,6 +240,12 @@ async def atualizar_agente(
         raise HTTPException(status_code=404, detail="Agente não encontrado.")
 
     dados = payload.model_dump(exclude_unset=True)
+    if "usuario_id" in dados:
+        usuario = await db.get(Usuario, dados["usuario_id"])
+        if not usuario:
+            raise HTTPException(status_code=404, detail="Usuário não encontrado.")
+        if (usuario.role or "USER").upper() != "ACS":
+            raise HTTPException(status_code=400, detail="Usuário deve ter role ACS.")
     for campo, valor in dados.items():
         setattr(agente, campo, valor)
 
@@ -237,3 +261,24 @@ async def atualizar_agente(
     resp.familias = microarea.familias if microarea else 0
     resp.pacientes = microarea.populacao if microarea else 0
     return resp
+
+
+@gestao_equipes_router.get(
+    "/gestao-equipes/acs-users",
+    response_model=List[AcsUserOut],
+)
+async def listar_acs_users(
+    current_user: Usuario = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Lista usuarios ACS ativos para vinculo nas microareas."""
+    _ensure_allowed(current_user)
+
+    result = await db.execute(
+        select(Usuario).where(
+            sqlfunc.upper(Usuario.role) == "ACS",
+            Usuario.ativo.is_(True),
+        ).order_by(Usuario.nome)
+    )
+    usuarios = result.scalars().all()
+    return [AcsUserOut(id=u.id, nome=u.nome, email=u.email) for u in usuarios]

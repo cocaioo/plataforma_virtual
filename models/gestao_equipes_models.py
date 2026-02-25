@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Text
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Text, JSON
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -14,7 +14,7 @@ class Microarea(Base):
     status = Column(String(20), nullable=False, default="COBERTA")  # COBERTA | DESCOBERTA
     populacao = Column(Integer, nullable=False, default=0)
     familias = Column(Integer, nullable=False, default=0)
-    geojson = Column(JSONB, nullable=True)  # Polígono GeoJSON para mapa futuro
+    geojson = Column(JSONB().with_variant(JSON, "sqlite"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 

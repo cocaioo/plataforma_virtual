@@ -45,6 +45,7 @@ class AgenteSaudeCreate(BaseModel):
 
 
 class AgenteSaudeUpdate(BaseModel):
+    usuario_id: Optional[int] = None
     microarea_id: Optional[int] = None
     ativo: Optional[bool] = None
 
@@ -71,3 +72,9 @@ class KpisTerritorioOut(BaseModel):
     familias_cadastradas: int
     microareas_descobertas: int
     cobertura_esf: float
+
+
+class AcsUserOut(BaseModel):
+    id: int
+    nome: str
+    email: str
