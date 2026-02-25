@@ -56,15 +56,10 @@ const SetupUbs = () => {
     numero_familias_cadastradas: '',
     numero_domicilios: '',
     domicilios_rurais: '',
-    periodo_referencia: '',
     identificacao_equipe: '',
     responsavel_nome: '',
     responsavel_cargo: '',
     responsavel_contato: '',
-    fluxo_agenda_acesso: '',
-    descritivos_gerais: '',
-    observacoes_gerais: '',
-    outros_servicos: '',
     data_inauguracao: '',
     data_ultima_reforma: '',
   });
@@ -87,15 +82,10 @@ const SetupUbs = () => {
             numero_familias_cadastradas: data.numero_familias_cadastradas ?? '',
             numero_domicilios: data.numero_domicilios ?? '',
             domicilios_rurais: data.domicilios_rurais ?? '',
-            periodo_referencia: data.periodo_referencia || '',
             identificacao_equipe: data.identificacao_equipe || '',
             responsavel_nome: data.responsavel_nome || '',
             responsavel_cargo: data.responsavel_cargo || '',
             responsavel_contato: data.responsavel_contato || '',
-            fluxo_agenda_acesso: data.fluxo_agenda_acesso || '',
-            descritivos_gerais: data.descritivos_gerais || '',
-            observacoes_gerais: data.observacoes_gerais || '',
-            outros_servicos: data.outros_servicos || '',
             data_inauguracao: data.data_inauguracao || '',
             data_ultima_reforma: data.data_ultima_reforma || '',
           });
@@ -130,15 +120,10 @@ const SetupUbs = () => {
         numero_familias_cadastradas: form.numero_familias_cadastradas ? Number(form.numero_familias_cadastradas) : 0,
         numero_domicilios: form.numero_domicilios ? Number(form.numero_domicilios) : 0,
         domicilios_rurais: form.domicilios_rurais ? Number(form.domicilios_rurais) : null,
-        periodo_referencia: form.periodo_referencia || null,
         identificacao_equipe: form.identificacao_equipe || null,
         responsavel_nome: form.responsavel_nome || null,
         responsavel_cargo: form.responsavel_cargo || null,
         responsavel_contato: form.responsavel_contato || null,
-        fluxo_agenda_acesso: form.fluxo_agenda_acesso || null,
-        descritivos_gerais: form.descritivos_gerais || null,
-        observacoes_gerais: form.observacoes_gerais || null,
-        outros_servicos: form.outros_servicos || null,
         data_inauguracao: form.data_inauguracao || null,
         data_ultima_reforma: form.data_ultima_reforma || null,
       };
@@ -192,20 +177,12 @@ const SetupUbs = () => {
           <InputField label="Familias cadastradas" name="numero_familias_cadastradas" value={form.numero_familias_cadastradas} onChange={handleChange} type="number" />
           <InputField label="Numero de domicilios" name="numero_domicilios" value={form.numero_domicilios} onChange={handleChange} type="number" />
           <InputField label="Domicilios rurais" name="domicilios_rurais" value={form.domicilios_rurais} onChange={handleChange} type="number" />
-          <InputField label="Periodo de referencia" name="periodo_referencia" value={form.periodo_referencia} onChange={handleChange} placeholder="Ex.: 2025/Q1" />
           <InputField label="Identificacao da equipe" name="identificacao_equipe" value={form.identificacao_equipe} onChange={handleChange} />
           <InputField label="Responsavel" name="responsavel_nome" value={form.responsavel_nome} onChange={handleChange} />
           <InputField label="Cargo do responsavel" name="responsavel_cargo" value={form.responsavel_cargo} onChange={handleChange} />
           <InputField label="Contato do responsavel" name="responsavel_contato" value={form.responsavel_contato} onChange={handleChange} />
           <InputField label="Data de inauguracao" name="data_inauguracao" value={form.data_inauguracao} onChange={handleChange} type="date" />
           <InputField label="Data da ultima reforma" name="data_ultima_reforma" value={form.data_ultima_reforma} onChange={handleChange} type="date" />
-        </div>
-
-        <div className="mt-6">
-          <TextAreaField label="Fluxo da agenda" name="fluxo_agenda_acesso" value={form.fluxo_agenda_acesso} onChange={handleChange} />
-          <TextAreaField label="Descritivos gerais" name="descritivos_gerais" value={form.descritivos_gerais} onChange={handleChange} />
-          <TextAreaField label="Observacoes gerais" name="observacoes_gerais" value={form.observacoes_gerais} onChange={handleChange} />
-          <TextAreaField label="Outros servicos" name="outros_servicos" value={form.outros_servicos} onChange={handleChange} />
         </div>
 
         <div className="mt-6 flex justify-end">
