@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNotifications } from '../components/ui/Notifications';
+import { isValidCpf, isValidEmail, validateName, validatePassword } from '../utils/validators';
 import { gestaoEquipesService } from '../services/gestaoEquipesService';
 import { api } from '../services/api';
 import { ubsService } from '../services/ubsService';
@@ -242,6 +243,28 @@ const GestaoEquipesMicroareas = () => {
 
     if (!acsForm.nome || !acsForm.email || !acsForm.cpf || !acsForm.senha) {
       notify({ type: 'warning', message: 'Preencha nome, email, CPF e senha do ACS.' });
+      return;
+    }
+
+    const nomeError = validateName(acsForm.nome);
+    if (nomeError) {
+      notify({ type: 'warning', message: nomeError });
+      return;
+    }
+
+    if (!isValidEmail(acsForm.email)) {
+      notify({ type: 'warning', message: 'Informe um email valido.' });
+      return;
+    }
+
+    if (!isValidCpf(acsForm.cpf)) {
+      notify({ type: 'warning', message: 'Informe um CPF valido.' });
+      return;
+    }
+
+    const senhaError = validatePassword(acsForm.senha);
+    if (senhaError) {
+      notify({ type: 'warning', message: senhaError });
       return;
     }
 

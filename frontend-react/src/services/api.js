@@ -82,9 +82,26 @@ async function request(path, options = {}) {
         errorData = { error: response.statusText };
       }
 
-      throw new Error(
-        `HTTP ${response.status}: ${errorData.detail || errorData.error || response.statusText}`
-      );
+      const formatDetail = (detail) => {
+        if (Array.isArray(detail)) {
+          return detail
+            .map((item) => item?.msg || item?.message || JSON.stringify(item))
+            .filter(Boolean)
+            .join(' | ');
+        }
+        if (detail && typeof detail === 'object') {
+          return detail.message || detail.error || JSON.stringify(detail);
+        }
+        return detail;
+      };
+
+      const detailMessage =
+        formatDetail(errorData?.detail) ||
+        errorData?.message ||
+        errorData?.error ||
+        response.statusText;
+
+      throw new Error(`HTTP ${response.status}: ${detailMessage}`);
     }
 
     const data = await response.json().catch(() => ({}));

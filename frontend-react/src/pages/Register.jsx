@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import { useNotifications } from '../components/ui/Notifications';
+import { isValidCpf, isValidEmail, validateName, validatePassword } from '../utils/validators';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -26,18 +27,29 @@ const Register = () => {
   };
 
   const validateForm = () => {
+    const nomeError = validateName(formData.nome);
+    if (nomeError) {
+      setError(nomeError);
+      return false;
+    }
+
+    if (!isValidEmail(formData.email)) {
+      setError('Informe um email valido.');
+      return false;
+    }
+
+    if (!isValidCpf(formData.cpf)) {
+      setError('Informe um CPF valido.');
+      return false;
+    }
+
     if (formData.password !== formData.confirmPassword) {
       setError('As senhas não coincidem.');
       return false;
     }
-    if (formData.password.length < 8) {
-      setError('A senha deve ter pelo menos 8 caracteres.');
-      return false;
-    }
-    // Basic regex for strong password (matches backend requirements roughly)
-    const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
-    if (!strongPasswordRegex.test(formData.password)) {
-      setError('A senha deve conter pelo menos uma letra maiúscula, uma minúscula e um número.');
+    const senhaError = validatePassword(formData.password);
+    if (senhaError) {
+      setError(senhaError);
       return false;
     }
     return true;
@@ -126,6 +138,7 @@ const Register = () => {
                   className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 />
               </div>
+              <p className="mt-1 text-xs text-gray-500">Use apenas letras e espaços.</p>
             </div>
 
             <div>
@@ -143,6 +156,7 @@ const Register = () => {
                   className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 />
               </div>
+              <p className="mt-1 text-xs text-gray-500">Informe um email valido.</p>
             </div>
 
             <div>
@@ -161,6 +175,7 @@ const Register = () => {
                   className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 />
               </div>
+              <p className="mt-1 text-xs text-gray-500">CPF valido (somente numeros ou com pontuacao).</p>
             </div>
 
 
@@ -213,6 +228,7 @@ const Register = () => {
                   )}
                 </button>
               </div>
+              <p className="mt-1 text-xs text-gray-500">Minimo 8 caracteres, com letra maiuscula, minuscula e numero.</p>
             </div>
 
             <div>
@@ -241,6 +257,7 @@ const Register = () => {
                   )}
                 </button>
               </div>
+              <p className="mt-1 text-xs text-gray-500">Repita exatamente a mesma senha.</p>
             </div>
 
             <div>

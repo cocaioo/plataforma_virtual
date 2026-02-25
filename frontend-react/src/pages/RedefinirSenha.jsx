@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import { useNotifications } from '../components/ui/Notifications';
 import { api } from '../services/api';
+import { isValidEmail, validatePassword } from '../utils/validators';
 
 const RedefinirSenha = () => {
   const { notify } = useNotifications();
@@ -20,6 +21,17 @@ const RedefinirSenha = () => {
 
     if (!form.email || !form.senha || !form.confirmar_senha) {
       notify({ type: 'warning', message: 'Preencha email, senha e confirmação.' });
+      return;
+    }
+
+    if (!isValidEmail(form.email)) {
+      notify({ type: 'warning', message: 'Informe um email valido.' });
+      return;
+    }
+
+    const senhaError = validatePassword(form.senha);
+    if (senhaError) {
+      notify({ type: 'warning', message: senhaError });
       return;
     }
 
