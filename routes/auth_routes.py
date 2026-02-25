@@ -62,6 +62,42 @@ class UsuarioCreate(BaseModel):
         return v
 
 
+class AcsUserCreate(BaseModel):
+    nome: str = Field(..., min_length=2, max_length=100)
+    email: EmailStr
+    senha: str = Field(..., min_length=8, max_length=100)
+    cpf: str = Field(..., min_length=11, max_length=14)
+
+    @field_validator('nome')
+    @classmethod
+    def validate_nome(cls, v):
+        if not v.strip():
+            raise ValueError('Nome não pode estar vazio')
+        if not re.match(r'^[a-zA-ZÀ-ÿ\s]+$', v):
+            raise ValueError('Nome deve conter apenas letras')
+        return v.strip()
+
+    @field_validator('cpf')
+    @classmethod
+    def validate_cpf_field(cls, v):
+        if not validate_cpf(v):
+            raise ValueError('CPF inválido')
+        return ''.join(filter(str.isdigit, v))
+
+    @field_validator('senha')
+    @classmethod
+    def validate_senha(cls, v):
+        if len(v) < 8:
+            raise ValueError('Senha deve ter no mínimo 8 caracteres')
+        if not re.search(r'[A-Z]', v):
+            raise ValueError('Senha deve conter pelo menos uma letra maiúscula')
+        if not re.search(r'[a-z]', v):
+            raise ValueError('Senha deve conter pelo menos uma letra minúscula')
+        if not re.search(r'\d', v):
+            raise ValueError('Senha deve conter pelo menos um número')
+        return v
+
+
 
 class UsuarioLogin(BaseModel):
     email: EmailStr
@@ -233,6 +269,48 @@ async def register_user(
         cpf=usuario.cpf,
         is_profissional=False,
         role=usuario.role or "USER",
+    )
+
+
+@auth_router.post("/acs-users", response_model=UsuarioOut, status_code=status.HTTP_201_CREATED)
+@limiter.limit("5/minute")
+async def create_acs_user(
+    request: Request,
+    payload: AcsUserCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(get_current_active_user),
+):
+    role = (current_user.role or "USER").upper()
+    if role not in ("GESTOR", "RECEPCAO"):
+        raise HTTPException(status_code=403, detail="Acesso restrito à recepção ou gestão")
+
+    resultado = await db.execute(select(Usuario).filter(Usuario.email == payload.email))
+    if resultado.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Email já cadastrado")
+
+    resultado = await db.execute(select(Usuario).filter(Usuario.cpf == payload.cpf))
+    if resultado.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="CPF já cadastrado")
+
+    usuario = Usuario(
+        nome=payload.nome,
+        email=payload.email,
+        senha=hash_password(payload.senha),
+        cpf=payload.cpf,
+        role="ACS",
+        welcome_email_sent=False,
+    )
+    db.add(usuario)
+    await db.commit()
+    await db.refresh(usuario)
+
+    return UsuarioOut(
+        id=usuario.id,
+        nome=usuario.nome,
+        email=usuario.email,
+        cpf=usuario.cpf,
+        is_profissional=False,
+        role=usuario.role or "ACS",
     )
 
 

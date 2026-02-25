@@ -1,13 +1,14 @@
 import React from 'react';
 import Card from './Card';
-import { 
-  ClipboardDocumentListIcon, 
-  ClockIcon, 
-  BookOpenIcon, 
+import {
+  ClipboardDocumentListIcon,
+  CalendarDaysIcon,
+  BookOpenIcon,
   CalendarIcon,
-  LifebuoyIcon, 
-  UsersIcon, 
-  ChartBarIcon
+  LifebuoyIcon,
+  UserGroupIcon,
+  ChartBarIcon,
+  DocumentTextIcon,
 } from '@heroicons/react/24/outline';
 
 const CardGrid = () => {
@@ -19,14 +20,14 @@ const CardGrid = () => {
     {
       title: 'Gerenciar Relatórios Situacionais',
       to: '/relatorios-situacionais',
-      icon: ClipboardDocumentListIcon,
+      icon: DocumentTextIcon,
       inDevelopment: false,
       allowed: ['USER', 'PROFISSIONAL', 'GESTOR', 'RECEPCAO']
     },
     {
       title: 'Marcação de Consultas',
       to: '/agendamento',
-      icon: ClockIcon,
+      icon: CalendarDaysIcon,
       inDevelopment: false,
       allowed: ['USER', 'PROFISSIONAL', 'GESTOR', 'RECEPCAO']
     },
@@ -47,7 +48,7 @@ const CardGrid = () => {
     {
       title: 'Gestão de Equipes e Microáreas',
       to: '/gestao-equipes',
-      icon: UsersIcon,
+      icon: UserGroupIcon,
       inDevelopment: false,
       allowed: ['GESTOR', 'RECEPCAO']
     },
@@ -76,9 +77,12 @@ const CardGrid = () => {
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-      {filteredCards.map((card, index) => (
-        <Card key={index} {...card} />
-      ))}
+      {filteredCards.map((card, index) => {
+        const staggerClass = `stagger-${(index % 6) + 1}`;
+        return (
+          <Card key={index} {...card} className={`rise-fade ${staggerClass}`} />
+        );
+      })}
     </div>
   );
 };

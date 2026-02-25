@@ -96,7 +96,7 @@ function App() {
       <div className={isDark ? 'dark' : ''}>
         <Router>
           <NavBar isDark={isDark} onToggleTheme={handleToggleTheme} />
-          <main className="bg-gray-50 dark:bg-slate-950 min-h-screen">
+          <main className="bg-gray-50 dark:bg-slate-950 min-h-screen page-enter">
             <Routes>
               <Route path="/" element={<Navigate to="/login" replace />} />
               <Route path="/login" element={<Login />} />

@@ -9,6 +9,7 @@ import {
   MapIcon,
   ChartBarIcon,
   UserCircleIcon,
+  CheckCircleIcon,
 } from '@heroicons/react/24/outline';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
@@ -31,11 +32,11 @@ const MOCK_KPIS = {
 };
 
 const MOCK_AGENTES = [
-  { id: 1, nome: 'Maria Jose da Silva', microarea_nome: 'Microarea 01 - Baixa do Aragao', familias: 210, pacientes: 680 },
-  { id: 2, nome: 'Francisco Alves de Sousa', microarea_nome: 'Microarea 02 - Centro', familias: 185, pacientes: 590 },
-  { id: 3, nome: 'Ana Claudia Ferreira', microarea_nome: 'Microarea 03 - Piaui', familias: 230, pacientes: 720 },
-  { id: 4, nome: 'Jose Ribamar Costa', microarea_nome: 'Microarea 04 - Frei Higino', familias: 195, pacientes: 615 },
-  { id: 5, nome: 'Francisca das Chagas Lima', microarea_nome: 'Microarea 05 - Pindorama', familias: 220, pacientes: 695 },
+  { id: 1, nome: 'Maria Jose da Silva', microarea_nome: 'Microarea 01 - Baixa do Aragao' },
+  { id: 2, nome: 'Francisco Alves de Sousa', microarea_nome: 'Microarea 02 - Centro' },
+  { id: 3, nome: 'Ana Claudia Ferreira', microarea_nome: 'Microarea 03 - Piaui' },
+  { id: 4, nome: 'Jose Ribamar Costa', microarea_nome: 'Microarea 04 - Frei Higino' },
+  { id: 5, nome: 'Francisca das Chagas Lima', microarea_nome: 'Microarea 05 - Pindorama' },
 ];
 
 const MAP_CENTER = [-2.9045, -41.7745];
@@ -127,6 +128,9 @@ const GestaoEquipesMicroareas = () => {
   const [agenteForm, setAgenteForm] = useState(EMPTY_AGENTE_FORM);
   const [agenteEditingId, setAgenteEditingId] = useState(null);
   const [savingAgente, setSavingAgente] = useState(false);
+  const [showAcsForm, setShowAcsForm] = useState(false);
+  const [acsForm, setAcsForm] = useState({ nome: '', email: '', cpf: '', senha: '' });
+  const [savingAcs, setSavingAcs] = useState(false);
 
   const loadCatalogs = useCallback(async () => {
     try {
@@ -174,8 +178,20 @@ const GestaoEquipesMicroareas = () => {
     loadData();
   }, [loadData]);
 
-  const totalFamilias = agentes.reduce((acc, a) => acc + (a.familias || 0), 0);
-  const totalPacientes = agentes.reduce((acc, a) => acc + (a.pacientes || 0), 0);
+  const microareaAgents = useMemo(() => {
+    const map = new Map();
+    agentes.forEach((agente) => {
+      if (!agente.microarea_id) return;
+      const list = map.get(agente.microarea_id) || [];
+      if (agente.nome) list.push(agente.nome);
+      map.set(agente.microarea_id, list);
+    });
+    return map;
+  }, [agentes]);
+  const microareasCobertas = useMemo(
+    () => microareas.filter((microarea) => microarea.status === 'COBERTA').length,
+    [microareas]
+  );
 
   const openNewMicroarea = () => {
     setMicroareaForm(EMPTY_MICROAREA_FORM);
@@ -201,6 +217,8 @@ const GestaoEquipesMicroareas = () => {
     setAgenteForm(EMPTY_AGENTE_FORM);
     setAgenteModalMode('create');
     setAgenteEditingId(null);
+    setShowAcsForm(false);
+    setAcsForm({ nome: '', email: '', cpf: '', senha: '' });
     setAgenteModalOpen(true);
   };
 
@@ -212,7 +230,46 @@ const GestaoEquipesMicroareas = () => {
     });
     setAgenteModalMode('edit');
     setAgenteEditingId(agente.id);
+    setShowAcsForm(false);
     setAgenteModalOpen(true);
+  };
+
+  const handleCreateAcs = async () => {
+    if (!canEdit || usingMockData) {
+      notify({ type: 'warning', message: 'Edicao indisponivel para este usuario ou em modo de demonstracao.' });
+      return;
+    }
+
+    if (!acsForm.nome || !acsForm.email || !acsForm.cpf || !acsForm.senha) {
+      notify({ type: 'warning', message: 'Preencha nome, email, CPF e senha do ACS.' });
+      return;
+    }
+
+    try {
+      setSavingAcs(true);
+      const novo = await api.request('/auth/acs-users', {
+        method: 'POST',
+        requiresAuth: true,
+        body: {
+          nome: acsForm.nome,
+          email: acsForm.email,
+          cpf: acsForm.cpf,
+          senha: acsForm.senha,
+        },
+      });
+      notify({ type: 'success', message: 'ACS cadastrado com sucesso.' });
+      setAcsForm({ nome: '', email: '', cpf: '', senha: '' });
+      setShowAcsForm(false);
+      const refreshed = await gestaoEquipesService.getAcsUsers();
+      setAcsUsers(Array.isArray(refreshed) ? refreshed : []);
+      if (novo?.id) {
+        setAgenteForm((prev) => ({ ...prev, usuario_id: String(novo.id) }));
+      }
+    } catch (error) {
+      notify({ type: 'error', message: error.message || 'Erro ao cadastrar ACS.' });
+    } finally {
+      setSavingAcs(false);
+    }
   };
 
   const buildMicroareaPayload = () => {
@@ -320,7 +377,7 @@ const GestaoEquipesMicroareas = () => {
     <div className="max-w-6xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
       <div className="mb-8 rise-fade">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
-          Gestao de Equipes e Microareas
+          Gerenciar agentes e microareas
         </h1>
         <p className="mt-2 text-sm text-gray-500 dark:text-slate-400">
           Edite microareas e agentes. Os indicadores sao calculados automaticamente.
@@ -348,7 +405,7 @@ const GestaoEquipesMicroareas = () => {
 
       {!loading && selectedUbsId && (
         <>
-          <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8 rise-fade stagger-1">
+          <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8 rise-fade stagger-1">
             <KpiCard
               icon={UsersIcon}
               value={(kpis.populacao_adscrita || 0).toLocaleString('pt-BR')}
@@ -366,6 +423,12 @@ const GestaoEquipesMicroareas = () => {
               value={kpis.microareas_descobertas || 0}
               label="Microareas Descobertas"
               color="bg-amber-500"
+            />
+            <KpiCard
+              icon={CheckCircleIcon}
+              value={microareasCobertas}
+              label="Microareas Cobertas"
+              color="bg-emerald-600"
             />
             <KpiCard
               icon={ChartBarIcon}
@@ -386,7 +449,7 @@ const GestaoEquipesMicroareas = () => {
                         Agentes Comunitarios de Saude
                       </h2>
                       <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
-                        {agentes.length} agentes &middot; {totalFamilias} familias &middot; {totalPacientes.toLocaleString('pt-BR')} pacientes
+                        {agentes.length} agentes
                       </p>
                     </div>
                   </div>
@@ -395,7 +458,7 @@ const GestaoEquipesMicroareas = () => {
                       onClick={openNewAgente}
                       className="rounded-full bg-blue-600 px-4 py-2 text-xs font-semibold text-white shadow hover:bg-blue-700"
                     >
-                      Novo agente
+                      Gerenciar agentes
                     </button>
                   )}
                 </div>
@@ -410,12 +473,6 @@ const GestaoEquipesMicroareas = () => {
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
                         Microarea
-                      </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
-                        Familias
-                      </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
-                        Pacientes
                       </th>
                       {canEdit && !usingMockData && (
                         <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
@@ -441,16 +498,6 @@ const GestaoEquipesMicroareas = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-slate-300">
                           {agente.microarea_nome || agente.microarea}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-center">
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
-                            {agente.familias}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-center">
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
-                            {agente.pacientes}
-                          </span>
                         </td>
                         {canEdit && !usingMockData && (
                           <td className="px-6 py-4 whitespace-nowrap text-right">
@@ -487,14 +534,6 @@ const GestaoEquipesMicroareas = () => {
                     <p className="text-xs text-gray-500 dark:text-slate-400">
                       {agente.microarea_nome || agente.microarea}
                     </p>
-                    <div className="flex gap-3">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
-                        {agente.familias} familias
-                      </span>
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
-                        {agente.pacientes} pacientes
-                      </span>
-                    </div>
                     {canEdit && !usingMockData && (
                       <button
                         onClick={() => openEditAgente(agente)}
@@ -524,7 +563,7 @@ const GestaoEquipesMicroareas = () => {
                       onClick={openNewMicroarea}
                       className="rounded-full bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow hover:bg-emerald-700"
                     >
-                      Nova microarea
+                      Gerenciar microareas
                     </button>
                   )}
                 </div>
@@ -539,6 +578,9 @@ const GestaoEquipesMicroareas = () => {
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
                         Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
+                        Agentes responsaveis
                       </th>
                       <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
                         Familias
@@ -561,6 +603,9 @@ const GestaoEquipesMicroareas = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-slate-300">
                           {microarea.status}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-slate-300">
+                          {(microareaAgents.get(microarea.id) || []).join(', ') || 'Nao definido'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-600 dark:text-slate-300">
                           {microarea.familias}
@@ -596,6 +641,9 @@ const GestaoEquipesMicroareas = () => {
                       </p>
                       <span className="text-xs text-gray-500 dark:text-slate-400">{microarea.status}</span>
                     </div>
+                    <p className="text-xs text-gray-500 dark:text-slate-400">
+                      {(microareaAgents.get(microarea.id) || []).join(', ') || 'Nao definido'}
+                    </p>
                     <div className="flex gap-3 text-xs text-gray-500 dark:text-slate-400">
                       <span>{microarea.familias} familias</span>
                       <span>{microarea.populacao} pessoas</span>
@@ -764,6 +812,17 @@ const GestaoEquipesMicroareas = () => {
               ))}
             </select>
           </Field>
+          {canEdit && !usingMockData && (
+            <div className="flex items-end">
+              <button
+                type="button"
+                onClick={() => setShowAcsForm((prev) => !prev)}
+                className="rounded-full border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+              >
+                {showAcsForm ? 'Fechar cadastro ACS' : 'Cadastrar novo ACS'}
+              </button>
+            </div>
+          )}
           <Field label="Microarea">
             <select
               value={agenteForm.microarea_id}
@@ -789,6 +848,59 @@ const GestaoEquipesMicroareas = () => {
             </select>
           </Field>
         </div>
+        {showAcsForm && (
+          <div className="mt-6 rounded-lg border border-slate-100 bg-slate-50 p-4">
+            <p className="text-xs font-semibold text-slate-500 mb-3">Cadastrar ACS</p>
+            <div className="grid gap-3 md:grid-cols-2">
+              <Field label="Nome">
+                <input
+                  type="text"
+                  value={acsForm.nome}
+                  onChange={(event) => setAcsForm((prev) => ({ ...prev, nome: event.target.value }))}
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                  placeholder="Nome completo"
+                />
+              </Field>
+              <Field label="Email">
+                <input
+                  type="email"
+                  value={acsForm.email}
+                  onChange={(event) => setAcsForm((prev) => ({ ...prev, email: event.target.value }))}
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                  placeholder="email@dominio.com"
+                />
+              </Field>
+              <Field label="CPF">
+                <input
+                  type="text"
+                  value={acsForm.cpf}
+                  onChange={(event) => setAcsForm((prev) => ({ ...prev, cpf: event.target.value }))}
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                  placeholder="000.000.000-00"
+                />
+              </Field>
+              <Field label="Senha">
+                <input
+                  type="password"
+                  value={acsForm.senha}
+                  onChange={(event) => setAcsForm((prev) => ({ ...prev, senha: event.target.value }))}
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                  placeholder="Minimo 8 caracteres"
+                />
+              </Field>
+            </div>
+            <div className="mt-4 flex justify-end">
+              <button
+                type="button"
+                onClick={handleCreateAcs}
+                disabled={savingAcs}
+                className="rounded-full bg-blue-600 px-4 py-2 text-xs font-semibold text-white shadow hover:bg-blue-700 disabled:opacity-60"
+              >
+                {savingAcs ? 'Salvando...' : 'Cadastrar ACS'}
+              </button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );

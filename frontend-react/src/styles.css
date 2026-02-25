@@ -21,8 +21,75 @@
 	}
 }
 
+@keyframes page-enter {
+	0% {
+		opacity: 0;
+		transform: translateY(8px) scale(0.995);
+	}
+	100% {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
+}
+
+@keyframes float-soft {
+	0% {
+		transform: translateY(0);
+	}
+	50% {
+		transform: translateY(-6px);
+	}
+	100% {
+		transform: translateY(0);
+	}
+}
+
+@keyframes shimmer {
+	0% {
+		background-position: 200% 0;
+	}
+	100% {
+		background-position: -200% 0;
+	}
+}
+
+@keyframes marquee {
+	0% {
+		transform: translateX(0);
+	}
+	100% {
+		transform: translateX(-50%);
+	}
+}
+
 .rise-fade {
 	animation: rise-fade 500ms ease-out both;
+}
+
+.page-enter {
+	animation: page-enter 420ms ease-out both;
+}
+
+.float-soft {
+	animation: float-soft 3.6s ease-in-out infinite;
+}
+
+.loading-shimmer {
+	background: linear-gradient(110deg, #eef2ff 8%, #f8fafc 18%, #eef2ff 33%);
+	background-size: 200% 100%;
+	animation: shimmer 1.6s linear infinite;
+}
+
+.marquee {
+	overflow: hidden;
+	white-space: nowrap;
+}
+
+.marquee-track {
+	display: inline-flex;
+	gap: 3rem;
+	white-space: nowrap;
+	animation: marquee 14s linear infinite;
 }
 
 .stagger-1 {
@@ -35,4 +102,16 @@
 
 .stagger-3 {
 	animation-delay: 240ms;
+}
+
+.stagger-4 {
+	animation-delay: 320ms;
+}
+
+.stagger-5 {
+	animation-delay: 400ms;
+}
+
+.stagger-6 {
+	animation-delay: 480ms;
 }

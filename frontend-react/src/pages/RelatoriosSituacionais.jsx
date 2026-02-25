@@ -503,13 +503,14 @@ const AttachmentsSection = ({ ubsId, initialData, onUpdate }) => {
 
 // --- MODAL DE RELATÓRIO COMPLETO ---
 
-const FullReportModal = ({ isOpen, onClose, reportId, onRefresh }) => {
+const FullReportModal = ({ isOpen, onClose, reportId, onRefresh, ubsInfo }) => {
     const { notify, confirm } = useNotifications();
     const [id, setId] = useState(reportId);
     const [reportData, setReportData] = useState(null);
     const [loading, setLoading] = useState(false);
     const [generalData, setGeneralData] = useState(null);
     const [saveStatus, setSaveStatus] = useState('');
+    const isLocked = !ubsInfo;
     
     const availableServices = [
         "Programa Saúde da Família", "Atendimento médico", "Atendimento de enfermagem", 
@@ -528,27 +529,40 @@ const FullReportModal = ({ isOpen, onClose, reportId, onRefresh }) => {
     const getToken = () => localStorage.getItem('token');
 
     useEffect(() => {
-        if (isOpen) {
-            setId(reportId);
-            setReportData(null);
-            setSaveStatus('');
-            if (reportId) {
-                fetchFullData(reportId);
-            } else {
-                setGeneralData({
-                    nome_relatorio: '', nome_ubs: '', cnes: '', area_atuacao: '',
-                    periodo_referencia: '', responsavel_nome: '', responsavel_cargo: '', 
-                    responsavel_contato: '', identificacao_equipe: '', 
-                    fluxo_agenda_acesso: '', descritivos_gerais: '', observacoes_gerais: '',
-                    numero_habitantes_ativos: '', numero_familias_cadastradas: '',
-                    numero_microareas: '', numero_domicilios: '', domicilios_rurais: '',
-                    data_inauguracao: '', data_ultima_reforma: '', outros_servicos: '',
-                    gestao_modelo_atencao: '',
-                    isDirty: false
-                });
-            }
+        if (!isOpen) return;
+        const nextId = reportId || ubsInfo?.id || null;
+        setId(nextId);
+        setReportData(null);
+        setSaveStatus('');
+        if (reportId) {
+            fetchFullData(reportId);
+            return;
         }
-    }, [isOpen, reportId]);
+        setGeneralData({
+            nome_relatorio: ubsInfo?.nome_relatorio || '',
+            nome_ubs: ubsInfo?.nome_ubs || '',
+            cnes: ubsInfo?.cnes || '',
+            area_atuacao: ubsInfo?.area_atuacao || '',
+            periodo_referencia: ubsInfo?.periodo_referencia || '',
+            responsavel_nome: ubsInfo?.responsavel_nome || '',
+            responsavel_cargo: ubsInfo?.responsavel_cargo || '',
+            responsavel_contato: ubsInfo?.responsavel_contato || '',
+            identificacao_equipe: ubsInfo?.identificacao_equipe || '',
+            fluxo_agenda_acesso: '',
+            descritivos_gerais: '',
+            observacoes_gerais: '',
+            numero_habitantes_ativos: ubsInfo?.numero_habitantes_ativos ?? '',
+            numero_familias_cadastradas: ubsInfo?.numero_familias_cadastradas ?? '',
+            numero_microareas: ubsInfo?.numero_microareas ?? '',
+            numero_domicilios: ubsInfo?.numero_domicilios ?? '',
+            domicilios_rurais: ubsInfo?.domicilios_rurais ?? '',
+            data_inauguracao: ubsInfo?.data_inauguracao || '',
+            data_ultima_reforma: ubsInfo?.data_ultima_reforma || '',
+            outros_servicos: '',
+            gestao_modelo_atencao: '',
+            isDirty: false
+        });
+    }, [isOpen, reportId, ubsInfo]);
 
     const fetchFullData = async (targetId) => {
         setLoading(true);
@@ -602,6 +616,10 @@ const FullReportModal = ({ isOpen, onClose, reportId, onRefresh }) => {
     };
 
     const handleCreateDraft = async () => {
+        if (!ubsInfo) {
+            notify({ type: 'warning', message: 'Configure a UBS antes de iniciar o relatório.' });
+            return;
+        }
         if (!generalData.nome_ubs || !generalData.cnes || !generalData.area_atuacao) {
             notify({ type: 'warning', message: 'Preencha os campos obrigatórios (*) para começar.' });
             return;
@@ -680,6 +698,13 @@ const FullReportModal = ({ isOpen, onClose, reportId, onRefresh }) => {
 
                 {/* --- CORPO --- */}
                 <div className="p-8 overflow-y-auto custom-scrollbar flex-1">
+                    {isLocked && (
+                        <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900">
+                            Configure a UBS primeiro para liberar o preenchimento do relatório.
+                        </div>
+                    )}
+
+                    <div className={isLocked ? 'opacity-60 pointer-events-none' : ''}>
                     
                     <SectionCard title="Identificação do relatório" subtitle="Defina um nome para este relatório situacional, para facilitar a identificação na lista de rascunhos e relatórios finalizados.">
                         <InputField label="Nome do relatório" name="nome_relatorio" value={generalData?.nome_relatorio} onChange={handleGeneralChange} required placeholder="Ex.: Diagnóstico Situacional UBS Adalto Pereira Saraçayo - 2025" />
@@ -806,6 +831,7 @@ const FullReportModal = ({ isOpen, onClose, reportId, onRefresh }) => {
                         </div>
                     )}
 
+                    </div>
                 </div>
 
                 <div className="bg-white px-8 py-5 border-t flex justify-end gap-4 rounded-b-lg">
@@ -893,27 +919,34 @@ const RelatoriosSituacionais = () => {
         onClose={() => setModalOpen(false)} 
         reportId={selectedReportId} 
         onRefresh={fetchRelatorios}
+                ubsInfo={ubsInfo}
       />
 
-      <div className="container mx-auto mt-10 p-6 bg-white rounded-xl shadow-lg">
-        <div className="flex justify-between items-center mb-8">
+            <div className="container mx-auto mt-10 p-6 bg-white rounded-xl shadow-lg rise-fade">
+                <div className="flex justify-between items-center mb-5">
           <div>
             <h1 className="text-3xl font-bold text-gray-800">Relatórios Situacionais</h1>
             <p className="text-gray-500 mt-1">Gerencie os diagnósticos das Unidades Básicas de Saúde</p>
           </div>
                     {!isUserRole && !ubsInfo && (
-                        <button onClick={() => { setSelectedReportId(null); setModalOpen(true); }} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-2">
+                                                <button onClick={() => { setSelectedReportId(null); setModalOpen(true); }} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-2 rise-fade stagger-2">
                             <PlusIcon className="w-5 h-5" />
                             Criar relatório
                         </button>
                     )}
                     {!isUserRole && ubsInfo && (
-                        <button onClick={() => { setSelectedReportId(ubsInfo.id); setModalOpen(true); }} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-2">
+                                                <button onClick={() => { setSelectedReportId(ubsInfo.id); setModalOpen(true); }} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-2 rise-fade stagger-2">
                             <PencilSquareIcon className="w-5 h-5" />
                             Editar relatório
                         </button>
                     )}
         </div>
+
+                <div className="mb-8 rounded-2xl border border-slate-200 bg-gradient-to-r from-slate-50 via-white to-blue-50 px-5 py-4 shadow-sm rise-fade stagger-3">
+                    <div className="text-sm font-medium text-slate-600">
+                        Salve o rascunho para destravar seções e anexos. Atualize indicadores antes de exportar o PDF.
+                    </div>
+                </div>
 
         {error && (
             <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 flex justify-between items-center">
@@ -923,7 +956,11 @@ const RelatoriosSituacionais = () => {
         )}
 
                 {loading ? (
-                    <div className="text-center p-10 text-gray-500 font-medium">Carregando relatório...</div>
+                    <div className="p-8 rounded-2xl border border-gray-100 bg-gray-50">
+                        <div className="h-6 w-40 rounded-full loading-shimmer mb-4" />
+                        <div className="h-4 w-2/3 rounded-full loading-shimmer mb-3" />
+                        <div className="h-4 w-1/2 rounded-full loading-shimmer" />
+                    </div>
                 ) : (
                     <div>
                         {!ubsInfo ? (
