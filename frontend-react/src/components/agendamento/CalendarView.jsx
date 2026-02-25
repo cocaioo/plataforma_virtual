@@ -14,7 +14,7 @@ const CalendarView = ({ user }) => {
   const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
   const [selectedApt, setSelectedApt] = useState(null);
 
-  const canManage = ['PROFISSIONAL', 'GESTOR', 'RECEPCAO'].includes(user?.role);
+  const canManage = ['PROFISSIONAL', 'GESTOR', 'RECEPCAO', 'ACS'].includes(user?.role);
   const canConfirm = ['GESTOR', 'RECEPCAO'].includes(user?.role);
   
   // Helper to get start of week (Sunday)

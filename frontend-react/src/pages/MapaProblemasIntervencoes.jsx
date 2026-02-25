@@ -463,9 +463,9 @@ const MapaProblemasIntervencoes = () => {
                   <p className="text-sm font-semibold text-slate-900">
                     {ubsInfo.nome_ubs || `UBS ${ubsInfo.id}`}
                   </p>
-                  <p className="text-xs text-slate-500">CNES: {ubsInfo.cnes || 'Nao informado'}</p>
+                  <p className="text-xs text-slate-500">CNES: {ubsInfo.cnes || 'Não informado'}</p>
                   <p className="text-xs text-slate-500">
-                    Area: {ubsInfo.area_atuacao || 'Nao informada'}
+                    Área: {ubsInfo.area_atuacao || 'Não informada'}
                   </p>
                 </div>
               ) : (

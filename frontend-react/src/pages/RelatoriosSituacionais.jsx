@@ -227,7 +227,7 @@ const IndicatorsSection = ({ ubsId, initialData, onUpdate }) => {
                             value={formData.nome_indicador}
                             onChange={e => setFormData(p => ({...p, nome_indicador: e.target.value}))}
                             required
-                            placeholder="Ex: Hipertensao com PA aferida"
+                            placeholder="Ex: Hipertensão com PA aferida"
                             helpText="Dica: use os atalhos acima para preencher mais rapido."
                         />
                         <div className="mb-4">
@@ -979,7 +979,7 @@ const RelatoriosSituacionais = () => {
                                             <span className={`px-3 py-1 rounded-full text-xs font-bold ${ubsInfo.status === 'DRAFT' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}`}>
                                                 {ubsInfo.status === 'DRAFT' ? 'RASCUNHO' : 'ENVIADO'}
                                             </span>
-                                            <span>CNES: {ubsInfo.cnes || 'Nao informado'}</span>
+                                            <span>CNES: {ubsInfo.cnes || 'Não informado'}</span>
                                         </div>
                                     </div>
                                     <div className="flex flex-wrap gap-2">

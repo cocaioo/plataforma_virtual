@@ -11,7 +11,7 @@ const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024;
 
 const PUBLICO_ALVO_OPTIONS = [
   'Profissionais',
-  'Usuarios',
+  'Usuários',
 ];
 
 const buildDownloadUrl = (fileId) => {
@@ -200,7 +200,7 @@ const MateriaisEducativos = () => {
       <div className="bg-white dark:bg-slate-900 shadow-md rounded-lg p-6 mb-8">
         <h1 className="text-2xl font-semibold text-gray-800 dark:text-white">Materiais Educativos</h1>
         <p className="text-gray-600 dark:text-slate-300 mt-2">
-          Centralize orientacoes, documentos oficiais e anexos da UBS.
+          Centralize orientações, documentos oficiais e anexos da UBS.
         </p>
       </div>
 
@@ -215,7 +215,7 @@ const MateriaisEducativos = () => {
         )}
         <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">Titulo</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">Título</label>
             <input
               value={form.titulo}
               onChange={(e) => setForm((prev) => ({ ...prev, titulo: e.target.value }))}
@@ -233,7 +233,7 @@ const MateriaisEducativos = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">Publico-alvo</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">Público-alvo</label>
             <select
               value={form.publico_alvo}
               onChange={(e) => setForm((prev) => ({ ...prev, publico_alvo: e.target.value }))}
@@ -248,7 +248,7 @@ const MateriaisEducativos = () => {
             </select>
           </div>
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">Descricao</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">Descrição</label>
             <textarea
               value={form.descricao}
               onChange={(e) => setForm((prev) => ({ ...prev, descricao: e.target.value }))}

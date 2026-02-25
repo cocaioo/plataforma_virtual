@@ -15,7 +15,7 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-// ─── Fix para icones do Leaflet com bundlers (Vite/Webpack) ─────────
+// ─── Fix para ícones do Leaflet com bundlers (Vite/Webpack) ─────────
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
@@ -23,7 +23,7 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
 
-// ─── Dados mockados (fallback caso a API nao responda) ─────────────
+// ─── Dados mockados (fallback caso a API não responda) ─────────────
 const MOCK_KPIS = {
   populacao_adscrita: 12450,
   familias_cadastradas: 3280,
@@ -32,11 +32,11 @@ const MOCK_KPIS = {
 };
 
 const MOCK_AGENTES = [
-  { id: 1, nome: 'Maria Jose da Silva', microarea_nome: 'Microarea 01 - Baixa do Aragao' },
-  { id: 2, nome: 'Francisco Alves de Sousa', microarea_nome: 'Microarea 02 - Centro' },
-  { id: 3, nome: 'Ana Claudia Ferreira', microarea_nome: 'Microarea 03 - Piaui' },
-  { id: 4, nome: 'Jose Ribamar Costa', microarea_nome: 'Microarea 04 - Frei Higino' },
-  { id: 5, nome: 'Francisca das Chagas Lima', microarea_nome: 'Microarea 05 - Pindorama' },
+  { id: 1, nome: 'Maria Jose da Silva', microarea_nome: 'Microárea 01 - Baixa do Aragão' },
+  { id: 2, nome: 'Francisco Alves de Sousa', microarea_nome: 'Microárea 02 - Centro' },
+  { id: 3, nome: 'Ana Claudia Ferreira', microarea_nome: 'Microárea 03 - Piauí' },
+  { id: 4, nome: 'Jose Ribamar Costa', microarea_nome: 'Microárea 04 - Frei Higino' },
+  { id: 5, nome: 'Francisca das Chagas Lima', microarea_nome: 'Microárea 05 - Pindorama' },
 ];
 
 const MAP_CENTER = [-2.9045, -41.7745];
@@ -63,11 +63,11 @@ const Modal = ({ open, title, children, onClose, footer }) => {
   return (
     <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-slate-900/60 p-4">
       <div className="w-full max-w-xl rounded-2xl bg-white shadow-2xl">
-        <div className="border-b border-slate-100 px-5 py-4 flex items-center justify-between">
-          <h3 className="text-base font-semibold text-slate-900">{title}</h3>
+        <div className="relative border-b border-slate-100 px-5 py-4 flex items-center">
+          <h3 className="text-base font-semibold text-slate-900 text-center w-full">{title}</h3>
           <button
             onClick={onClose}
-            className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+            className="absolute right-5 top-1/2 -translate-y-1/2 rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50"
           >
             Fechar
           </button>
@@ -142,7 +142,7 @@ const GestaoEquipesMicroareas = () => {
       setUbsInfo(ubsData);
       setSelectedUbsId(ubsData ? String(ubsData.id) : '');
     } catch (error) {
-      notify({ type: 'warning', message: error.message || 'Nao foi possivel carregar a UBS.' });
+      notify({ type: 'warning', message: error.message || 'Não foi possível carregar a UBS.' });
     }
   }, [notify]);
 
@@ -164,7 +164,7 @@ const GestaoEquipesMicroareas = () => {
       setAgentes(MOCK_AGENTES);
       setMicroareas([]);
       setUsingMockData(true);
-      notify({ type: 'warning', message: 'Usando dados de demonstracao. Conexao com o servidor indisponivel.' });
+      notify({ type: 'warning', message: 'Usando dados de demonstração. Conexão com o servidor indisponível.' });
     } finally {
       setLoading(false);
     }
@@ -236,7 +236,7 @@ const GestaoEquipesMicroareas = () => {
 
   const handleCreateAcs = async () => {
     if (!canEdit || usingMockData) {
-      notify({ type: 'warning', message: 'Edicao indisponivel para este usuario ou em modo de demonstracao.' });
+      notify({ type: 'warning', message: 'Edição indisponível para este usuário ou em modo de demonstração.' });
       return;
     }
 
@@ -288,7 +288,7 @@ const GestaoEquipesMicroareas = () => {
       try {
         payload.geojson = JSON.parse(microareaForm.geojson);
       } catch {
-        throw new Error('GeoJSON invalido.');
+        throw new Error('GeoJSON inválido.');
       }
     }
 
@@ -297,17 +297,17 @@ const GestaoEquipesMicroareas = () => {
 
   const handleSaveMicroarea = async () => {
     if (!canEdit || usingMockData) {
-      notify({ type: 'warning', message: 'Edicao indisponivel para este usuario ou em modo de demonstracao.' });
+      notify({ type: 'warning', message: 'Edição indisponível para este usuário ou em modo de demonstração.' });
       return;
     }
 
     if (!isValidId(selectedUbsId)) {
-      notify({ type: 'error', message: 'Selecione uma UBS valida.' });
+      notify({ type: 'error', message: 'Selecione uma UBS válida.' });
       return;
     }
 
     if (!microareaForm.nome.trim()) {
-      notify({ type: 'error', message: 'O nome da microarea e obrigatorio.' });
+      notify({ type: 'error', message: 'O nome da microárea é obrigatório.' });
       return;
     }
 
@@ -317,16 +317,16 @@ const GestaoEquipesMicroareas = () => {
 
       if (microareaModalMode === 'create') {
         await gestaoEquipesService.createMicroarea(payload);
-        notify({ type: 'success', message: 'Microarea criada com sucesso.' });
+        notify({ type: 'success', message: 'Microárea criada com sucesso.' });
       } else if (microareaEditingId) {
         await gestaoEquipesService.updateMicroarea(microareaEditingId, payload);
-        notify({ type: 'success', message: 'Microarea atualizada com sucesso.' });
+        notify({ type: 'success', message: 'Microárea atualizada com sucesso.' });
       }
 
       setMicroareaModalOpen(false);
       await loadData();
     } catch (error) {
-      notify({ type: 'error', message: error.message || 'Erro ao salvar microarea.' });
+      notify({ type: 'error', message: error.message || 'Erro ao salvar microárea.' });
     } finally {
       setSavingMicroarea(false);
     }
@@ -334,17 +334,17 @@ const GestaoEquipesMicroareas = () => {
 
   const handleSaveAgente = async () => {
     if (!canEdit || usingMockData) {
-      notify({ type: 'warning', message: 'Edicao indisponivel para este usuario ou em modo de demonstracao.' });
+      notify({ type: 'warning', message: 'Edição indisponível para este usuário ou em modo de demonstração.' });
       return;
     }
 
     if (!isValidId(agenteForm.usuario_id)) {
-      notify({ type: 'error', message: 'Selecione um ACS valido.' });
+      notify({ type: 'error', message: 'Selecione um ACS válido.' });
       return;
     }
 
     if (!isValidId(agenteForm.microarea_id)) {
-      notify({ type: 'error', message: 'Selecione uma microarea valida.' });
+      notify({ type: 'error', message: 'Selecione uma microárea válida.' });
       return;
     }
 
@@ -377,10 +377,10 @@ const GestaoEquipesMicroareas = () => {
     <div className="max-w-6xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
       <div className="mb-8 rise-fade">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
-          Gerenciar agentes e microareas
+          Gerenciar agentes e microáreas
         </h1>
         <p className="mt-2 text-sm text-gray-500 dark:text-slate-400">
-          Edite microareas e agentes. Os indicadores sao calculados automaticamente.
+          Edite microáreas e agentes. Os indicadores são calculados automaticamente.
         </p>
         {ubsInfo && (
           <p className="mt-3 text-sm text-gray-600 dark:text-slate-300">
@@ -398,7 +398,7 @@ const GestaoEquipesMicroareas = () => {
       {!loading && !selectedUbsId && (
         <div className="bg-white dark:bg-slate-900 shadow-md rounded-lg p-6">
           <p className="text-gray-600 dark:text-slate-300">
-            Nenhuma UBS configurada. Finalize a configuracao inicial para continuar.
+            Nenhuma UBS configurada. Finalize a configuração inicial para continuar.
           </p>
         </div>
       )}
@@ -409,25 +409,25 @@ const GestaoEquipesMicroareas = () => {
             <KpiCard
               icon={UsersIcon}
               value={(kpis.populacao_adscrita || 0).toLocaleString('pt-BR')}
-              label="Populacao Adscrita"
+              label="População Adscrita"
               color="bg-blue-600"
             />
             <KpiCard
               icon={HomeModernIcon}
               value={(kpis.familias_cadastradas || 0).toLocaleString('pt-BR')}
-              label="Familias Cadastradas"
+              label="Famílias Cadastradas"
               color="bg-emerald-600"
             />
             <KpiCard
               icon={MapIcon}
               value={kpis.microareas_descobertas || 0}
-              label="Microareas Descobertas"
+              label="Microáreas Descobertas"
               color="bg-amber-500"
             />
             <KpiCard
               icon={CheckCircleIcon}
               value={microareasCobertas}
-              label="Microareas Cobertas"
+              label="Microáreas Cobertas"
               color="bg-emerald-600"
             />
             <KpiCard
@@ -446,7 +446,7 @@ const GestaoEquipesMicroareas = () => {
                     <UserCircleIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                     <div>
                       <h2 className="text-lg font-semibold text-gray-800 dark:text-white">
-                        Agentes Comunitarios de Saude
+                        Agentes Comunitários de Saúde
                       </h2>
                       <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
                         {agentes.length} agentes
@@ -469,14 +469,14 @@ const GestaoEquipesMicroareas = () => {
                   <thead className="bg-gray-50 dark:bg-slate-800/50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
-                        Agente de Saude
+                        Agente de Saúde
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
-                        Microarea
+                        Microárea
                       </th>
                       {canEdit && !usingMockData && (
                         <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
-                          Acoes
+                          Ações
                         </th>
                       )}
                     </tr>
@@ -553,9 +553,9 @@ const GestaoEquipesMicroareas = () => {
               <div className="bg-gray-50 dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 px-6 py-4">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Microareas</h2>
+                    <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Microáreas</h2>
                     <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
-                      {microareas.length} microareas cadastradas
+                      {microareas.length} microáreas cadastradas
                     </p>
                   </div>
                   {canEdit && !usingMockData && (
@@ -563,7 +563,7 @@ const GestaoEquipesMicroareas = () => {
                       onClick={openNewMicroarea}
                       className="rounded-full bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow hover:bg-emerald-700"
                     >
-                      Gerenciar microareas
+                      Gerenciar microáreas
                     </button>
                   )}
                 </div>
@@ -574,23 +574,23 @@ const GestaoEquipesMicroareas = () => {
                   <thead className="bg-gray-50 dark:bg-slate-800/50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
-                        Microarea
+                        Microárea
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
                         Status
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
-                        Agentes responsaveis
+                        Agentes responsáveis
                       </th>
                       <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
-                        Familias
+                        Famílias
                       </th>
                       <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
-                        Populacao
+                        População
                       </th>
                       {canEdit && !usingMockData && (
                         <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
-                          Acoes
+                          Ações
                         </th>
                       )}
                     </tr>
@@ -605,7 +605,7 @@ const GestaoEquipesMicroareas = () => {
                           {microarea.status}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-slate-300">
-                          {(microareaAgents.get(microarea.id) || []).join(', ') || 'Nao definido'}
+                          {(microareaAgents.get(microarea.id) || []).join(', ') || 'Não definido'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-600 dark:text-slate-300">
                           {microarea.familias}
@@ -642,10 +642,10 @@ const GestaoEquipesMicroareas = () => {
                       <span className="text-xs text-gray-500 dark:text-slate-400">{microarea.status}</span>
                     </div>
                     <p className="text-xs text-gray-500 dark:text-slate-400">
-                      {(microareaAgents.get(microarea.id) || []).join(', ') || 'Nao definido'}
+                      {(microareaAgents.get(microarea.id) || []).join(', ') || 'Não definido'}
                     </p>
                     <div className="flex gap-3 text-xs text-gray-500 dark:text-slate-400">
-                      <span>{microarea.familias} familias</span>
+                      <span>{microarea.familias} famílias</span>
                       <span>{microarea.populacao} pessoas</span>
                     </div>
                     {canEdit && !usingMockData && (
@@ -669,10 +669,10 @@ const GestaoEquipesMicroareas = () => {
                   <MapIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                   <div>
                     <h2 className="text-lg font-semibold text-gray-800 dark:text-white">
-                      Mapa do Territorio
+                      Mapa do Território
                     </h2>
                     <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
-                      Parnaiba - PI &middot; Area de atuacao da ESF
+                      Parnaíba - PI &middot; Área de atuação da ESF
                     </p>
                   </div>
                 </div>
@@ -693,7 +693,7 @@ const GestaoEquipesMicroareas = () => {
                     <Popup>
                       <strong>ESF 41 - Adalto Parentes Sampaio</strong>
                       <br />
-                      Parnaiba - PI
+                      Parnaíba - PI
                     </Popup>
                   </Marker>
                 </MapContainer>
@@ -705,7 +705,7 @@ const GestaoEquipesMicroareas = () => {
 
       <Modal
         open={microareaModalOpen}
-        title={microareaModalMode === 'create' ? 'Nova microarea' : 'Editar microarea'}
+        title={microareaModalMode === 'create' ? 'Nova microárea' : 'Editar microárea'}
         onClose={() => setMicroareaModalOpen(false)}
         footer={(
           <div className="flex items-center justify-end gap-2">
@@ -732,7 +732,7 @@ const GestaoEquipesMicroareas = () => {
               value={microareaForm.nome}
               onChange={(event) => setMicroareaForm((prev) => ({ ...prev, nome: event.target.value }))}
               className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
-              placeholder="Microarea 01 - Centro"
+              placeholder="Microárea 01 - Centro"
             />
           </Field>
           <Field label="Status">
@@ -745,7 +745,7 @@ const GestaoEquipesMicroareas = () => {
               <option value="DESCOBERTA">DESCOBERTA</option>
             </select>
           </Field>
-          <Field label="Populacao">
+          <Field label="População">
             <input
               type="number"
               value={microareaForm.populacao}
@@ -754,7 +754,7 @@ const GestaoEquipesMicroareas = () => {
               placeholder="Ex.: 2100"
             />
           </Field>
-          <Field label="Familias">
+          <Field label="Famílias">
             <input
               type="number"
               value={microareaForm.familias}
@@ -777,7 +777,7 @@ const GestaoEquipesMicroareas = () => {
 
       <Modal
         open={agenteModalOpen}
-        title={agenteModalMode === 'create' ? 'Novo agente' : 'Editar agente'}
+        title={agenteModalMode === 'create' ? 'Gerenciar agentes da microárea' : 'Editar agente'}
         onClose={() => setAgenteModalOpen(false)}
         footer={(
           <div className="flex items-center justify-end gap-2">
@@ -798,7 +798,7 @@ const GestaoEquipesMicroareas = () => {
         )}
       >
         <div className="grid gap-4 md:grid-cols-2">
-          <Field label="ACS responsavel">
+          <Field label="ACS responsável">
             <select
               value={agenteForm.usuario_id}
               onChange={(event) => setAgenteForm((prev) => ({ ...prev, usuario_id: event.target.value }))}
@@ -823,7 +823,7 @@ const GestaoEquipesMicroareas = () => {
               </button>
             </div>
           )}
-          <Field label="Microarea">
+          <Field label="Microárea">
             <select
               value={agenteForm.microarea_id}
               onChange={(event) => setAgenteForm((prev) => ({ ...prev, microarea_id: event.target.value }))}
@@ -844,7 +844,7 @@ const GestaoEquipesMicroareas = () => {
               className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
             >
               <option value="true">Sim</option>
-              <option value="false">Nao</option>
+              <option value="false">Não</option>
             </select>
           </Field>
         </div>
@@ -860,6 +860,7 @@ const GestaoEquipesMicroareas = () => {
                   className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
                   placeholder="Nome completo"
                 />
+                <p className="mt-2 text-xs text-slate-500">Use apenas letras e espaços.</p>
               </Field>
               <Field label="Email">
                 <input
@@ -867,8 +868,9 @@ const GestaoEquipesMicroareas = () => {
                   value={acsForm.email}
                   onChange={(event) => setAcsForm((prev) => ({ ...prev, email: event.target.value }))}
                   className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-                  placeholder="email@dominio.com"
+                  placeholder="email@domínio.com"
                 />
+                <p className="mt-2 text-xs text-slate-500">Informe um email válido.</p>
               </Field>
               <Field label="CPF">
                 <input
@@ -878,6 +880,7 @@ const GestaoEquipesMicroareas = () => {
                   className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
                   placeholder="000.000.000-00"
                 />
+                <p className="mt-2 text-xs text-slate-500">CPF válido (somente números ou com pontuação).</p>
               </Field>
               <Field label="Senha">
                 <input
@@ -885,8 +888,9 @@ const GestaoEquipesMicroareas = () => {
                   value={acsForm.senha}
                   onChange={(event) => setAcsForm((prev) => ({ ...prev, senha: event.target.value }))}
                   className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-                  placeholder="Minimo 8 caracteres"
+                  placeholder="Mínimo 8 caracteres"
                 />
+                <p className="mt-2 text-xs text-slate-500">Mínimo 8 caracteres, com letra maiúscula, minúscula e número.</p>
               </Field>
             </div>
             <div className="mt-4 flex justify-end">

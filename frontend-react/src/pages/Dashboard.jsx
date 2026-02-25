@@ -7,7 +7,7 @@ const Dashboard = () => {
   const userJson = localStorage.getItem('user');
   const user = userJson ? JSON.parse(userJson) : null;
   const role = (user?.role || 'USER').toUpperCase();
-  const canSetupUbs = ['PROFISSIONAL', 'GESTOR'].includes(role);
+  const canSetupUbs = ['PROFISSIONAL', 'GESTOR', 'ACS'].includes(role);
   const [hasUbs, setHasUbs] = useState(null);
 
   useEffect(() => {
@@ -31,31 +31,31 @@ const Dashboard = () => {
       label: 'Dashboard',
       to: '/dashboard',
       tone: 'border-slate-200 bg-slate-50 text-slate-700',
-      allowed: ['USER', 'PROFISSIONAL', 'GESTOR', 'RECEPCAO'],
+      allowed: ['USER', 'PROFISSIONAL', 'GESTOR', 'RECEPCAO', 'ACS'],
     },
     {
       label: 'Gerenciar Relatórios Situacionais',
       to: '/relatorios-situacionais',
       tone: 'border-blue-100 bg-blue-50 text-blue-700',
-      allowed: ['USER', 'PROFISSIONAL', 'GESTOR', 'RECEPCAO'],
+      allowed: ['USER', 'PROFISSIONAL', 'GESTOR', 'RECEPCAO', 'ACS'],
     },
     {
       label: 'Marcação de Consultas',
       to: '/agendamento',
       tone: 'border-sky-100 bg-sky-50 text-sky-700',
-      allowed: ['USER', 'PROFISSIONAL', 'GESTOR', 'RECEPCAO'],
+      allowed: ['USER', 'PROFISSIONAL', 'GESTOR', 'RECEPCAO', 'ACS'],
     },
     {
       label: 'Suporte e Feedback',
       to: '/suporte-feedback',
       tone: 'border-amber-100 bg-amber-50 text-amber-700',
-      allowed: ['USER', 'PROFISSIONAL', 'GESTOR', 'RECEPCAO'],
+      allowed: ['USER', 'PROFISSIONAL', 'GESTOR', 'RECEPCAO', 'ACS'],
     },
     {
-      label: 'Mapa de problemas e Intervenções',
+      label: 'Mapa de problemas e intervenções',
       to: '/mapa-problemas-intervencoes',
       tone: 'border-orange-100 bg-orange-50 text-orange-700',
-      allowed: ['USER', 'PROFISSIONAL', 'GESTOR'],
+      allowed: ['USER', 'PROFISSIONAL', 'GESTOR', 'ACS'],
     },
     {
       label: 'Gerenciar agentes e microáreas',
@@ -67,19 +67,19 @@ const Dashboard = () => {
       label: 'Materiais',
       to: '/materiais-educativos',
       tone: 'border-emerald-100 bg-emerald-50 text-emerald-700',
-      allowed: ['PROFISSIONAL', 'GESTOR'],
+      allowed: ['PROFISSIONAL', 'GESTOR', 'ACS'],
     },
     {
       label: 'Cronograma',
       to: '/cronograma',
       tone: 'border-teal-100 bg-teal-50 text-teal-700',
-      allowed: ['PROFISSIONAL', 'GESTOR'],
+      allowed: ['PROFISSIONAL', 'GESTOR', 'ACS'],
     },
     {
       label: hasUbs ? 'Editar UBS' : 'Configurar UBS',
       to: '/setup-ubs',
       tone: 'border-violet-100 bg-violet-50 text-violet-700',
-      allowed: ['PROFISSIONAL', 'GESTOR'],
+      allowed: ['PROFISSIONAL', 'GESTOR', 'ACS'],
     },
     {
       label: 'Notificações',
@@ -98,10 +98,22 @@ const Dashboard = () => {
   return (
     <div className="container mx-auto p-8">
       <div className="bg-white dark:bg-slate-900 shadow-md rounded-lg p-6 mb-6 rise-fade">
-        <h1 className="text-2xl font-semibold text-gray-800 dark:text-white">Bem-vindo à Plataforma UBS</h1>
-        <p className="mt-2 text-gray-600 dark:text-slate-300">
-          Você está autenticado como <strong className="capitalize">{user?.role?.toLowerCase() || 'Usuário'}</strong>.
-        </p>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold text-gray-800 dark:text-white">Bem-vindo à Plataforma UBS</h1>
+            <p className="mt-2 text-gray-600 dark:text-slate-300">
+              Você está autenticado como <strong className="capitalize">{user?.role?.toLowerCase() || 'Usuário'}</strong>.
+            </p>
+          </div>
+          {(role === 'GESTOR' || role === 'RECEPCAO') && (
+            <Link
+              to="/redefinir-senha"
+              className="inline-flex items-center justify-center rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              Redefinir senha
+            </Link>
+          )}
+        </div>
       </div>
 
       <CardGrid />

@@ -137,7 +137,7 @@ const SetupUbs = () => {
       }
       navigate('/dashboard');
     } catch (error) {
-      notify({ type: 'error', message: error.message || 'Erro ao salvar configuracao da UBS.' });
+      notify({ type: 'error', message: error.message || 'Erro ao salvar configuração da UBS.' });
     } finally {
       setSaving(false);
     }
@@ -147,18 +147,18 @@ const SetupUbs = () => {
     <div className="container mx-auto p-8">
       {checking && (
         <div className="bg-white shadow-md rounded-lg p-6 mb-8">
-          <p className="text-gray-600">Carregando configuracao da UBS...</p>
+          <p className="text-gray-600">Carregando configuração da UBS...</p>
         </div>
       )}
 
       {!checking && (
       <div className="bg-white shadow-md rounded-lg p-6 mb-8">
         <h1 className="text-2xl font-semibold text-gray-800">
-          {existingUbs ? 'Editar UBS' : 'Configuracao inicial da UBS'}
+          {existingUbs ? 'Editar UBS' : 'Configuração inicial da UBS'}
         </h1>
         <p className="mt-2 text-gray-600">
           {existingUbs
-            ? 'Atualize as informacoes principais da unidade.'
+            ? 'Atualize as informações principais da unidade.'
             : 'Preencha os dados principais para ativar a plataforma.'}
         </p>
       </div>
@@ -170,19 +170,19 @@ const SetupUbs = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <InputField label="Nome da UBS" name="nome_ubs" value={form.nome_ubs} onChange={handleChange} required />
           <InputField label="CNES" name="cnes" value={form.cnes} onChange={handleChange} required />
-          <InputField label="Nome do relatorio" name="nome_relatorio" value={form.nome_relatorio} onChange={handleChange} />
-          <InputField label="Area de atuacao" name="area_atuacao" value={form.area_atuacao} onChange={handleChange} required />
-          <InputField label="Populacao adscrita" name="numero_habitantes_ativos" value={form.numero_habitantes_ativos} onChange={handleChange} type="number" />
-          <InputField label="Numero de microareas" name="numero_microareas" value={form.numero_microareas} onChange={handleChange} type="number" />
-          <InputField label="Familias cadastradas" name="numero_familias_cadastradas" value={form.numero_familias_cadastradas} onChange={handleChange} type="number" />
-          <InputField label="Numero de domicilios" name="numero_domicilios" value={form.numero_domicilios} onChange={handleChange} type="number" />
-          <InputField label="Domicilios rurais" name="domicilios_rurais" value={form.domicilios_rurais} onChange={handleChange} type="number" />
-          <InputField label="Identificacao da equipe" name="identificacao_equipe" value={form.identificacao_equipe} onChange={handleChange} />
-          <InputField label="Responsavel" name="responsavel_nome" value={form.responsavel_nome} onChange={handleChange} />
-          <InputField label="Cargo do responsavel" name="responsavel_cargo" value={form.responsavel_cargo} onChange={handleChange} />
-          <InputField label="Contato do responsavel" name="responsavel_contato" value={form.responsavel_contato} onChange={handleChange} />
-          <InputField label="Data de inauguracao" name="data_inauguracao" value={form.data_inauguracao} onChange={handleChange} type="date" />
-          <InputField label="Data da ultima reforma" name="data_ultima_reforma" value={form.data_ultima_reforma} onChange={handleChange} type="date" />
+          <InputField label="Nome do relatório" name="nome_relatorio" value={form.nome_relatorio} onChange={handleChange} />
+          <InputField label="Área de atuação" name="area_atuacao" value={form.area_atuacao} onChange={handleChange} required />
+          <InputField label="População adscrita" name="numero_habitantes_ativos" value={form.numero_habitantes_ativos} onChange={handleChange} type="number" />
+          <InputField label="Número de microáreas" name="numero_microareas" value={form.numero_microareas} onChange={handleChange} type="number" />
+          <InputField label="Famílias cadastradas" name="numero_familias_cadastradas" value={form.numero_familias_cadastradas} onChange={handleChange} type="number" />
+          <InputField label="Número de domicílios" name="numero_domicilios" value={form.numero_domicilios} onChange={handleChange} type="number" />
+          <InputField label="Domicílios rurais" name="domicilios_rurais" value={form.domicilios_rurais} onChange={handleChange} type="number" />
+          <InputField label="Identificação da equipe" name="identificacao_equipe" value={form.identificacao_equipe} onChange={handleChange} />
+          <InputField label="Responsável" name="responsavel_nome" value={form.responsavel_nome} onChange={handleChange} />
+          <InputField label="Cargo do responsável" name="responsavel_cargo" value={form.responsavel_cargo} onChange={handleChange} />
+          <InputField label="Contato do responsável" name="responsavel_contato" value={form.responsavel_contato} onChange={handleChange} />
+          <InputField label="Data de inauguração" name="data_inauguracao" value={form.data_inauguracao} onChange={handleChange} type="date" />
+          <InputField label="Data da última reforma" name="data_ultima_reforma" value={form.data_ultima_reforma} onChange={handleChange} type="date" />
         </div>
 
         <div className="mt-6 flex justify-end">
@@ -191,7 +191,7 @@ const SetupUbs = () => {
             disabled={saving}
             className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg shadow disabled:opacity-60"
           >
-            {saving ? 'Salvando...' : existingUbs ? 'Salvar alteracoes' : 'Salvar configuracao'}
+            {saving ? 'Salvando...' : existingUbs ? 'Salvar alterações' : 'Salvar configuração'}
           </button>
         </div>
       </form>

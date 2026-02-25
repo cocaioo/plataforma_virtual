@@ -116,7 +116,7 @@ const Cronograma = () => {
     }
 
     if (!form.inicio) {
-      notify({ type: 'warning', message: 'Informe a data de inicio.' });
+      notify({ type: 'warning', message: 'Informe a data de início.' });
       return;
     }
 
@@ -207,9 +207,9 @@ const Cronograma = () => {
   return (
     <div className="container mx-auto p-6">
       <div className="bg-white dark:bg-slate-900 shadow-md rounded-lg p-6 mb-8">
-        <h1 className="text-2xl font-semibold text-gray-800">Cronograma e Calendario</h1>
+        <h1 className="text-2xl font-semibold text-gray-800">Cronograma e Calendário</h1>
         <p className="text-gray-600 mt-2">
-          Organize sala de vacina, farmacia basica e reunioes da equipe por UBS.
+          Organize sala de vacina, farmácia básica e reuniões da equipe por UBS.
         </p>
       </div>
 
@@ -240,13 +240,13 @@ const Cronograma = () => {
               className="mt-1 block w-full rounded-md border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-gray-900 dark:text-slate-100"
             >
               <option value="SALA_VACINA">Sala de vacina</option>
-              <option value="FARMACIA_BASICA">Farmacia basica</option>
-              <option value="REUNIAO_EQUIPE">Reuniao da equipe</option>
+              <option value="FARMACIA_BASICA">Farmácia básica</option>
+              <option value="REUNIAO_EQUIPE">Reunião da equipe</option>
               <option value="OUTRO">Outro</option>
             </select>
           </div>
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">Titulo</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">Título</label>
             <input
               value={form.titulo}
               onChange={(e) => setForm((prev) => ({ ...prev, titulo: e.target.value }))}
@@ -255,7 +255,7 @@ const Cronograma = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">Inicio</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">Início</label>
             <input
               type={form.dia_inteiro ? 'date' : 'datetime-local'}
               value={form.inicio}

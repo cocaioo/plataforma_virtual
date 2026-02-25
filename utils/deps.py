@@ -51,7 +51,7 @@ async def get_current_professional_user(
     db: AsyncSession = Depends(get_db),
 ) -> Usuario:
     role = (current_user.role or "USER").upper()
-    if role in ("PROFISSIONAL", "GESTOR"):
+    if role in ("PROFISSIONAL", "GESTOR", "ACS"):
         return current_user
 
     # Compatibilidade: se existir registro ativo em profissionais, também permite

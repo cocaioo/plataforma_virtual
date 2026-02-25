@@ -98,6 +98,24 @@ class AcsUserCreate(BaseModel):
         return v
 
 
+class PasswordResetInternal(BaseModel):
+    email: EmailStr
+    senha: str = Field(..., min_length=8, max_length=100)
+
+    @field_validator('senha')
+    @classmethod
+    def validate_senha(cls, v):
+        if len(v) < 8:
+            raise ValueError('Senha deve ter no mínimo 8 caracteres')
+        if not re.search(r'[A-Z]', v):
+            raise ValueError('Senha deve conter pelo menos uma letra maiúscula')
+        if not re.search(r'[a-z]', v):
+            raise ValueError('Senha deve conter pelo menos uma letra minúscula')
+        if not re.search(r'\d', v):
+            raise ValueError('Senha deve conter pelo menos um número')
+        return v
+
+
 
 class UsuarioLogin(BaseModel):
     email: EmailStr
@@ -120,7 +138,7 @@ async def get_me(
     current_user: Usuario = Depends(get_current_active_user),
 ):
     role = (current_user.role or "USER").upper()
-    is_prof = role in ("PROFISSIONAL", "GESTOR")
+    is_prof = role in ("PROFISSIONAL", "GESTOR", "ACS")
     if not is_prof:
         resultado = await db.execute(
             select(ProfissionalUbs).where(ProfissionalUbs.usuario_id == current_user.id, ProfissionalUbs.ativo == True)
@@ -314,6 +332,31 @@ async def create_acs_user(
     )
 
 
+@auth_router.post("/reset-password", status_code=status.HTTP_200_OK)
+@limiter.limit("5/minute")
+async def reset_password_internal(
+    request: Request,
+    payload: PasswordResetInternal,
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(get_current_active_user),
+):
+    role = (current_user.role or "USER").upper()
+    if role not in ("GESTOR", "RECEPCAO"):
+        raise HTTPException(status_code=403, detail="Acesso restrito à recepção ou gestão")
+
+    resultado = await db.execute(select(Usuario).filter(Usuario.email == payload.email))
+    usuario = resultado.scalar_one_or_none()
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+
+    usuario.senha = hash_password(payload.senha)
+    usuario.tentativas_login = 0
+    usuario.bloqueado_ate = None
+    await db.commit()
+
+    return {"message": "Senha redefinida com sucesso."}
+
+
 @auth_router.post("/login")
 @limiter.limit("10/minute")
 async def login_user(request: Request, payload: UsuarioLogin, db: AsyncSession = Depends(get_db)):
@@ -359,7 +402,7 @@ async def login_user(request: Request, payload: UsuarioLogin, db: AsyncSession =
 
     resultado = await db.execute(select(ProfissionalUbs).filter(ProfissionalUbs.usuario_id == usuario.id))
     tem_registro_prof = resultado.scalar_one_or_none() is not None
-    is_profissional = role in ("PROFISSIONAL", "GESTOR") or tem_registro_prof
+    is_profissional = role in ("PROFISSIONAL", "GESTOR", "ACS") or tem_registro_prof
     
     token_acesso = create_access_token(
         data={"sub": str(usuario.id), "email": usuario.email, "is_profissional": is_profissional, "role": role}

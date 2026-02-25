@@ -22,28 +22,28 @@ const CardGrid = () => {
       to: '/relatorios-situacionais',
       icon: DocumentTextIcon,
       inDevelopment: false,
-      allowed: ['USER', 'PROFISSIONAL', 'GESTOR', 'RECEPCAO']
+      allowed: ['USER', 'PROFISSIONAL', 'GESTOR', 'RECEPCAO', 'ACS']
     },
     {
       title: 'Marcação de Consultas',
       to: '/agendamento',
       icon: CalendarDaysIcon,
       inDevelopment: false,
-      allowed: ['USER', 'PROFISSIONAL', 'GESTOR', 'RECEPCAO']
+      allowed: ['USER', 'PROFISSIONAL', 'GESTOR', 'RECEPCAO', 'ACS']
     },
     {
       title: 'Suporte e Feedback',
       to: '/suporte-feedback',
       icon: LifebuoyIcon,
       inDevelopment: false,
-      allowed: ['USER', 'PROFISSIONAL', 'GESTOR', 'RECEPCAO']
+      allowed: ['USER', 'PROFISSIONAL', 'GESTOR', 'RECEPCAO', 'ACS']
     },
     {
-      title: 'Mapa de problemas e Intervenções',
+      title: 'Mapa de problemas e intervenções',
       to: '/mapa-problemas-intervencoes',
       icon: ChartBarIcon,
       inDevelopment: false,
-      allowed: ['USER', 'PROFISSIONAL', 'GESTOR']
+      allowed: ['USER', 'PROFISSIONAL', 'GESTOR', 'ACS']
     },
     {
       title: 'Gestão de Equipes e Microáreas',
@@ -54,21 +54,21 @@ const CardGrid = () => {
     },
   ];
 
-  if (['PROFISSIONAL', 'GESTOR'].includes(role)) {
+  if (['PROFISSIONAL', 'GESTOR', 'ACS'].includes(role)) {
     allCards.push(
       {
         title: 'Materiais Educativos',
         to: '/materiais-educativos',
         icon: BookOpenIcon,
         inDevelopment: false,
-        allowed: ['PROFISSIONAL', 'GESTOR']
+        allowed: ['PROFISSIONAL', 'GESTOR', 'ACS']
       },
       {
-        title: 'Cronograma e Calendario',
+        title: 'Cronograma e Calendário',
         to: '/cronograma',
         icon: CalendarIcon,
         inDevelopment: false,
-        allowed: ['PROFISSIONAL', 'GESTOR']
+        allowed: ['PROFISSIONAL', 'GESTOR', 'ACS']
       }
     );
   }

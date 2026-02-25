@@ -12,7 +12,8 @@ import {
   ClipboardDocumentListIcon,
   UsersIcon,
   LifebuoyIcon,
-  EnvelopeIcon
+  EnvelopeIcon,
+  KeyIcon
 } from '@heroicons/react/24/outline';
 import { ubsService } from '../services/ubsService';
 
@@ -28,12 +29,10 @@ const NavBar = ({ isDark, onToggleTheme }) => {
     window.location.href = '/login';
   };
 
-  if (!user) return null;
-
   const isActive = (path) => location.pathname === path;
-  const role = (user.role || 'USER').toUpperCase();
+  const role = (user?.role || 'USER').toUpperCase();
   const roleLabel = role.toLowerCase();
-  const canSetupUbs = ['PROFISSIONAL', 'GESTOR'].includes(role);
+  const canSetupUbs = ['PROFISSIONAL', 'GESTOR', 'ACS'].includes(role);
 
   useEffect(() => {
     let active = true;
@@ -50,6 +49,8 @@ const NavBar = ({ isDark, onToggleTheme }) => {
     loadUbs();
     return () => { active = false; };
   }, [canSetupUbs]);
+
+  if (!user) return null;
 
   return (
     <nav className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 sticky top-0 z-30 w-full transition-all duration-300">
@@ -80,7 +81,7 @@ const NavBar = ({ isDark, onToggleTheme }) => {
                 Dashboard
               </Link>
 
-              {['PROFISSIONAL', 'GESTOR'].includes(role) && (
+              {['PROFISSIONAL', 'GESTOR', 'ACS'].includes(role) && (
                 <Link
                   to="/materiais-educativos"
                   className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
@@ -94,7 +95,7 @@ const NavBar = ({ isDark, onToggleTheme }) => {
                 </Link>
               )}
 
-              {['PROFISSIONAL', 'GESTOR'].includes(role) && (
+              {['PROFISSIONAL', 'GESTOR', 'ACS'].includes(role) && (
                 <Link
                   to="/cronograma"
                   className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
@@ -147,6 +148,20 @@ const NavBar = ({ isDark, onToggleTheme }) => {
                 >
                   <EnvelopeIcon className="w-5 h-5 mr-2" />
                   Mensagens
+                </Link>
+              )}
+
+              {(role === 'GESTOR' || role === 'RECEPCAO') && (
+                <Link
+                  to="/redefinir-senha"
+                  className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    isActive('/redefinir-senha')
+                      ? 'bg-blue-50 text-blue-700 dark:bg-slate-800 dark:text-blue-300'
+                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white'
+                  }`}
+                >
+                  <KeyIcon className="w-5 h-5 mr-2" />
+                  Redefinir senha
                 </Link>
               )}
             </div>

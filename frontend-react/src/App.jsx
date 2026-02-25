@@ -14,6 +14,7 @@ import Cronograma from './pages/Cronograma';
 import SuporteFeedback from './pages/SuporteFeedback';
 import GerenciarMensagens from './pages/GerenciarMensagens';
 import GestaoEquipesMicroareas from './pages/GestaoEquipesMicroareas';
+import RedefinirSenha from './pages/RedefinirSenha';
 import NavBar from './components/NavBar';
 import { NotificationsProvider } from './components/ui/Notifications';
 import { api } from './services/api';
@@ -37,7 +38,7 @@ const UbsGate = ({ children }) => {
   const [status, setStatus] = useState({ loading: true, hasUbs: true });
   const userJson = localStorage.getItem('user');
   const user = userJson ? JSON.parse(userJson) : null;
-  const canSetupUbs = ['PROFISSIONAL', 'GESTOR'].includes(user?.role);
+  const canSetupUbs = ['PROFISSIONAL', 'GESTOR', 'ACS'].includes(user?.role);
 
   useEffect(() => {
     let active = true;
@@ -71,9 +72,9 @@ const UbsGate = ({ children }) => {
     return (
       <div className="mx-auto max-w-2xl px-6 py-12">
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-amber-900">
-          <h2 className="text-lg font-semibold">UBS ainda nao configurada</h2>
+          <h2 className="text-lg font-semibold">UBS ainda não configurada</h2>
           <p className="mt-2 text-sm text-amber-800">
-            A configuracao inicial precisa ser feita por um gestor ou profissional. Fale com o administrador
+            A configuração inicial precisa ser feita por um gestor, profissional ou ACS. Fale com o administrador
             para liberar o acesso.
           </p>
         </div>
@@ -119,7 +120,7 @@ function App() {
               } />
               
               <Route path="/relatorios-situacionais" element={
-                <ProtectedRoute allowedRoles={['USER', 'PROFISSIONAL', 'GESTOR', 'RECEPCAO']}>
+                <ProtectedRoute allowedRoles={['USER', 'PROFISSIONAL', 'GESTOR', 'RECEPCAO', 'ACS']}>
                   <UbsGate>
                     <RelatoriosSituacionais />
                   </UbsGate>
@@ -127,7 +128,7 @@ function App() {
               } />
 
               <Route path="/setup-ubs" element={
-                <ProtectedRoute allowedRoles={['PROFISSIONAL', 'GESTOR']}>
+                <ProtectedRoute allowedRoles={['PROFISSIONAL', 'GESTOR', 'ACS']}>
                   <SetupUbs />
                 </ProtectedRoute>
               } />
@@ -149,7 +150,7 @@ function App() {
               } />
 
               <Route path="/mapa-problemas-intervencoes" element={
-                <ProtectedRoute allowedRoles={['USER', 'PROFISSIONAL', 'GESTOR']}>
+                <ProtectedRoute allowedRoles={['USER', 'PROFISSIONAL', 'GESTOR', 'ACS']}>
                   <UbsGate>
                     <MapaProblemasIntervencoes />
                   </UbsGate>
@@ -157,7 +158,7 @@ function App() {
               } />
 
               <Route path="/materiais-educativos" element={
-                <ProtectedRoute allowedRoles={['PROFISSIONAL', 'GESTOR']}>
+                <ProtectedRoute allowedRoles={['PROFISSIONAL', 'GESTOR', 'ACS']}>
                   <UbsGate>
                     <MateriaisEducativos />
                   </UbsGate>
@@ -165,7 +166,7 @@ function App() {
               } />
 
               <Route path="/cronograma" element={
-                <ProtectedRoute allowedRoles={['PROFISSIONAL', 'GESTOR']}>
+                <ProtectedRoute allowedRoles={['PROFISSIONAL', 'GESTOR', 'ACS']}>
                   <UbsGate>
                     <Cronograma />
                   </UbsGate>
@@ -173,7 +174,7 @@ function App() {
               } />
 
               <Route path="/suporte-feedback" element={
-                <ProtectedRoute allowedRoles={['USER', 'PROFISSIONAL', 'GESTOR', 'RECEPCAO']}>
+                <ProtectedRoute allowedRoles={['USER', 'PROFISSIONAL', 'GESTOR', 'RECEPCAO', 'ACS']}>
                   <UbsGate>
                     <SuporteFeedback />
                   </UbsGate>
@@ -192,6 +193,14 @@ function App() {
                 <ProtectedRoute allowedRoles={['GESTOR', 'RECEPCAO']}>
                   <UbsGate>
                     <GestaoEquipesMicroareas />
+                  </UbsGate>
+                </ProtectedRoute>
+              } />
+
+              <Route path="/redefinir-senha" element={
+                <ProtectedRoute allowedRoles={['GESTOR', 'RECEPCAO']}>
+                  <UbsGate>
+                    <RedefinirSenha />
                   </UbsGate>
                 </ProtectedRoute>
               } />
