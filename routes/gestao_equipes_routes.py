@@ -184,6 +184,27 @@ async def atualizar_microarea(
     return microarea
 
 
+@gestao_equipes_router.delete(
+    "/gestao-equipes/microareas/{microarea_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def deletar_microarea(
+    microarea_id: int,
+    current_user: Usuario = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Remove uma microárea (e seus vínculos)."""
+    _ensure_allowed(current_user)
+
+    microarea = await db.get(Microarea, microarea_id)
+    if not microarea:
+        raise HTTPException(status_code=404, detail="Microárea não encontrada.")
+
+    await db.delete(microarea)
+    await db.commit()
+    return None
+
+
 # ─── Agentes CRUD ─────────────────────────────────────────────────────
 
 @gestao_equipes_router.post(
@@ -261,6 +282,27 @@ async def atualizar_agente(
     resp.familias = microarea.familias if microarea else 0
     resp.pacientes = microarea.populacao if microarea else 0
     return resp
+
+
+@gestao_equipes_router.delete(
+    "/gestao-equipes/agentes/{agente_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def deletar_agente(
+    agente_id: int,
+    current_user: Usuario = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Desassocia um agente removendo o vínculo com a microárea."""
+    _ensure_allowed(current_user)
+
+    agente = await db.get(AgenteSaude, agente_id)
+    if not agente:
+        raise HTTPException(status_code=404, detail="Agente não encontrado.")
+
+    await db.delete(agente)
+    await db.commit()
+    return None
 
 
 @gestao_equipes_router.get(

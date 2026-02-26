@@ -43,6 +43,12 @@ export const gestaoEquipesService = {
       requiresAuth: true,
     }),
 
+  deleteMicroarea: (microareaId) =>
+    api.request(`/gestao-equipes/microareas/${microareaId}`, {
+      method: 'DELETE',
+      requiresAuth: true,
+    }),
+
   createAgente: (payload) =>
     api.request('/gestao-equipes/agentes', {
       method: 'POST',
@@ -54,6 +60,12 @@ export const gestaoEquipesService = {
     api.request(`/gestao-equipes/agentes/${agenteId}`, {
       method: 'PATCH',
       body: payload,
+      requiresAuth: true,
+    }),
+
+  deleteAgente: (agenteId) =>
+    api.request(`/gestao-equipes/agentes/${agenteId}`, {
+      method: 'DELETE',
       requiresAuth: true,
     }),
 };

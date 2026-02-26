@@ -102,7 +102,7 @@ const KpiCard = ({ icon: Icon, value, label, color }) => (
 
 // ─── Componente Principal ───────────────────────────────────────────
 const GestaoEquipesMicroareas = () => {
-  const { notify } = useNotifications();
+  const { notify, confirm } = useNotifications();
   const currentUser = api.getCurrentUser();
   const canEdit = useMemo(() => {
     const role = (currentUser?.role || 'USER').toUpperCase();
@@ -396,6 +396,52 @@ const GestaoEquipesMicroareas = () => {
     }
   };
 
+  const handleDeleteAgente = async (agente) => {
+    if (!canEdit || usingMockData) {
+      notify({ type: 'warning', message: 'Edição indisponível para este usuário ou em modo de demonstração.' });
+      return;
+    }
+
+    const confirmed = await confirm({
+      title: 'Desassociar agente',
+      message: `Deseja desassociar ${agente.nome || 'este agente'} da microárea?`,
+      confirmLabel: 'Desassociar',
+      cancelLabel: 'Cancelar',
+    });
+    if (!confirmed) return;
+
+    try {
+      await gestaoEquipesService.deleteAgente(agente.id);
+      notify({ type: 'success', message: 'Agente desassociado com sucesso.' });
+      await loadData();
+    } catch (error) {
+      notify({ type: 'error', message: error.message || 'Erro ao desassociar agente.' });
+    }
+  };
+
+  const handleDeleteMicroarea = async (microarea) => {
+    if (!canEdit || usingMockData) {
+      notify({ type: 'warning', message: 'Edição indisponível para este usuário ou em modo de demonstração.' });
+      return;
+    }
+
+    const confirmed = await confirm({
+      title: 'Descadastrar microárea',
+      message: `Deseja descadastrar a microárea ${microarea.nome}? Os vínculos com agentes serão removidos.`,
+      confirmLabel: 'Descadastrar',
+      cancelLabel: 'Cancelar',
+    });
+    if (!confirmed) return;
+
+    try {
+      await gestaoEquipesService.deleteMicroarea(microarea.id);
+      notify({ type: 'success', message: 'Microárea descadastrada com sucesso.' });
+      await loadData();
+    } catch (error) {
+      notify({ type: 'error', message: error.message || 'Erro ao descadastrar microárea.' });
+    }
+  };
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
       <div className="mb-8 rise-fade">
@@ -524,12 +570,20 @@ const GestaoEquipesMicroareas = () => {
                         </td>
                         {canEdit && !usingMockData && (
                           <td className="px-6 py-4 whitespace-nowrap text-right">
-                            <button
-                              onClick={() => openEditAgente(agente)}
-                              className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50"
-                            >
-                              Editar
-                            </button>
+                            <div className="flex justify-end gap-2">
+                              <button
+                                onClick={() => openEditAgente(agente)}
+                                className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                              >
+                                Editar
+                              </button>
+                              <button
+                                onClick={() => handleDeleteAgente(agente)}
+                                className="rounded-full border border-red-200 px-3 py-1 text-xs font-semibold text-red-600 hover:bg-red-50"
+                              >
+                                Desassociar
+                              </button>
+                            </div>
                           </td>
                         )}
                       </tr>
@@ -558,12 +612,20 @@ const GestaoEquipesMicroareas = () => {
                       {agente.microarea_nome || agente.microarea}
                     </p>
                     {canEdit && !usingMockData && (
-                      <button
-                        onClick={() => openEditAgente(agente)}
-                        className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50"
-                      >
-                        Editar
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => openEditAgente(agente)}
+                          className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          onClick={() => handleDeleteAgente(agente)}
+                          className="rounded-full border border-red-200 px-3 py-1 text-xs font-semibold text-red-600 hover:bg-red-50"
+                        >
+                          Desassociar
+                        </button>
+                      </div>
                     )}
                   </div>
                 ))}
@@ -638,12 +700,20 @@ const GestaoEquipesMicroareas = () => {
                         </td>
                         {canEdit && !usingMockData && (
                           <td className="px-6 py-4 whitespace-nowrap text-right">
-                            <button
-                              onClick={() => openEditMicroarea(microarea)}
-                              className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50"
-                            >
-                              Editar
-                            </button>
+                            <div className="flex justify-end gap-2">
+                              <button
+                                onClick={() => openEditMicroarea(microarea)}
+                                className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                              >
+                                Editar
+                              </button>
+                              <button
+                                onClick={() => handleDeleteMicroarea(microarea)}
+                                className="rounded-full border border-red-200 px-3 py-1 text-xs font-semibold text-red-600 hover:bg-red-50"
+                              >
+                                Descadastrar
+                              </button>
+                            </div>
                           </td>
                         )}
                       </tr>
@@ -672,12 +742,20 @@ const GestaoEquipesMicroareas = () => {
                       <span>{microarea.populacao} pessoas</span>
                     </div>
                     {canEdit && !usingMockData && (
-                      <button
-                        onClick={() => openEditMicroarea(microarea)}
-                        className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50"
-                      >
-                        Editar
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => openEditMicroarea(microarea)}
+                          className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          onClick={() => handleDeleteMicroarea(microarea)}
+                          className="rounded-full border border-red-200 px-3 py-1 text-xs font-semibold text-red-600 hover:bg-red-50"
+                        >
+                          Descadastrar
+                        </button>
+                      </div>
                     )}
                   </div>
                 ))}
