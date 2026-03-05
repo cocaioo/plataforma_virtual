@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import axios from 'axios';
 import { useNotifications } from '../components/ui/Notifications';
 import { isValidCpf, isValidEmail, validateName, validatePassword } from '../utils/validators';
 import { gestaoEquipesService } from '../services/gestaoEquipesService';
@@ -11,6 +12,7 @@ import {
   ChartBarIcon,
   UserCircleIcon,
   CheckCircleIcon,
+  DocumentArrowDownIcon,
 } from '@heroicons/react/24/outline';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
@@ -491,6 +493,37 @@ const GestaoEquipesMicroareas = () => {
     }
   };
 
+  const handleExportMicroareas = async () => {
+    if (!selectedUbsId) {
+      notify({ type: 'warning', message: 'Selecione uma UBS valida para exportar.' });
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(
+        `/api/gestao-equipes/microareas/export/pdf?ubs_id=${selectedUbsId}`,
+        { headers: { Authorization: `Bearer ${token}` }, responseType: 'blob' }
+      );
+
+      const disposition = response.headers?.['content-disposition'] || '';
+      let filename = 'relatorio_microareas.pdf';
+      const match = disposition.match(/filename="?([^";]+)"?/i);
+      if (match && match[1]) filename = match[1];
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      notify({ type: 'error', message: error.message || 'Erro ao exportar o PDF.' });
+    }
+  };
+
   const handleToggleUsuarioId = (usuarioId) => {
     setSelectedUsuarioIds((prev) =>
       prev.includes(usuarioId) ? prev.filter((id) => id !== usuarioId) : [...prev, usuarioId]
@@ -525,17 +558,28 @@ const GestaoEquipesMicroareas = () => {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mb-8 rise-fade">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
-          Gerenciar agentes e microáreas
-        </h1>
-        <p className="mt-2 text-sm text-gray-500 dark:text-slate-400">
-          Edite microáreas e agentes. Os indicadores são calculados automaticamente.
-        </p>
-        {ubsInfo && (
-          <p className="mt-3 text-sm text-gray-600 dark:text-slate-300">
-            UBS: <strong>{ubsInfo.nome_ubs}</strong>
+      <div className="mb-8 rise-fade flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
+            Gerenciar agentes e microáreas
+          </h1>
+          <p className="mt-2 text-sm text-gray-500 dark:text-slate-400">
+            Edite microáreas e agentes. Os indicadores são calculados automaticamente.
           </p>
+          {ubsInfo && (
+            <p className="mt-3 text-sm text-gray-600 dark:text-slate-300">
+              UBS: <strong>{ubsInfo.nome_ubs}</strong>
+            </p>
+          )}
+        </div>
+        {canEdit && !usingMockData && (
+          <button
+            onClick={handleExportMicroareas}
+            className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-4 py-2 text-xs font-semibold text-white shadow-md shadow-blue-600/30 hover:bg-blue-700 hover:shadow-blue-600/40 transition"
+          >
+            <DocumentArrowDownIcon className="h-4 w-4" />
+            Exportar relatorio PDF
+          </button>
         )}
       </div>
 

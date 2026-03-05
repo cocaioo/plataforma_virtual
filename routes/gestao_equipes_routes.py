@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import Response as FastAPIResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func as sqlfunc
 from typing import List, Optional
@@ -127,6 +128,60 @@ async def listar_microareas(
         stmt = stmt.where(Microarea.ubs_id == ubs_id)
     result = await db.execute(stmt.order_by(Microarea.id))
     return result.scalars().all()
+
+
+@gestao_equipes_router.get("/gestao-equipes/microareas/export/pdf")
+async def export_microareas_pdf(
+    current_user: Usuario = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    ubs_id: Optional[int] = Query(None, ge=1),
+):
+    """Exporta um PDF com a situacao atual das microareas."""
+    _ensure_allowed(current_user)
+
+    if not ubs_id:
+        raise HTTPException(status_code=400, detail="Informe o ubs_id.")
+
+    ubs = await db.get(UBS, ubs_id)
+    if not ubs or ubs.is_deleted:
+        raise HTTPException(status_code=404, detail="UBS nao encontrada.")
+
+    microareas = (
+        await db.execute(
+            select(Microarea).where(Microarea.ubs_id == ubs_id).order_by(Microarea.id)
+        )
+    ).scalars().all()
+
+    agentes_stmt = (
+        select(AgenteSaude, Usuario)
+        .join(Usuario, Usuario.id == AgenteSaude.usuario_id)
+        .join(Microarea, Microarea.id == AgenteSaude.microarea_id)
+        .where(Microarea.ubs_id == ubs_id)
+        .order_by(AgenteSaude.id)
+    )
+    agentes_rows = (await db.execute(agentes_stmt)).all()
+
+    agentes_por_microarea = {}
+    for agente, usuario in agentes_rows:
+        agentes_por_microarea.setdefault(agente.microarea_id, []).append(usuario.nome)
+
+    try:
+        from services.reporting.microareas_report_pdf import generate_microareas_report_pdf
+
+        pdf_bytes, filename_base = generate_microareas_report_pdf(
+            ubs=ubs,
+            microareas=microareas,
+            agentes_por_microarea=agentes_por_microarea,
+            emitted_by=(current_user.nome or None),
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Erro ao gerar PDF: {exc}") from exc
+
+    headers = {
+        "Content-Disposition": f'attachment; filename="{filename_base}.pdf"',
+        "X-Report-Engine": "reportlab",
+    }
+    return FastAPIResponse(content=pdf_bytes, media_type="application/pdf", headers=headers)
 
 
 @gestao_equipes_router.post(
