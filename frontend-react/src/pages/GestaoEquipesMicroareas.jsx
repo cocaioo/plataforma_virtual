@@ -417,7 +417,7 @@ const GestaoEquipesMicroareas = () => {
       return;
     }
 
-    if (!isValidId(agenteForm.microarea_id)) {
+    if (microareas.length > 0 && !isValidId(agenteForm.microarea_id)) {
       notify({ type: 'error', message: 'Selecione uma microárea válida.' });
       return;
     }
@@ -426,7 +426,9 @@ const GestaoEquipesMicroareas = () => {
       setSavingAgente(true);
       const payload = {
         usuario_id: Number(agenteForm.usuario_id),
-        microarea_id: Number(agenteForm.microarea_id),
+        microarea_id: isValidId(agenteForm.microarea_id)
+          ? Number(agenteForm.microarea_id)
+          : null,
         ativo: Boolean(agenteForm.ativo),
       };
 

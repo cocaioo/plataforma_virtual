@@ -358,13 +358,13 @@ create table public.microareas (
 create table public.agentes_saude (
   id serial not null,
   usuario_id integer not null,
-  microarea_id integer not null,
+  microarea_id integer null,
   ativo boolean not null default true,
   created_at timestamp with time zone null default now(),
   updated_at timestamp with time zone null,
   constraint agentes_saude_pkey primary key (id),
   constraint agentes_saude_usuario_id_fkey foreign KEY (usuario_id) references usuarios (id),
-  constraint agentes_saude_microarea_id_fkey foreign KEY (microarea_id) references microareas (id) on delete CASCADE
+  constraint agentes_saude_microarea_id_fkey foreign KEY (microarea_id) references microareas (id) on delete SET NULL
 ) TABLESPACE pg_default;
 ```
 
@@ -669,14 +669,14 @@ CREATE TABLE public.microareas (
 CREATE TABLE public.agentes_saude (
     id serial NOT NULL,
     usuario_id integer NOT NULL,
-    microarea_id integer NOT NULL,
+  microarea_id integer NULL,
     ativo boolean NOT NULL DEFAULT true,
     created_at timestamp with time zone NULL DEFAULT now(),
     updated_at timestamp with time zone NULL,
 
     CONSTRAINT agentes_saude_pkey PRIMARY KEY (id),
     CONSTRAINT agentes_saude_usuario_id_fkey FOREIGN KEY (usuario_id) REFERENCES public.usuarios (id),
-    CONSTRAINT agentes_saude_microarea_id_fkey FOREIGN KEY (microarea_id) REFERENCES public.microareas (id) ON DELETE CASCADE
+    CONSTRAINT agentes_saude_microarea_id_fkey FOREIGN KEY (microarea_id) REFERENCES public.microareas (id) ON DELETE SET NULL
 ) TABLESPACE pg_default;
 ```
 

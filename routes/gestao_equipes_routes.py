@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import Response as FastAPIResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func as sqlfunc
+from sqlalchemy import select, func as sqlfunc, update, or_
 from typing import List, Optional
 
 from database import get_db
@@ -88,8 +88,14 @@ async def listar_agentes(
 
     stmt = select(AgenteSaude)
     if ubs_id:
-        stmt = stmt.join(Microarea, AgenteSaude.microarea_id == Microarea.id).where(
-            Microarea.ubs_id == ubs_id
+        stmt = (
+            stmt.outerjoin(Microarea, AgenteSaude.microarea_id == Microarea.id)
+            .where(
+                or_(
+                    Microarea.ubs_id == ubs_id,
+                    AgenteSaude.microarea_id.is_(None),
+                )
+            )
         )
     result = await db.execute(stmt.order_by(AgenteSaude.id))
     agentes = result.scalars().all()
@@ -256,6 +262,11 @@ async def deletar_microarea(
     if not microarea:
         raise HTTPException(status_code=404, detail="Microárea não encontrada.")
 
+    await db.execute(
+        update(AgenteSaude)
+        .where(AgenteSaude.microarea_id == microarea_id)
+        .values(microarea_id=None)
+    )
     await db.delete(microarea)
     await db.commit()
     return None
@@ -352,9 +363,11 @@ async def criar_agente(
     """Cria um novo agente de saúde."""
     _ensure_allowed(current_user)
 
-    microarea = await db.get(Microarea, payload.microarea_id)
-    if not microarea:
-        raise HTTPException(status_code=404, detail="Microárea não encontrada.")
+    microarea = None
+    if payload.microarea_id:
+        microarea = await db.get(Microarea, payload.microarea_id)
+        if not microarea:
+            raise HTTPException(status_code=404, detail="Microárea não encontrada.")
 
     usuario = await db.get(Usuario, payload.usuario_id)
     if not usuario:
@@ -369,9 +382,9 @@ async def criar_agente(
 
     resp = AgenteSaudeOut.model_validate(novo)
     resp.nome = usuario.nome
-    resp.microarea_nome = microarea.nome
-    resp.familias = microarea.familias
-    resp.pacientes = microarea.populacao
+    resp.microarea_nome = microarea.nome if microarea else None
+    resp.familias = microarea.familias if microarea else 0
+    resp.pacientes = microarea.populacao if microarea else 0
     return resp
 
 

@@ -92,3 +92,15 @@ CREATE TABLE IF NOT EXISTS suporte_feedback (
 	created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- 5) Ajuste de relacionamento microareas -> agentes_saude
+-- Evita apagar agentes ao excluir microarea, deixando microarea_id nulo.
+ALTER TABLE public.agentes_saude
+DROP CONSTRAINT IF EXISTS agentes_saude_microarea_id_fkey;
+
+ALTER TABLE public.agentes_saude
+ALTER COLUMN microarea_id DROP NOT NULL;
+
+ALTER TABLE public.agentes_saude
+ADD CONSTRAINT agentes_saude_microarea_id_fkey
+FOREIGN KEY (microarea_id) REFERENCES public.microareas (id) ON DELETE SET NULL;
+

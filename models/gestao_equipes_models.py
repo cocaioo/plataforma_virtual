@@ -19,7 +19,7 @@ class Microarea(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     ubs = relationship("UBS", backref="microareas")
-    agentes = relationship("AgenteSaude", back_populates="microarea", cascade="all, delete-orphan")
+    agentes = relationship("AgenteSaude", back_populates="microarea")
 
 
 class AgenteSaude(Base):
@@ -27,7 +27,7 @@ class AgenteSaude(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     usuario_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
-    microarea_id = Column(Integer, ForeignKey("microareas.id", ondelete="CASCADE"), nullable=False)
+    microarea_id = Column(Integer, ForeignKey("microareas.id", ondelete="SET NULL"), nullable=True)
     ativo = Column(Boolean, nullable=False, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

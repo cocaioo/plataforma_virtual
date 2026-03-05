@@ -40,7 +40,7 @@ class MicroareaOut(BaseModel):
 
 class AgenteSaudeCreate(BaseModel):
     usuario_id: int
-    microarea_id: int
+    microarea_id: Optional[int] = None
     ativo: bool = True
 
 
@@ -53,7 +53,7 @@ class AgenteSaudeUpdate(BaseModel):
 class AgenteSaudeOut(BaseModel):
     id: int
     usuario_id: int
-    microarea_id: int
+    microarea_id: Optional[int] = None
     ativo: bool
     nome: Optional[str] = None
     microarea_nome: Optional[str] = None
