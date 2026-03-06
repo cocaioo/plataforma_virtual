@@ -1209,14 +1209,21 @@ async def export_situational_report_pdf(
     db: AsyncSession = Depends(get_db),
     current_user: Usuario = Depends(get_current_active_user),
 ):
-    """Exporta o relatório situacional em PDF.
+    """Exporta o relatório situacional completo em PDF.
 
-    Gera o PDF a partir do diagnóstico agregado ("/diagnosis") usando ReportLab.
+    Gera o PDF a partir do diagnóstico agregado ("/diagnosis") e dados de todos os
+    módulos da plataforma (problemas/intervenções, microáreas, agendamentos,
+    cronograma e materiais educativos) usando ReportLab.
     """
+    from models.agendamento_models import Agendamento
+    from models.cronograma_models import CronogramaEvent
+    from models.gestao_equipes_models import Microarea, AgenteSaude
+    from models.materiais_models import EducationalMaterial, EducationalMaterialFile
+    from models.auth_models import ProfissionalUbs
 
     diagnosis = await get_full_diagnosis(ubs_id=ubs_id, db=db, current_user=current_user)
 
-    # Busca anexos diretamente (inclui storage_path) apenas para geração do PDF
+    # --- Anexos ---
     attachments_stmt = (
         select(UBSAttachment)
         .join(UBS)
@@ -1237,6 +1244,160 @@ async def export_situational_report_pdf(
         }
         for a in attachments
     ]
+
+    # --- Problemas + Intervenções + Ações ---
+    problems_stmt = (
+        select(UBSProblem)
+        .options(
+            selectinload(UBSProblem.interventions).selectinload(UBSIntervention.actions)
+        )
+        .where(UBSProblem.ubs_id == ubs_id)
+        .order_by(UBSProblem.gut_score.desc())
+    )
+    problems_rows = (await db.execute(problems_stmt)).scalars().all()
+    problems_data = []
+    for p in problems_rows:
+        interventions_data = []
+        for iv in (p.interventions or []):
+            actions_data = [
+                {
+                    "acao": a.acao,
+                    "prazo": a.prazo,
+                    "status": a.status,
+                    "observacoes": a.observacoes,
+                }
+                for a in (iv.actions or [])
+            ]
+            interventions_data.append({
+                "objetivo": iv.objetivo,
+                "metas": iv.metas,
+                "responsavel": iv.responsavel,
+                "status": iv.status,
+                "actions": actions_data,
+            })
+        problems_data.append({
+            "titulo": p.titulo,
+            "descricao": p.descricao,
+            "gut_gravidade": p.gut_gravidade,
+            "gut_urgencia": p.gut_urgencia,
+            "gut_tendencia": p.gut_tendencia,
+            "gut_score": p.gut_score,
+            "is_prioritario": p.is_prioritario,
+            "interventions": interventions_data,
+        })
+
+    # --- Microáreas + Agentes ---
+    microareas_stmt = (
+        select(Microarea)
+        .options(selectinload(Microarea.agentes).selectinload(AgenteSaude.usuario))
+        .where(Microarea.ubs_id == ubs_id)
+        .order_by(Microarea.nome)
+    )
+    microareas_rows = (await db.execute(microareas_stmt)).scalars().all()
+    microareas_data = []
+    for m in microareas_rows:
+        agentes_list = []
+        for ag in (m.agentes or []):
+            nome = getattr(ag.usuario, "nome", "-") if ag.usuario else "-"
+            agentes_list.append({"nome": nome, "ativo": ag.ativo})
+        microareas_data.append({
+            "nome": m.nome,
+            "bairro": m.bairro,
+            "status": m.status,
+            "populacao": m.populacao,
+            "familias": m.familias,
+            "agentes": agentes_list,
+        })
+
+    # --- Agendamentos ---
+    try:
+        agendamentos_stmt = (
+            select(Agendamento)
+            .options(
+                selectinload(Agendamento.paciente),
+                selectinload(Agendamento.profissional).selectinload(ProfissionalUbs.usuario),
+            )
+            .order_by(Agendamento.data_hora.desc())
+        )
+        agendamentos_rows = (await db.execute(agendamentos_stmt)).scalars().all()
+    except Exception:
+        agendamentos_stmt = select(Agendamento).order_by(Agendamento.data_hora.desc())
+        agendamentos_rows = (await db.execute(agendamentos_stmt)).scalars().all()
+
+    agendamentos_data = []
+    for ag in agendamentos_rows:
+        paciente_nome = "-"
+        profissional_nome = "-"
+        try:
+            if ag.paciente:
+                paciente_nome = ag.paciente.nome
+        except Exception:
+            pass
+        try:
+            if ag.profissional and ag.profissional.usuario:
+                profissional_nome = ag.profissional.usuario.nome
+            elif ag.profissional:
+                profissional_nome = ag.profissional.cargo
+        except Exception:
+            pass
+        agendamentos_data.append({
+            "data_hora": ag.data_hora.isoformat() if ag.data_hora else None,
+            "paciente_nome": paciente_nome,
+            "profissional_nome": profissional_nome,
+            "status": ag.status,
+            "observacoes": ag.observacoes,
+        })
+
+    # --- Cronograma ---
+    cronograma_stmt = (
+        select(CronogramaEvent)
+        .where(CronogramaEvent.ubs_id == ubs_id)
+        .order_by(CronogramaEvent.inicio.desc())
+    )
+    cronograma_rows = (await db.execute(cronograma_stmt)).scalars().all()
+    cronograma_data = [
+        {
+            "titulo": ev.titulo,
+            "tipo": ev.tipo,
+            "local": ev.local,
+            "inicio": ev.inicio.isoformat() if ev.inicio else None,
+            "fim": ev.fim.isoformat() if ev.fim else None,
+            "recorrencia": ev.recorrencia,
+        }
+        for ev in cronograma_rows
+    ]
+
+    # --- Materiais Educativos ---
+    materiais_stmt = (
+        select(EducationalMaterial)
+        .options(selectinload(EducationalMaterial.files))
+        .where(EducationalMaterial.ubs_id == ubs_id, EducationalMaterial.ativo.is_(True))
+        .order_by(EducationalMaterial.titulo)
+    )
+    materiais_rows = (await db.execute(materiais_stmt)).scalars().all()
+    materiais_data = [
+        {
+            "titulo": mat.titulo,
+            "descricao": mat.descricao,
+            "categoria": mat.categoria,
+            "publico_alvo": mat.publico_alvo,
+            "files": [
+                {"original_filename": f.original_filename}
+                for f in (mat.files or [])
+            ],
+        }
+        for mat in materiais_rows
+    ]
+
+    # --- Gerar PDF ---
+    extra_data = {
+        "problems": problems_data,
+        "microareas": microareas_data,
+        "agendamentos": agendamentos_data,
+        "cronograma": cronograma_data,
+        "materiais": materiais_data,
+    }
+
     try:
         from services.reporting.simple_situational_report_pdf import (
             generate_situational_report_pdf_simple,
@@ -1244,10 +1405,11 @@ async def export_situational_report_pdf(
 
         pdf_bytes, filename_base = generate_situational_report_pdf_simple(
             diagnosis,
-            municipality="Municipio",
+            municipality="Município de Parnaíba",
             reference_period=(diagnosis.ubs.periodo_referencia or ""),
             attachments=attachments_for_pdf,
             attachments_base_dir=_UPLOADS_BASE_DIR,
+            extra_data=extra_data,
         )
     except Exception as exc:
         logger.exception("Erro ao gerar PDF")

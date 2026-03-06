@@ -12,9 +12,11 @@ import {
   UserCircleIcon,
   CheckCircleIcon,
 } from '@heroicons/react/24/outline';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, GeoJSON, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import bairrosParnaiba, { COLORS } from '../data/bairrosParnaiba';
+import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 
 // ─── Fix para ícones do Leaflet com bundlers (Vite/Webpack) ─────────
 delete L.Icon.Default.prototype._getIconUrl;
@@ -100,6 +102,15 @@ const KpiCard = ({ icon: Icon, value, label, color }) => (
   </div>
 );
 
+// ─── Componente para reposicionar o mapa ────────────────────────────
+const FlyToBairro = ({ center }) => {
+  const map = useMap();
+  useEffect(() => {
+    if (center) map.flyTo(center, 15, { duration: 0.8 });
+  }, [center, map]);
+  return null;
+};
+
 // ─── Componente Principal ───────────────────────────────────────────
 const GestaoEquipesMicroareas = () => {
   const { notify, confirm } = useNotifications();
@@ -132,6 +143,108 @@ const GestaoEquipesMicroareas = () => {
   const [showAcsForm, setShowAcsForm] = useState(false);
   const [acsForm, setAcsForm] = useState({ nome: '', email: '', cpf: '', senha: '' });
   const [savingAcs, setSavingAcs] = useState(false);
+
+  // ─── Estado do mapa interativo de bairros ──────────────────────────
+  const [bairroSearch, setBairroSearch] = useState('');
+  const [flyToCenter, setFlyToCenter] = useState(null);
+  const [selectedBairro, setSelectedBairro] = useState(null);
+  const [bairroModalOpen, setBairroModalOpen] = useState(false);
+  const [bairroMicroareaForm, setBairroMicroareaForm] = useState({ nome: '', status: 'DESCOBERTA', populacao: '', familias: '' });
+  const [savingBairroMicroarea, setSavingBairroMicroarea] = useState(false);
+
+  // Mapa: bairro_id → microarea (para colorir polígonos atribuídos)
+  const bairroToMicroarea = useMemo(() => {
+    const m = new Map();
+    microareas.forEach((ma) => {
+      if (ma.bairro) m.set(ma.bairro, ma);
+    });
+    return m;
+  }, [microareas]);
+
+  // Bairros filtrados pela busca
+  const filteredBairros = useMemo(() => {
+    if (!bairroSearch.trim()) return [];
+    const q = bairroSearch.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    return bairrosParnaiba.features.filter((f) => {
+      const name = f.properties.nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      return name.includes(q);
+    });
+  }, [bairroSearch]);
+
+  const handleBairroClick = (feature) => {
+    setSelectedBairro(feature);
+    const existing = bairroToMicroarea.get(feature.properties.id);
+    if (existing) {
+      setBairroMicroareaForm({
+        nome: existing.nome,
+        status: existing.status,
+        populacao: String(existing.populacao),
+        familias: String(existing.familias),
+      });
+    } else {
+      setBairroMicroareaForm({
+        nome: `Microárea - ${feature.properties.nome}`,
+        status: 'DESCOBERTA',
+        populacao: '',
+        familias: '',
+      });
+    }
+    setBairroModalOpen(true);
+  };
+
+  const handleSearchSelect = (feature) => {
+    const center = feature.properties.center;
+    setFlyToCenter(center);
+    setBairroSearch('');
+    handleBairroClick(feature);
+  };
+
+  const handleSaveBairroMicroarea = async () => {
+    if (!selectedBairro || !selectedUbsId) return;
+    setSavingBairroMicroarea(true);
+    try {
+      const existing = bairroToMicroarea.get(selectedBairro.properties.id);
+      const payload = {
+        nome: bairroMicroareaForm.nome,
+        status: bairroMicroareaForm.status,
+        populacao: Number(bairroMicroareaForm.populacao) || 0,
+        familias: Number(bairroMicroareaForm.familias) || 0,
+        bairro: selectedBairro.properties.id,
+        geojson: selectedBairro.geometry,
+      };
+      if (existing) {
+        await gestaoEquipesService.updateMicroarea(existing.id, payload);
+        notify({ type: 'success', message: `Microárea "${payload.nome}" atualizada.` });
+      } else {
+        await gestaoEquipesService.createMicroarea({ ...payload, ubs_id: Number(selectedUbsId) });
+        notify({ type: 'success', message: `Bairro "${selectedBairro.properties.nome}" definido como microárea.` });
+      }
+      setBairroModalOpen(false);
+      setSelectedBairro(null);
+      loadData();
+    } catch (err) {
+      notify({ type: 'error', message: err.message || 'Erro ao salvar microárea.' });
+    } finally {
+      setSavingBairroMicroarea(false);
+    }
+  };
+
+  const handleRemoveBairroMicroarea = async () => {
+    if (!selectedBairro) return;
+    const existing = bairroToMicroarea.get(selectedBairro.properties.id);
+    if (!existing) return;
+    const confirmed = await confirm(`Remover microárea "${existing.nome}" do bairro ${selectedBairro.properties.nome}?`);
+    if (!confirmed) return;
+    try {
+      await gestaoEquipesService.deleteMicroarea(existing.id);
+      notify({ type: 'success', message: 'Microárea removida.' });
+      setBairroModalOpen(false);
+      setSelectedBairro(null);
+      loadData();
+    } catch (err) {
+      notify({ type: 'error', message: err.message || 'Erro ao remover microárea.' });
+    }
+  };
 
   const loadCatalogs = useCallback(async () => {
     try {
@@ -775,20 +888,71 @@ const GestaoEquipesMicroareas = () => {
           <section className="rise-fade stagger-3">
             <div className="bg-white dark:bg-slate-900 shadow-md rounded-lg overflow-hidden">
               <div className="bg-gray-50 dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 px-6 py-4">
-                <div className="flex items-center gap-3">
-                  <MapIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-                  <div>
-                    <h2 className="text-lg font-semibold text-gray-800 dark:text-white">
-                      Mapa do Território
-                    </h2>
-                    <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
-                      Parnaíba - PI &middot; Área de atuação da ESF
-                    </p>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <MapIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                    <div>
+                      <h2 className="text-lg font-semibold text-gray-800 dark:text-white">
+                        Mapa do Território
+                      </h2>
+                      <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
+                        Parnaíba - PI &middot; Clique em um bairro para definir como microárea
+                      </p>
+                    </div>
                   </div>
+
+                  {canEdit && !usingMockData && (
+                    <div className="relative w-full sm:w-72">
+                      <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <input
+                        type="text"
+                        value={bairroSearch}
+                        onChange={(e) => setBairroSearch(e.target.value)}
+                        placeholder="Pesquisar bairro..."
+                        className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 pl-9 pr-3 py-2 text-sm text-slate-800 dark:text-white focus:border-blue-500 focus:outline-none"
+                      />
+                      {filteredBairros.length > 0 && (
+                        <div className="absolute top-full left-0 right-0 z-50 mt-1 max-h-48 overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 shadow-lg">
+                          {filteredBairros.map((f) => {
+                            const assigned = bairroToMicroarea.has(f.properties.id);
+                            return (
+                              <button
+                                key={f.properties.id}
+                                onClick={() => handleSearchSelect(f)}
+                                className="flex w-full items-center justify-between px-3 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 text-left"
+                              >
+                                <span className="text-slate-800 dark:text-white">{f.properties.nome}</span>
+                                {assigned && (
+                                  <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">Microárea</span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
-              <div className="h-[400px] lg:h-[500px]">
+              {/* Legenda */}
+              <div className="px-6 py-3 bg-slate-50 dark:bg-slate-800/50 border-b border-gray-200 dark:border-slate-700 flex flex-wrap gap-3 items-center text-xs">
+                <span className="font-semibold text-slate-600 dark:text-slate-300">Legenda:</span>
+                <span className="flex items-center gap-1">
+                  <span className="inline-block w-3 h-3 rounded-sm border-2 border-emerald-500 bg-emerald-200" />
+                  <span className="text-slate-600 dark:text-slate-300">Microárea coberta</span>
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="inline-block w-3 h-3 rounded-sm border-2 border-amber-500 bg-amber-200" />
+                  <span className="text-slate-600 dark:text-slate-300">Microárea descoberta</span>
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="inline-block w-3 h-3 rounded-sm border-2 border-slate-400 bg-slate-200" />
+                  <span className="text-slate-600 dark:text-slate-300">Bairro sem microárea</span>
+                </span>
+              </div>
+
+              <div className="h-[500px] lg:h-[600px]">
                 <MapContainer
                   center={MAP_CENTER}
                   zoom={MAP_ZOOM}
@@ -799,6 +963,7 @@ const GestaoEquipesMicroareas = () => {
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                   />
+                  <FlyToBairro center={flyToCenter} />
                   <Marker position={MAP_CENTER}>
                     <Popup>
                       <strong>ESF 41 - Adalto Parentes Sampaio</strong>
@@ -806,6 +971,82 @@ const GestaoEquipesMicroareas = () => {
                       Parnaíba - PI
                     </Popup>
                   </Marker>
+
+                  {bairrosParnaiba.features.map((feature) => {
+                    const bId = feature.properties.id;
+                    const microarea = bairroToMicroarea.get(bId);
+                    const isCoberta = microarea?.status === 'COBERTA';
+                    const isDescoberta = microarea?.status === 'DESCOBERTA';
+
+                    let fillColor = '#94a3b8';
+                    let borderColor = '#64748b';
+                    let fillOpacity = 0.2;
+
+                    if (isCoberta) {
+                      fillColor = '#10b981';
+                      borderColor = '#059669';
+                      fillOpacity = 0.4;
+                    } else if (isDescoberta) {
+                      fillColor = '#f59e0b';
+                      borderColor = '#d97706';
+                      fillOpacity = 0.4;
+                    }
+
+                    return (
+                      <GeoJSON
+                        key={`${bId}-${microarea?.id || 'none'}-${microarea?.status || ''}`}
+                        data={feature}
+                        style={{
+                          fillColor,
+                          color: borderColor,
+                          weight: 2,
+                          fillOpacity,
+                        }}
+                        eventHandlers={{
+                          click: () => {
+                            if (canEdit && !usingMockData) handleBairroClick(feature);
+                          },
+                          mouseover: (e) => {
+                            e.target.setStyle({ weight: 3, fillOpacity: fillOpacity + 0.2 });
+                          },
+                          mouseout: (e) => {
+                            e.target.setStyle({ weight: 2, fillOpacity });
+                          },
+                        }}
+                      >
+                        <Popup>
+                          <div className="text-sm">
+                            <strong>{feature.properties.nome}</strong>
+                            {microarea ? (
+                              <>
+                                <br />
+                                <span className={isCoberta ? 'text-emerald-600' : 'text-amber-600'}>
+                                  {microarea.nome} ({microarea.status})
+                                </span>
+                                <br />
+                                <span className="text-gray-500">
+                                  {microarea.populacao} hab. &middot; {microarea.familias} famílias
+                                </span>
+                                {(microareaAgents.get(microarea.id) || []).length > 0 && (
+                                  <>
+                                    <br />
+                                    <span className="text-blue-600">
+                                      ACS: {microareaAgents.get(microarea.id).join(', ')}
+                                    </span>
+                                  </>
+                                )}
+                              </>
+                            ) : (
+                              <>
+                                <br />
+                                <span className="text-gray-400">Sem microárea definida</span>
+                              </>
+                            )}
+                          </div>
+                        </Popup>
+                      </GeoJSON>
+                    );
+                  })}
                 </MapContainer>
               </div>
             </div>
@@ -1015,6 +1256,100 @@ const GestaoEquipesMicroareas = () => {
             </div>
           </div>
         )}
+      </Modal>
+
+      {/* Modal: definir/editar microárea a partir do bairro no mapa */}
+      <Modal
+        open={bairroModalOpen}
+        title={
+          selectedBairro
+            ? bairroToMicroarea.has(selectedBairro.properties.id)
+              ? `Editar microárea — ${selectedBairro.properties.nome}`
+              : `Definir microárea — ${selectedBairro.properties.nome}`
+            : 'Microárea'
+        }
+        onClose={() => { setBairroModalOpen(false); setSelectedBairro(null); }}
+        footer={(
+          <div className="flex items-center justify-between">
+            <div>
+              {selectedBairro && bairroToMicroarea.has(selectedBairro.properties.id) && (
+                <button
+                  onClick={handleRemoveBairroMicroarea}
+                  className="rounded-full border border-red-200 px-4 py-2 text-xs font-semibold text-red-600 hover:bg-red-50"
+                >
+                  Remover microárea
+                </button>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => { setBairroModalOpen(false); setSelectedBairro(null); }}
+                className="rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSaveBairroMicroarea}
+                disabled={savingBairroMicroarea}
+                className="rounded-full bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow hover:bg-emerald-700 disabled:opacity-60"
+              >
+                {savingBairroMicroarea
+                  ? 'Salvando...'
+                  : selectedBairro && bairroToMicroarea.has(selectedBairro.properties.id)
+                    ? 'Atualizar'
+                    : 'Definir como microárea'}
+              </button>
+            </div>
+          </div>
+        )}
+      >
+        <div className="grid gap-4 md:grid-cols-2">
+          <Field label="Nome da microárea">
+            <input
+              type="text"
+              value={bairroMicroareaForm.nome}
+              onChange={(e) => setBairroMicroareaForm((prev) => ({ ...prev, nome: e.target.value }))}
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
+              placeholder="Ex.: Microárea 01 - Centro"
+            />
+          </Field>
+          <Field label="Status">
+            <select
+              value={bairroMicroareaForm.status}
+              onChange={(e) => setBairroMicroareaForm((prev) => ({ ...prev, status: e.target.value }))}
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
+            >
+              <option value="COBERTA">COBERTA</option>
+              <option value="DESCOBERTA">DESCOBERTA</option>
+            </select>
+          </Field>
+          <Field label="População">
+            <input
+              type="number"
+              value={bairroMicroareaForm.populacao}
+              onChange={(e) => setBairroMicroareaForm((prev) => ({ ...prev, populacao: e.target.value }))}
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
+              placeholder="Ex.: 2100"
+            />
+          </Field>
+          <Field label="Famílias">
+            <input
+              type="number"
+              value={bairroMicroareaForm.familias}
+              onChange={(e) => setBairroMicroareaForm((prev) => ({ ...prev, familias: e.target.value }))}
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
+              placeholder="Ex.: 210"
+            />
+          </Field>
+        </div>
+        <div className="mt-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 p-3">
+          <p className="text-xs text-blue-700 dark:text-blue-300">
+            <strong>Bairro:</strong> {selectedBairro?.properties.nome}
+            {selectedBairro && bairroToMicroarea.has(selectedBairro.properties.id) && (
+              <> &middot; <span className="text-emerald-600 dark:text-emerald-400">Já possui microárea atribuída</span></>
+            )}
+          </p>
+        </div>
       </Modal>
     </div>
   );

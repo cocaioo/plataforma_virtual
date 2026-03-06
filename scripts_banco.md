@@ -348,6 +348,7 @@ create table public.microareas (
   status character varying(20) not null default 'COBERTA',
   populacao integer not null default 0,
   familias integer not null default 0,
+  bairro character varying(150) null,
   geojson jsonb null,
   created_at timestamp with time zone null default now(),
   updated_at timestamp with time zone null,

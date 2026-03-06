@@ -11,6 +11,7 @@ class MicroareaCreate(BaseModel):
     status: str = "COBERTA"
     populacao: int = 0
     familias: int = 0
+    bairro: Optional[str] = None
     geojson: Optional[dict] = None
 
 
@@ -19,6 +20,7 @@ class MicroareaUpdate(BaseModel):
     status: Optional[str] = None
     populacao: Optional[int] = None
     familias: Optional[int] = None
+    bairro: Optional[str] = None
     geojson: Optional[dict] = None
 
 
@@ -29,6 +31,7 @@ class MicroareaOut(BaseModel):
     status: str
     populacao: int
     familias: int
+    bairro: Optional[str] = None
     geojson: Optional[dict] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None

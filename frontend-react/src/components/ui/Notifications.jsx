@@ -3,10 +3,10 @@ import { createContext, useCallback, useContext, useMemo, useRef, useState } fro
 const NotificationsContext = createContext(null);
 
 const toastStyles = {
-  success: 'border-emerald-500 bg-emerald-50 text-emerald-900',
-  error: 'border-red-500 bg-red-50 text-red-900',
-  warning: 'border-amber-500 bg-amber-50 text-amber-900',
-  info: 'border-sky-500 bg-sky-50 text-sky-900',
+  success: 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-900 dark:text-emerald-200',
+  error: 'border-red-500 bg-red-50 dark:bg-red-900/30 text-red-900 dark:text-red-200',
+  warning: 'border-amber-500 bg-amber-50 dark:bg-amber-900/30 text-amber-900 dark:text-amber-200',
+  info: 'border-sky-500 bg-sky-50 dark:bg-sky-900/30 text-sky-900 dark:text-sky-200',
 };
 
 export const NotificationsProvider = ({ children }) => {
@@ -97,7 +97,7 @@ export const NotificationsProvider = ({ children }) => {
             <div className="text-sm leading-snug">{toast.message}</div>
             <button
               onClick={() => removeToast(toast.id)}
-              className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-slate-600"
+              className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400"
             >
               Fechar
             </button>
@@ -107,17 +107,17 @@ export const NotificationsProvider = ({ children }) => {
 
       {confirmState && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-slate-900/60 p-4">
-          <div className="w-full max-w-sm rounded-2xl bg-white shadow-2xl">
-            <div className="border-b border-slate-100 px-5 py-4">
-              <h3 className="text-base font-semibold text-slate-900">{confirmState.title}</h3>
+          <div className="w-full max-w-sm rounded-2xl bg-white dark:bg-slate-900 shadow-2xl">
+            <div className="border-b border-slate-100 dark:border-slate-700 px-5 py-4">
+              <h3 className="text-base font-semibold text-slate-900 dark:text-white">{confirmState.title}</h3>
               {confirmState.message && (
-                <p className="mt-2 text-sm text-slate-600">{confirmState.message}</p>
+                <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">{confirmState.message}</p>
               )}
             </div>
             <div className="flex items-center justify-end gap-2 px-5 py-4">
               <button
                 onClick={() => handleConfirm(false)}
-                className="rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                className="rounded-full border border-slate-200 dark:border-slate-600 px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
               >
                 {confirmState.cancelLabel}
               </button>
@@ -134,16 +134,16 @@ export const NotificationsProvider = ({ children }) => {
 
       {promptState && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-slate-900/60 p-4">
-          <div className="w-full max-w-sm rounded-2xl bg-white shadow-2xl">
-            <div className="border-b border-slate-100 px-5 py-4">
-              <h3 className="text-base font-semibold text-slate-900">{promptState.title}</h3>
+          <div className="w-full max-w-sm rounded-2xl bg-white dark:bg-slate-900 shadow-2xl">
+            <div className="border-b border-slate-100 dark:border-slate-700 px-5 py-4">
+              <h3 className="text-base font-semibold text-slate-900 dark:text-white">{promptState.title}</h3>
               {promptState.message && (
-                <p className="mt-2 text-sm text-slate-600">{promptState.message}</p>
+                <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">{promptState.message}</p>
               )}
             </div>
             <div className="px-5 py-4">
               <input
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
                 placeholder={promptState.placeholder}
                 value={promptState.value}
                 onChange={(event) => setPromptState((prev) => ({ ...prev, value: event.target.value }))}
@@ -152,7 +152,7 @@ export const NotificationsProvider = ({ children }) => {
             <div className="flex items-center justify-end gap-2 px-5 pb-5">
               <button
                 onClick={() => handlePrompt(null)}
-                className="rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                className="rounded-full border border-slate-200 dark:border-slate-600 px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
               >
                 {promptState.cancelLabel}
               </button>

@@ -14,6 +14,7 @@ class Microarea(Base):
     status = Column(String(20), nullable=False, default="COBERTA")  # COBERTA | DESCOBERTA
     populacao = Column(Integer, nullable=False, default=0)
     familias = Column(Integer, nullable=False, default=0)
+    bairro = Column(String(150), nullable=True)
     geojson = Column(JSONB().with_variant(JSON, "sqlite"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

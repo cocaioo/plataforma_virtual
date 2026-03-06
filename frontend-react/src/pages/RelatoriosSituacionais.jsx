@@ -13,17 +13,17 @@ import {
 // --- COMPONENTES VISUAIS ---
 
 const SectionCard = ({ title, subtitle, children, disabled, lockedMessage }) => (
-    <div className={`bg-white shadow-md rounded-lg mb-8 transition-opacity duration-300 ${disabled ? 'opacity-60 relative' : ''}`}>
+    <div className={`bg-white dark:bg-slate-900 shadow-md rounded-lg mb-8 transition-opacity duration-300 ${disabled ? 'opacity-60 relative' : ''}`}>
         {disabled && lockedMessage && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center bg-gray-100 bg-opacity-50 rounded-lg">
-                <div className="bg-white p-3 rounded shadow border border-gray-200 text-gray-600 font-medium text-sm text-center">
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-gray-100 dark:bg-slate-800 bg-opacity-50 rounded-lg">
+                <div className="bg-white dark:bg-slate-900 p-3 rounded shadow border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 font-medium text-sm text-center">
                     {lockedMessage}
                 </div>
             </div>
         )}
-        <div className="bg-gray-50 border-b border-gray-200 px-6 py-4 rounded-t-lg">
-            <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
-            {subtitle && <p className="text-sm text-gray-500 mt-1">{subtitle}</p>}
+        <div className="bg-gray-50 dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 px-6 py-4 rounded-t-lg">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white">{title}</h3>
+            {subtitle && <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">{subtitle}</p>}
         </div>
         <div className={`p-6 ${disabled ? 'pointer-events-none' : ''}`}>
             {children}
@@ -33,7 +33,7 @@ const SectionCard = ({ title, subtitle, children, disabled, lockedMessage }) => 
 
 const InputField = ({ label, name, value, onChange, type = 'text', helpText, placeholder, ...props }) => (
     <div className="mb-4">
-        <label htmlFor={name} className="block text-sm font-medium text-gray-700">
+        <label htmlFor={name} className="block text-sm font-medium text-gray-700 dark:text-slate-300">
             {label} {props.required && <span className="text-red-500">*</span>}
         </label>
         <input
@@ -43,16 +43,16 @@ const InputField = ({ label, name, value, onChange, type = 'text', helpText, pla
             value={value || ''}
             onChange={onChange}
             placeholder={placeholder}
-            className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            className="mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:text-white dark:placeholder-slate-500"
             {...props}
         />
-        {helpText && <p className="mt-2 text-xs text-gray-500 italic">{helpText}</p>}
+        {helpText && <p className="mt-2 text-xs text-gray-500 dark:text-slate-400 italic">{helpText}</p>}
     </div>
 );
 
 const TextAreaField = ({ label, name, value, onChange, helpText, placeholder, ...props }) => (
     <div className="mb-4">
-        <label htmlFor={name} className="block text-sm font-medium text-gray-700">
+        <label htmlFor={name} className="block text-sm font-medium text-gray-700 dark:text-slate-300">
             {label} {props.required && <span className="text-red-500">*</span>}
         </label>
         <textarea
@@ -62,10 +62,10 @@ const TextAreaField = ({ label, name, value, onChange, helpText, placeholder, ..
             onChange={onChange}
             placeholder={placeholder}
             rows={props.rows || 4}
-            className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            className="mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:text-white dark:placeholder-slate-500"
             {...props}
         />
-        {helpText && <p className="mt-2 text-xs text-gray-500 italic">{helpText}</p>}
+        {helpText && <p className="mt-2 text-xs text-gray-500 dark:text-slate-400 italic">{helpText}</p>}
     </div>
 );
 
@@ -179,40 +179,40 @@ const IndicatorsSection = ({ ubsId, initialData, onUpdate }) => {
         <SectionCard title="Indicadores epidemiológicos" subtitle="Preencha ou atualize os principais indicadores. Use os atalhos para acelerar." disabled={!ubsId} lockedMessage="Salve o rascunho para habilitar os indicadores">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
                 {initialData && initialData.map(ind => (
-                    <div key={ind.id} className="p-4 border rounded bg-white shadow-sm border-blue-100 relative group">
-                        <button 
+                    <div key={ind.id} className="p-4 border rounded bg-white dark:bg-slate-800 shadow-sm border-blue-100 dark:border-slate-700 relative group">
+                        <button
                             onClick={() => handleDelete(ind.id)}
                             className="absolute top-2 right-2 p-1 text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
                             title="Excluir"
                         >
                             <TrashIcon className="w-4 h-4" />
                         </button>
-                        <h4 className="font-bold text-gray-700 text-sm pr-6">{ind.nome_indicador}</h4>
-                        <p className="text-xl font-bold text-blue-600 mt-1">{formatIndicatorValue(ind.valor, ind.tipo_valor)}</p>
-                        <p className="text-xs text-gray-500 mt-1">Período: {ind.periodo_referencia || "-"}</p>
-                        <p className="text-xs text-gray-500">Meta: {formatIndicatorValue(ind.meta, ind.tipo_valor)}</p>
-                        <p className="text-xs text-gray-400">Tipo: {(valueTypeOptions.find(option => option.value === ind.tipo_valor) || valueTypeOptions[0]).label}</p>
+                        <h4 className="font-bold text-gray-700 dark:text-slate-300 text-sm pr-6">{ind.nome_indicador}</h4>
+                        <p className="text-xl font-bold text-blue-600 dark:text-blue-400 mt-1">{formatIndicatorValue(ind.valor, ind.tipo_valor)}</p>
+                        <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Período: {ind.periodo_referencia || "-"}</p>
+                        <p className="text-xs text-gray-500 dark:text-slate-400">Meta: {formatIndicatorValue(ind.meta, ind.tipo_valor)}</p>
+                        <p className="text-xs text-gray-400 dark:text-slate-500">Tipo: {(valueTypeOptions.find(option => option.value === ind.tipo_valor) || valueTypeOptions[0]).label}</p>
                     </div>
                 ))}
             </div>
 
-            <div className="p-4 border rounded-md bg-green-50">
-                <h4 className="font-bold text-green-900 mb-4 text-sm uppercase">Adicionar ou atualizar indicador</h4>
+            <div className="p-4 border rounded-md bg-green-50 dark:bg-green-900/20 dark:border-green-800">
+                <h4 className="font-bold text-green-900 dark:text-green-300 mb-4 text-sm uppercase">Adicionar ou atualizar indicador</h4>
                 <div className="mb-6 space-y-4">
                     {indicatorPresetGroups.map(group => (
                         <div key={group.title}>
-                            <p className="text-xs font-semibold text-green-800 uppercase tracking-wide">{group.title}</p>
+                            <p className="text-xs font-semibold text-green-800 dark:text-green-400 uppercase tracking-wide">{group.title}</p>
                             <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-3">
                                 {group.items.map(item => (
-                                    <div key={item.name} className="rounded-md border border-green-200 bg-white p-2">
+                                    <div key={item.name} className="rounded-md border border-green-200 dark:border-green-800 bg-white dark:bg-slate-800 p-2">
                                         <button
                                             type="button"
                                             onClick={() => setFormData(p => ({ ...p, nome_indicador: item.name }))}
-                                            className="text-xs font-semibold text-green-700 hover:text-green-900"
+                                            className="text-xs font-semibold text-green-700 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300"
                                         >
                                             {item.name}
                                         </button>
-                                        <p className="text-[11px] text-green-700/80 mt-1">{item.desc}</p>
+                                        <p className="text-[11px] text-green-700/80 dark:text-green-500 mt-1">{item.desc}</p>
                                     </div>
                                 ))}
                             </div>
@@ -231,18 +231,18 @@ const IndicatorsSection = ({ ubsId, initialData, onUpdate }) => {
                             helpText="Dica: use os atalhos acima para preencher mais rapido."
                         />
                         <div className="mb-4">
-                            <label className="block text-sm font-medium text-gray-700">Tipo de valor *</label>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">Tipo de valor *</label>
                             <select
                                 value={formData.tipo_valor}
                                 onChange={e => setFormData(p => ({...p, tipo_valor: e.target.value}))}
-                                className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm"
+                                className="mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-800 dark:text-white border border-gray-300 dark:border-slate-600 rounded-md text-sm"
                                 required
                             >
                                 {valueTypeOptions.map(option => (
                                     <option key={option.value} value={option.value}>{option.label}</option>
                                 ))}
                             </select>
-                            <p className="mt-2 text-xs text-gray-500 italic">Escolha a unidade para valor e meta.</p>
+                            <p className="mt-2 text-xs text-gray-500 dark:text-slate-400 italic">Escolha a unidade para valor e meta.</p>
                         </div>
                         <InputField
                             label={`Valor (${valueType.label})`}
@@ -268,11 +268,11 @@ const IndicatorsSection = ({ ubsId, initialData, onUpdate }) => {
                             helpText="Opcional. Use para comparar com a meta da equipe."
                         />
                         <div className="mb-4">
-                            <label className="block text-sm font-medium text-gray-700">Período (trimestre) *</label>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">Período (trimestre) *</label>
                             <select
                                 value={formData.periodo_quadrimestre}
                                 onChange={e => setFormData(p => ({...p, periodo_quadrimestre: e.target.value}))}
-                                className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm"
+                                className="mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-800 dark:text-white border border-gray-300 dark:border-slate-600 rounded-md text-sm"
                                 required
                             >
                                 <option value="">Selecionar</option>
@@ -281,14 +281,14 @@ const IndicatorsSection = ({ ubsId, initialData, onUpdate }) => {
                                 <option value="Q3">Q3</option>
                                 <option value="Q4">Q4</option>
                             </select>
-                            <p className="mt-2 text-xs text-gray-500 italic">Use o trimestre do período analisado.</p>
+                            <p className="mt-2 text-xs text-gray-500 dark:text-slate-400 italic">Use o trimestre do período analisado.</p>
                         </div>
                         <div className="mb-4">
-                            <label className="block text-sm font-medium text-gray-700">Ano *</label>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">Ano *</label>
                             <select
                                 value={formData.periodo_ano}
                                 onChange={e => setFormData(p => ({...p, periodo_ano: e.target.value}))}
-                                className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm"
+                                className="mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-800 dark:text-white border border-gray-300 dark:border-slate-600 rounded-md text-sm"
                                 required
                             >
                                 <option value="">Selecionar</option>
@@ -296,12 +296,12 @@ const IndicatorsSection = ({ ubsId, initialData, onUpdate }) => {
                                     <option key={year} value={year}>{year}</option>
                                 ))}
                             </select>
-                            <p className="mt-2 text-xs text-gray-500 italic">Exemplo: Q3/2025.</p>
+                            <p className="mt-2 text-xs text-gray-500 dark:text-slate-400 italic">Exemplo: Q3/2025.</p>
                         </div>
                     </div>
                     <TextAreaField label="Observações (opcional)" name="observacoes" rows={2} value={formData.observacoes} onChange={e => setFormData(p => ({...p, observacoes: e.target.value}))} placeholder="Fonte dos dados, critérios, etc."/>
                     <div className="flex justify-end gap-2 mt-2">
-                        <button type="button" onClick={() => setFormData({ nome_indicador: '', valor: '', meta: '', tipo_valor: 'PERCENTUAL', periodo_quadrimestre: '', periodo_ano: '', observacoes: '' })} className="text-sm font-medium text-gray-600 hover:underline">Limpar</button>
+                        <button type="button" onClick={() => setFormData({ nome_indicador: '', valor: '', meta: '', tipo_valor: 'PERCENTUAL', periodo_quadrimestre: '', periodo_ano: '', observacoes: '' })} className="text-sm font-medium text-gray-600 dark:text-slate-400 hover:underline">Limpar</button>
                         <button type="submit" className="bg-green-600 text-white px-6 py-2 rounded font-bold hover:bg-green-700 transition-colors">Salvar indicador</button>
                     </div>
                 </form>
@@ -360,13 +360,13 @@ const ProfessionalsSection = ({ ubsId, initialData, onUpdate }) => {
         <SectionCard title="Profissionais da equipe" subtitle="Consulte os profissionais já cadastrados e atualize conforme a composição da equipe da UBS." disabled={!ubsId} lockedMessage="Salve o rascunho para habilitar esta seção">
             <div className="mb-6 space-y-4">
                 {initialData && initialData.map(prof => (
-                    <div key={prof.id} className="flex justify-between items-center p-3 border rounded bg-gray-50 relative group">
+                    <div key={prof.id} className="flex justify-between items-center p-3 border dark:border-slate-700 rounded bg-gray-50 dark:bg-slate-800 relative group">
                         <div>
-                            <p className="font-bold text-gray-800">{prof.cargo_funcao}</p>
-                            <p className="text-xs text-gray-500">{prof.observacoes}</p>
+                            <p className="font-bold text-gray-800 dark:text-white">{prof.cargo_funcao}</p>
+                            <p className="text-xs text-gray-500 dark:text-slate-400">{prof.observacoes}</p>
                         </div>
                         <div className="flex items-center gap-3">
-                            <span className="text-sm font-medium bg-blue-100 text-blue-800 px-2 py-1 rounded">Qtd: {prof.quantidade}</span>
+                            <span className="text-sm font-medium bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 px-2 py-1 rounded">Qtd: {prof.quantidade}</span>
                             <button 
                                 onClick={() => handleDelete(prof.id)}
                                 className="p-1 text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
@@ -379,14 +379,14 @@ const ProfessionalsSection = ({ ubsId, initialData, onUpdate }) => {
                 ))}
             </div>
 
-            <div className="p-4 border rounded-md bg-indigo-50">
-                <h4 className="font-bold text-indigo-900 mb-4 text-sm uppercase">Adicionar ou atualizar profissional</h4>
+            <div className="p-4 border rounded-md bg-indigo-50 dark:bg-indigo-900/20 dark:border-indigo-800">
+                <h4 className="font-bold text-indigo-900 dark:text-indigo-300 mb-4 text-sm uppercase">Adicionar ou atualizar profissional</h4>
                 <form onSubmit={handleAdd} className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <InputField label="Cargo / função" name="cargo_funcao" value={formData.cargo_funcao} onChange={e => setFormData(p => ({...p, cargo_funcao: e.target.value}))} required placeholder="Ex: Enfermeiro da Família"/>
                     <InputField label="Quantidade" name="quantidade" type="number" value={formData.quantidade} onChange={e => setFormData(p => ({...p, quantidade: e.target.value}))} required placeholder="Ex: 2"/>
                     <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700">Tipo de vínculo *</label>
-                        <select value={formData.tipo_vinculo} onChange={e => setFormData(p => ({...p, tipo_vinculo: e.target.value}))} className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm" required>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">Tipo de vínculo *</label>
+                        <select value={formData.tipo_vinculo} onChange={e => setFormData(p => ({...p, tipo_vinculo: e.target.value}))} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-800 dark:text-white border border-gray-300 dark:border-slate-600 rounded-md text-sm" required>
                             <option value="">Selecionar</option>
                             <option value="concursado">Concursado</option>
                             <option value="contratado">Contratado</option>
@@ -398,7 +398,7 @@ const ProfessionalsSection = ({ ubsId, initialData, onUpdate }) => {
                         <TextAreaField label="Observações (opcional)" rows={2} value={formData.observacoes} onChange={e => setFormData(p => ({...p, observacoes: e.target.value}))} placeholder="Informe categoria profissional, carga horária, etc."/>
                     </div>
                     <div className="md:col-span-3 flex justify-end gap-2">
-                        <button type="button" onClick={() => setFormData({ cargo_funcao: '', quantidade: '', tipo_vinculo: '', observacoes: '' })} className="text-sm font-medium text-gray-600 hover:underline">Limpar</button>
+                        <button type="button" onClick={() => setFormData({ cargo_funcao: '', quantidade: '', tipo_vinculo: '', observacoes: '' })} className="text-sm font-medium text-gray-600 dark:text-slate-400 hover:underline">Limpar</button>
                         <button type="submit" className="bg-indigo-600 text-white px-4 py-2 rounded font-bold hover:bg-indigo-700 transition-colors">Salvar profissional</button>
                     </div>
                 </form>
@@ -456,12 +456,12 @@ const AttachmentsSection = ({ ubsId, initialData, onUpdate }) => {
 
     return (
         <SectionCard title="Anexos" subtitle="Envie fotos e arquivos relacionados (ex.: registros fotográficos)." disabled={!ubsId} lockedMessage="Salve o rascunho para habilitar os anexos.">
-             <form onSubmit={handleUpload} className="p-4 border rounded-md bg-gray-50 mb-6 space-y-4">
-                <input type="file" onChange={e => setFile(e.target.files[0])} className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-blue-50 file:text-blue-700"/>
+             <form onSubmit={handleUpload} className="p-4 border dark:border-slate-700 rounded-md bg-gray-50 dark:bg-slate-800 mb-6 space-y-4">
+                <input type="file" onChange={e => setFile(e.target.files[0])} className="block w-full text-sm text-gray-500 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-blue-50 dark:file:bg-blue-900/30 file:text-blue-700 dark:file:text-blue-400"/>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700">Seção do PDF</label>
-                        <select value={section} onChange={e => setSection(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">Seção do PDF</label>
+                        <select value={section} onChange={e => setSection(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-800 dark:text-white border border-gray-300 dark:border-slate-600 rounded-md text-sm">
                             <option value="PROBLEMAS">Problemas identificados</option>
                             <option value="NEC_EQUIP_INSUMOS">Necessidades (equipamentos e insumos)</option>
                             <option value="NEC_INFRA">Necessidades (infraestrutura e manutenção)</option>
@@ -478,11 +478,11 @@ const AttachmentsSection = ({ ubsId, initialData, onUpdate }) => {
                     {isUploading ? 'Enviando...' : 'Enviar anexos'}
                 </button>
              </form>
-             <h4 className="font-bold text-gray-700 mb-2">Anexos enviados</h4>
-             <ul className="divide-y divide-gray-200">
+             <h4 className="font-bold text-gray-700 dark:text-slate-300 mb-2">Anexos enviados</h4>
+             <ul className="divide-y divide-gray-200 dark:divide-slate-700">
                  {initialData && initialData.map(att => (
                      <li key={att.id} className="py-3 flex justify-between items-center text-sm">
-                         <span>{att.original_filename} <span className="text-gray-500">({att.description || att.section})</span></span>
+                         <span>{att.original_filename} <span className="text-gray-500 dark:text-slate-400">({att.description || att.section})</span></span>
                          <div className="flex gap-3">
                             <a href={`/api/ubs/attachments/${att.id}/download`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Baixar</a>
                             <button
@@ -495,7 +495,7 @@ const AttachmentsSection = ({ ubsId, initialData, onUpdate }) => {
                          </div>
                      </li>
                  ))}
-                 {(!initialData || initialData.length === 0) && <li className="text-center py-4 text-gray-500 italic">Nenhum anexo enviado.</li>}
+                 {(!initialData || initialData.length === 0) && <li className="text-center py-4 text-gray-500 dark:text-slate-400 italic">Nenhum anexo enviado.</li>}
              </ul>
         </SectionCard>
     );
@@ -682,24 +682,24 @@ const FullReportModal = ({ isOpen, onClose, reportId, onRefresh, ubsInfo }) => {
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center overflow-hidden p-4">
-            <div className="bg-gray-100 w-full max-w-7xl rounded-lg shadow-2xl flex flex-col max-h-[95vh]">
-                
+            <div className="bg-gray-100 dark:bg-slate-950 w-full max-w-7xl rounded-lg shadow-2xl flex flex-col max-h-[95vh]">
+
                 {/* --- HEADER --- */}
-                <div className="bg-white px-8 py-5 border-b flex justify-between items-center rounded-t-lg">
+                <div className="bg-white dark:bg-slate-900 px-8 py-5 border-b dark:border-slate-700 flex justify-between items-center rounded-t-lg">
                     <div>
-                        <h2 className="text-2xl font-bold text-gray-800">Diagnóstico Situacional da UBS</h2>
-                        <p className="text-sm text-gray-500">Formulário para registro de dados do relatório situacional da Unidade Básica de Saúde</p>
+                        <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Diagnóstico Situacional da UBS</h2>
+                        <p className="text-sm text-gray-500 dark:text-slate-400">Formulário para registro de dados do relatório situacional da Unidade Básica de Saúde</p>
                     </div>
                     <div className="flex items-center gap-4">
                         <span className={`text-sm italic font-medium ${saveStatus === 'Erro ao salvar' ? 'text-red-600' : saveStatus === 'Salvando...' ? 'text-yellow-600' : 'text-green-600'}`}>{saveStatus}</span>
-                        <button onClick={onClose} className="text-gray-400 hover:text-gray-700 transition-colors text-3xl font-light">&times;</button>
+                        <button onClick={onClose} className="text-gray-400 dark:text-slate-500 hover:text-gray-700 dark:hover:text-slate-300 transition-colors text-3xl font-light">&times;</button>
                     </div>
                 </div>
 
                 {/* --- CORPO --- */}
                 <div className="p-8 overflow-y-auto custom-scrollbar flex-1">
                     {isLocked && (
-                        <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900">
+                        <div className="mb-6 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-amber-900 dark:text-amber-300">
                             Configure a UBS primeiro para liberar o preenchimento do relatório.
                         </div>
                     )}
@@ -749,7 +749,7 @@ const FullReportModal = ({ isOpen, onClose, reportId, onRefresh, ubsInfo }) => {
                     <SectionCard title="Serviços oferecidos pela UBS" subtitle="Marque os serviços que a UBS oferece diretamente à população.">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                             {availableServices.map(s => (
-                                <label key={s} className="flex items-center space-x-2 text-sm text-gray-700 bg-gray-50 p-2 rounded border border-gray-100 hover:bg-gray-100 transition-colors">
+                                <label key={s} className="flex items-center space-x-2 text-sm text-gray-700 dark:text-slate-300 bg-gray-50 dark:bg-slate-800 p-2 rounded border border-gray-100 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
                                     <input type="checkbox" className="rounded text-blue-600" />
                                     <span>{s}</span>
                                 </label>
@@ -823,9 +823,9 @@ const FullReportModal = ({ isOpen, onClose, reportId, onRefresh, ubsInfo }) => {
                     </SectionCard>
 
                     {!id && (
-                        <div className="flex justify-center my-8 p-6 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div className="flex justify-center my-8 p-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
                             <div className="text-center">
-                                <p className="mb-4 text-blue-800 font-medium">Preencha Nome da UBS, CNES e Área de atuação acima e clique abaixo para desbloquear as demais seções.</p>
+                                <p className="mb-4 text-blue-800 dark:text-blue-300 font-medium">Preencha Nome da UBS, CNES e Área de atuação acima e clique abaixo para desbloquear as demais seções.</p>
                                 <button onClick={handleCreateDraft} className="bg-blue-600 text-white px-10 py-4 rounded-lg font-bold text-xl shadow-lg hover:bg-blue-700 transition-all">Salvar rascunho</button>
                             </div>
                         </div>
@@ -834,13 +834,13 @@ const FullReportModal = ({ isOpen, onClose, reportId, onRefresh, ubsInfo }) => {
                     </div>
                 </div>
 
-                <div className="bg-white px-8 py-5 border-t flex justify-end gap-4 rounded-b-lg">
-                    <button onClick={onClose} className="px-6 py-2 bg-gray-500 text-white rounded font-bold hover:bg-gray-600 transition-colors">Fechar</button>
+                <div className="bg-white dark:bg-slate-900 px-8 py-5 border-t dark:border-slate-700 flex justify-end gap-4 rounded-b-lg">
+                    <button onClick={onClose} className="px-6 py-2 bg-gray-500 dark:bg-slate-600 text-white rounded font-bold hover:bg-gray-600 dark:hover:bg-slate-500 transition-colors">Fechar</button>
                     {id && (
                         <>
                             <button
                                 onClick={() => notify({ type: 'info', message: 'Rascunho salvo automaticamente.' })}
-                                className="px-6 py-2 bg-indigo-50 text-indigo-700 rounded font-bold border border-indigo-200"
+                                className="px-6 py-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 rounded font-bold border border-indigo-200 dark:border-indigo-800"
                             >
                                 Salvar rascunho
                             </button>
@@ -913,20 +913,20 @@ const RelatoriosSituacionais = () => {
   };
 
   return (
-    <>
-      <FullReportModal 
-        isOpen={modalOpen} 
-        onClose={() => setModalOpen(false)} 
-        reportId={selectedReportId} 
+    <div className="pt-10">
+      <FullReportModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        reportId={selectedReportId}
         onRefresh={fetchRelatorios}
                 ubsInfo={ubsInfo}
       />
 
-            <div className="container mx-auto mt-10 p-6 bg-white rounded-xl shadow-lg rise-fade">
+            <div className="container mx-auto p-6 bg-white dark:bg-slate-900 rounded-xl shadow-lg rise-fade">
                 <div className="flex justify-between items-center mb-5">
           <div>
-            <h1 className="text-3xl font-bold text-gray-800">Relatórios Situacionais</h1>
-            <p className="text-gray-500 mt-1">Gerencie os diagnósticos das Unidades Básicas de Saúde</p>
+            <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Relatórios Situacionais</h1>
+            <p className="text-gray-500 dark:text-slate-400 mt-1">Gerencie os diagnósticos das Unidades Básicas de Saúde</p>
           </div>
                     {!isUserRole && !ubsInfo && (
                                                 <button onClick={() => { setSelectedReportId(null); setModalOpen(true); }} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-2 rise-fade stagger-2">
@@ -942,21 +942,21 @@ const RelatoriosSituacionais = () => {
                     )}
         </div>
 
-                <div className="mb-8 rounded-2xl border border-slate-200 bg-gradient-to-r from-slate-50 via-white to-blue-50 px-5 py-4 shadow-sm rise-fade stagger-3">
-                    <div className="text-sm font-medium text-slate-600">
+                <div className="mb-8 rounded-2xl border border-slate-200 dark:border-slate-700 bg-gradient-to-r from-slate-50 via-white to-blue-50 dark:from-slate-800 dark:via-slate-900 dark:to-slate-800 px-5 py-4 shadow-sm rise-fade stagger-3">
+                    <div className="text-sm font-medium text-slate-600 dark:text-slate-400">
                         Salve o rascunho para destravar seções e anexos. Atualize indicadores antes de exportar o PDF.
                     </div>
                 </div>
 
         {error && (
-            <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 flex justify-between items-center">
+            <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 text-red-700 dark:text-red-300 flex justify-between items-center">
                 <span>{error}</span>
                 <button onClick={() => window.location.href = '/login'} className="underline font-bold">Ir para Login</button>
             </div>
         )}
 
                 {loading ? (
-                    <div className="p-8 rounded-2xl border border-gray-100 bg-gray-50">
+                    <div className="p-8 rounded-2xl border border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-800">
                         <div className="h-6 w-40 rounded-full loading-shimmer mb-4" />
                         <div className="h-4 w-2/3 rounded-full loading-shimmer mb-3" />
                         <div className="h-4 w-1/2 rounded-full loading-shimmer" />
@@ -964,19 +964,19 @@ const RelatoriosSituacionais = () => {
                 ) : (
                     <div>
                         {!ubsInfo ? (
-                            <div className="text-center py-12 text-gray-500">
+                            <div className="text-center py-12 text-gray-500 dark:text-slate-400">
                                 Nenhum relatório encontrado. Configure a UBS para iniciar o diagnóstico.
                             </div>
                         ) : (
-                            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-6">
+                            <div className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 p-6">
                                 <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                                     <div>
-                                        <h2 className="text-xl font-semibold text-gray-800">
+                                        <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
                                             {ubsInfo.nome_relatorio || 'Diagnóstico situacional'}
                                         </h2>
-                                        <p className="text-sm text-gray-500">UBS: {ubsInfo.nome_ubs || '-'}</p>
-                                        <div className="mt-2 inline-flex items-center gap-2 text-sm text-gray-600">
-                                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${ubsInfo.status === 'DRAFT' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}`}>
+                                        <p className="text-sm text-gray-500 dark:text-slate-400">UBS: {ubsInfo.nome_ubs || '-'}</p>
+                                        <div className="mt-2 inline-flex items-center gap-2 text-sm text-gray-600 dark:text-slate-300">
+                                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${ubsInfo.status === 'DRAFT' ? 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300' : 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300'}`}>
                                                 {ubsInfo.status === 'DRAFT' ? 'RASCUNHO' : 'ENVIADO'}
                                             </span>
                                             <span>CNES: {ubsInfo.cnes || 'Não informado'}</span>
@@ -994,7 +994,7 @@ const RelatoriosSituacionais = () => {
                                         )}
                                         <button
                                             onClick={() => handleExport(ubsInfo.id)}
-                                            className="p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors border border-transparent hover:border-gray-200"
+                                            className="p-2 text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700 rounded-lg transition-colors border border-transparent hover:border-gray-200 dark:hover:border-slate-600"
                                             title="Exportar PDF"
                                         >
                                             <DocumentArrowDownIcon className="w-5 h-5" />
@@ -1015,7 +1015,7 @@ const RelatoriosSituacionais = () => {
                     </div>
                 )}
       </div>
-    </>
+    </div>
   );
 };
 

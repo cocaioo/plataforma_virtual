@@ -7,8 +7,7 @@ const BookingForm = ({ onSuccess, onCancel, initialData = null, title = "Agendar
   const [especialidades, setEspecialidades] = useState([]);
   const [selectedEspecialidade, setSelectedEspecialidade] = useState('');
   const [loading, setLoading] = useState(true);
-  
-  // Se for reagendamento, extrai data e hora da data_hora original
+
   const getInitialState = () => {
     if (initialData) {
       const d = new Date(initialData.data_hora);
@@ -81,7 +80,7 @@ const BookingForm = ({ onSuccess, onCancel, initialData = null, title = "Agendar
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
-    if (error) setError(null); // Limpa erro ao digitar
+    if (error) setError(null);
   };
 
   const handleSubmit = async (e) => {
@@ -96,9 +95,8 @@ const BookingForm = ({ onSuccess, onCancel, initialData = null, title = "Agendar
 
     try {
       const dataHora = new Date(`${formData.data}T${formData.hora}:00`);
-      
+
       if (initialData) {
-        // Lógica de Reagendamento
         await agendamentoService.atualizarAgendamento(initialData.id, {
           profissional_id: parseInt(formData.profissional_id),
           data_hora: dataHora.toISOString(),
@@ -106,7 +104,6 @@ const BookingForm = ({ onSuccess, onCancel, initialData = null, title = "Agendar
         });
         setSuccessMsg("Consulta reagendada com sucesso!");
       } else {
-        // Lógica de Novo Agendamento
         await agendamentoService.criarAgendamento({
           profissional_id: parseInt(formData.profissional_id),
           data_hora: dataHora.toISOString(),
@@ -114,8 +111,7 @@ const BookingForm = ({ onSuccess, onCancel, initialData = null, title = "Agendar
         });
         setSuccessMsg("Consulta agendada com sucesso!");
       }
-      
-      // Aguarda um pouco para mostrar a mensagem de sucesso antes de fechar/redirecionar
+
       setTimeout(() => {
           onSuccess();
       }, 1500);
@@ -125,44 +121,43 @@ const BookingForm = ({ onSuccess, onCancel, initialData = null, title = "Agendar
     }
   };
 
-  // Calcula data mínima (hoje)
   const today = new Date().toISOString().split('T')[0];
   const maxDateObj = new Date();
   maxDateObj.setDate(maxDateObj.getDate() + 14);
   const maxDate = maxDateObj.toISOString().split('T')[0];
 
-  if (loading) return <p className="p-4 text-center">Carregando...</p>;
+  if (loading) return <p className="p-4 text-center dark:text-slate-400">Carregando...</p>;
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-xl border border-gray-100 relative">
-      <h3 className="text-xl font-bold text-gray-900 mb-6 border-b pb-2">{title}</h3>
-      
+    <div className="bg-white dark:bg-slate-900 p-6 rounded-lg shadow-xl border border-gray-100 dark:border-slate-700 relative">
+      <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 border-b dark:border-slate-700 pb-2">{title}</h3>
+
       {error && (
-        <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4 rounded-md flex items-start">
-            <ExclamationTriangleIcon className="h-5 w-5 text-red-500 mr-2 mt-0.5 flex-shrink-0" />
+        <div className="mb-4 bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 p-4 rounded-md flex items-start">
+            <ExclamationTriangleIcon className="h-5 w-5 text-red-500 dark:text-red-400 mr-2 mt-0.5 flex-shrink-0" />
             <div>
-                <p className="text-sm text-red-700 font-medium">Não foi possível realizar o agendamento</p>
-                <p className="text-sm text-red-600 mt-1">{error}</p>
+                <p className="text-sm text-red-700 dark:text-red-300 font-medium">Não foi possível realizar o agendamento</p>
+                <p className="text-sm text-red-600 dark:text-red-400 mt-1">{error}</p>
             </div>
         </div>
       )}
 
       {successMsg && (
-        <div className="absolute inset-0 z-10 bg-white/90 flex flex-col items-center justify-center rounded-lg">
+        <div className="absolute inset-0 z-10 bg-white/90 dark:bg-slate-900/90 flex flex-col items-center justify-center rounded-lg">
              <CheckCircleIcon className="h-16 w-16 text-green-500 mb-4 animate-bounce" />
-             <p className="text-xl font-bold text-gray-800">{successMsg}</p>
+             <p className="text-xl font-bold text-gray-800 dark:text-white">{successMsg}</p>
         </div>
       )}
-      
+
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-1">Especialidade</label>
+          <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1">Especialidade</label>
           <select
             name="especialidade"
             value={selectedEspecialidade}
             onChange={handleEspecialidadeChange}
             disabled={!!initialData}
-            className={`mt-1 block w-full pl-3 pr-10 py-2.5 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-lg ${initialData ? 'bg-gray-50' : ''}`}
+            className={`mt-1 block w-full pl-3 pr-10 py-2.5 text-base border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-lg ${initialData ? 'bg-gray-50 dark:bg-slate-700' : ''}`}
             required={!initialData}
           >
             <option value="">Selecione uma especialidade</option>
@@ -175,13 +170,13 @@ const BookingForm = ({ onSuccess, onCancel, initialData = null, title = "Agendar
         </div>
 
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-1">Profissional</label>
+          <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1">Profissional</label>
           <select
             name="profissional_id"
             value={formData.profissional_id}
             onChange={handleChange}
-            disabled={!!initialData} // Geralmente não se muda o profissional no reagendamento, mas se quiser permitir, remova isso
-            className={`mt-1 block w-full pl-3 pr-10 py-2.5 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-lg ${initialData ? 'bg-gray-50' : ''}`}
+            disabled={!!initialData}
+            className={`mt-1 block w-full pl-3 pr-10 py-2.5 text-base border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-lg ${initialData ? 'bg-gray-50 dark:bg-slate-700' : ''}`}
             required
           >
             <option value="">Selecione um profissional</option>
@@ -195,7 +190,7 @@ const BookingForm = ({ onSuccess, onCancel, initialData = null, title = "Agendar
 
         <div className="grid grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">Data</label>
+            <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1">Data</label>
             <input
               type="date"
               name="data"
@@ -203,40 +198,40 @@ const BookingForm = ({ onSuccess, onCancel, initialData = null, title = "Agendar
               max={maxDate}
               value={formData.data}
               onChange={handleChange}
-              className="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+              className="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white rounded-lg focus:ring-blue-500 focus:border-blue-500"
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">Hora</label>
+            <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1">Hora</label>
             <input
               type="time"
               name="hora"
               value={formData.hora}
               onChange={handleChange}
-              className="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+              className="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white rounded-lg focus:ring-blue-500 focus:border-blue-500"
               required
             />
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-1">Observações (Opcional)</label>
+          <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1">Observações (Opcional)</label>
           <textarea
             name="observacoes"
             rows={3}
             value={formData.observacoes}
             onChange={handleChange}
             placeholder="Alguma observação importante para o profissional..."
-            className="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+            className="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:placeholder-slate-500 rounded-lg focus:ring-blue-500 focus:border-blue-500"
           />
         </div>
 
-        <div className="flex justify-end space-x-3 pt-4 border-t">
+        <div className="flex justify-end space-x-3 pt-4 border-t dark:border-slate-700">
           <button
             type="button"
             onClick={onCancel}
-            className="bg-white py-2.5 px-6 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            className="bg-white dark:bg-slate-800 py-2.5 px-6 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
             Cancelar
           </button>

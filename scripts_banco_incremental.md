@@ -127,3 +127,9 @@ INSERT INTO cargos (nome) VALUES
 	('Agente Comunitário de Saúde'),('Técnico de Enfermagem')
 ON CONFLICT DO NOTHING;
 
+-- 7) Adicionar coluna bairro na tabela microareas (Mapa de bairros/microáreas)
+-- Permite associar uma microárea a um bairro específico de Parnaíba,
+-- refletindo no mapa interativo da seção de gestão de equipes.
+ALTER TABLE public.microareas
+ADD COLUMN IF NOT EXISTS bairro character varying(150) NULL;
+
