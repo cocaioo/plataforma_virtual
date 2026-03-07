@@ -18,9 +18,9 @@ if config.config_file_name is not None:
 
 # Importa metadata do projeto
 os.environ.setdefault("SKIP_ASYNC_ENGINE", "1")
-from database import Base  # noqa: E402
-import models.auth_models  # noqa: F401,E402
-import models.diagnostico_models  # noqa: F401,E402
+from app.database import Base  # noqa: E402
+import app.models.auth_models  # noqa: F401,E402
+import app.models.diagnostico_models  # noqa: F401,E402
 
 target_metadata = Base.metadata
 

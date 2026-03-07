@@ -45,7 +45,7 @@ O backend é construído com FastAPI e utiliza SQLite por padrão para desenvolv
 4.  **Inicialize o Banco de Dados:**
     Este comando criará o arquivo `dev.db` (SQLite) e populará as tabelas iniciais.
     ```bash
-    python create_tables.py
+    python scripts/creates/create_tables.py
     ```
 
 5.  **Inicie o servidor:**
@@ -102,7 +102,7 @@ Este script cria um usuário administrador padrão ou promove um usuário existe
 
 1. Execute o script na raiz do projeto:
    ```bash
-   python create_admin.py
+    python scripts/creates/create_admin.py
    ```
 2. O usuário padrão será:
    - **Login:** `admin@example.com`
@@ -120,11 +120,10 @@ Se preferir usar seu próprio cadastro feito pelo frontend:
 
 ## 🛠️ Estrutura do Projeto
 
-- `main.py`: Ponto de entrada da API FastAPI.
-- `models/`: Definições das tabelas do banco de dados (SQLAlchemy).
-- `routes/`: Definição dos endpoints da API.
-- `schemas/`: Validação de dados (Pydantic).
-- `services/`: Lógica de negócio e geração de relatórios.
+- `app/`: Backend FastAPI (API, modelos, schemas, services e utils).
+- `main.py`: Entry point que expõe `app` do backend.
+- `scripts/`: Scripts auxiliares (seed, criação de usuários, inspeção).
+- `docs/`: Documentação técnica e scripts SQL.
 - `frontend-react/`: Código fonte da aplicação web.
 - `alembic/`: Migrações do banco de dados (usado principalmente em produção).
 

@@ -6,10 +6,10 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 
 from main import app
-from database import Base, get_db
-from models.auth_models import Usuario, ProfissionalUbs
-from models.agendamento_models import Agendamento, BloqueioAgenda, StatusAgendamento
-from utils.jwt_handler import create_access_token
+from app.database import Base, get_db
+from app.models.auth_models import Usuario, ProfissionalUbs
+from app.models.agendamento_models import Agendamento, BloqueioAgenda, StatusAgendamento
+from app.utils.jwt_handler import create_access_token
 
 
 async def _create_user(session: AsyncSession, email: str, role: str = "USER") -> Usuario:
