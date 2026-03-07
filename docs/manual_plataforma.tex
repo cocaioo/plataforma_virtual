@@ -1,0 +1,334 @@
+% Manual de Uso - Plataforma UBS
+% Compilacao recomendada: XeLaTeX ou LuaLaTeX
+\documentclass[12pt,a4paper]{article}
+
+\usepackage[a4paper,margin=2.4cm]{geometry}
+\usepackage{graphicx}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{tcolorbox}
+\usepackage{hyperref}
+\usepackage{tikz}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+
+% Tipografia (fallback para pdfLaTeX)
+\newcommand{\headingfont}{\bfseries}
+
+% Paleta (aproximada do frontend)
+\definecolor{BrandBlue}{HTML}{2563EB}
+\definecolor{BrandBlueDark}{HTML}{1D4ED8}
+\definecolor{Ink}{HTML}{0F172A}
+\definecolor{Slate}{HTML}{475569}
+\definecolor{Paper}{HTML}{F8FAFC}
+\definecolor{Line}{HTML}{E2E8F0}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=BrandBlueDark,
+  urlcolor=BrandBlueDark,
+  citecolor=BrandBlueDark
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\fancyfoot[C]{\thepage}
+
+\titleformat{\section}{\Large\headingfont\color{Ink}}{}{0pt}{}
+\titleformat{\subsection}{\large\headingfont\color{Ink}}{}{0pt}{}
+
+\newtcolorbox{FeatureBox}{
+  colback=Paper,
+  colframe=Line,
+  boxrule=0.6pt,
+  arc=8pt,
+  left=10pt,
+  right=10pt,
+  top=8pt,
+  bottom=8pt
+}
+
+\newcommand{\pill}[1]{\tikz[baseline]{\node[fill=BrandBlue!10,draw=BrandBlue!30,rounded corners=4pt,inner xsep=6pt,inner ysep=2pt, text=BrandBlueDark]{\small\textbf{#1}};}}
+
+\begin{document}
+
+% Capa
+\begin{titlepage}
+  \thispagestyle{empty}
+  \begin{tikzpicture}[remember picture,overlay]
+    \fill[BrandBlue] (current page.north west) rectangle ([yshift=-7cm]current page.north east);
+    \fill[BrandBlueDark] (current page.north west) rectangle ([yshift=-0.6cm]current page.north east);
+  \end{tikzpicture}
+
+  \vspace*{2.6cm}
+  {\headingfont\color{white}\fontsize{36}{42}\selectfont Manual de Uso\\}
+  \vspace{0.4cm}
+  {\headingfont\color{white}\fontsize{20}{24}\selectfont Plataforma UBS}
+
+  \vspace{1.4cm}
+  {\color{white}\large Versao atual \textemdash\ 07 de marco de 2026}
+
+  \vfill
+  {\color{white}\large Autoria: Caio e Samuel}
+
+  \vspace*{1.2cm}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+\section{Visao geral}
+A Plataforma UBS oferece um ambiente completo para gestao de Unidades Basicas de Saude (UBS), integrando diagnosticos situacionais, agendamentos, comunicacao, materiais educativos e acompanhamento de cronogramas. O sistema foi pensado para diferentes perfis de uso, com fluxos controlados por permissao.
+
+\section{Acesso e perfis}
+\begin{FeatureBox}
+\textbf{Perfis disponiveis}\par
+\vspace{4pt}
+\pill{USER} \pill{PROFISSIONAL} \pill{GESTOR} \pill{RECEPCAO} \pill{ACS}
+\end{FeatureBox}
+
+\subsection{Login}
+\begin{itemize}[leftmargin=*]
+  \item Acesse a tela de login e informe e-mail e senha.
+  \item Em caso de esquecimento, utilize \textbf{Redefinir senha} no menu do usuario.
+\end{itemize}
+
+\subsection{Primeiro acesso}
+\begin{itemize}[leftmargin=*]
+  \item Usuarios recem-cadastrados iniciam com perfil \pill{USER}.
+  \item Perfis de gestao devem ser concedidos por um gestor ou administrador.
+\end{itemize}
+
+\section{Navegacao principal}
+A barra superior traz atalhos para as principais areas e o menu do usuario. O conteudo exibido varia conforme o perfil.
+
+\begin{FeatureBox}
+\textbf{Itens frequentes no menu}\par
+\vspace{4pt}
+\pill{Dashboard} \pill{Agendamento} \pill{Relatorios} \pill{Mapa de Problemas} \pill{Materiais} \pill{Cronograma} \pill{Suporte}
+\end{FeatureBox}
+
+\section{Funcionalidades por area}
+
+\subsection{Dashboard}
+Visao consolidada do desempenho da UBS, com indicadores e cards de acesso rapido.
+\begin{itemize}[leftmargin=*]
+  \item Acesse o \textbf{Dashboard} pelo menu superior.
+  \item Revise os indicadores e clique nos cards para abrir atalhos.
+  \item Use esta tela para definir prioridades do dia.
+\end{itemize}
+
+\subsection{Notificacoes \textemdash\ Gestor e Recepcao}
+Centraliza avisos operacionais, solicitacoes e comunicados.
+\begin{itemize}[leftmargin=*]
+  \item Entre em \textbf{Notificacoes} no menu superior.
+  \item Filtre por tipo de aviso e marque como lido apos resolver.
+  \item Use para organizar a fila de demandas.
+\end{itemize}
+
+\subsection{Agendamento}
+Permite criar, visualizar e organizar consultas e atendimentos.
+\begin{itemize}[leftmargin=*]
+  \item Acesse \textbf{Agendamento}.
+  \item Clique em \textbf{Novo agendamento} e preencha paciente, data, horario e profissional.
+  \item Salve e confirme o registro na lista ou no calendario.
+  \item Para bloquear horarios, use \textbf{Bloquear horario} e selecione o periodo.
+\end{itemize}
+
+\subsection{Relatorios situacionais}
+Gera relatorios com dados da UBS, anexos e metadados para acompanhamento tecnico.
+\begin{itemize}[leftmargin=*]
+  \item Acesse \textbf{Relatorios situacionais}.
+  \item Selecione a UBS e o periodo de referencia.
+  \item Preencha os campos e adicione anexos quando solicitado.
+  \item Salve e utilize o relatorio para acompanhamento da gestao.
+\end{itemize}
+
+\subsection{Mapa de problemas e intervencoes}
+Registro estruturado de problemas identificados e das intervencoes planejadas.
+\begin{itemize}[leftmargin=*]
+  \item Acesse \textbf{Mapa de problemas e intervencoes}.
+  \item Cadastre o problema com descricao clara e local.
+  \item Registre a intervencao planejada, responsavel e prazo.
+  \item Atualize o status conforme a execucao evoluir.
+\end{itemize}
+
+\subsection{Materiais educativos}
+Repositorio de materiais com anexos organizados por UBS.
+\begin{itemize}[leftmargin=*]
+  \item Acesse \textbf{Materiais educativos}.
+  \item Clique em \textbf{Novo material} e adicione titulo, descricao e arquivos.
+  \item Classifique por tema para facilitar a busca.
+\end{itemize}
+
+\subsection{Cronograma}
+Planejamento de acoes, com etapas e prazos.
+\begin{itemize}[leftmargin=*]
+  \item Entre em \textbf{Cronograma}.
+  \item Cadastre atividades, prazos e responsaveis.
+  \item Atualize o andamento periodicamente para manter a equipe alinhada.
+\end{itemize}
+
+\subsection{Suporte e feedback}
+Canal de comunicacao para duvidas, melhorias e suporte operacional.
+\begin{itemize}[leftmargin=*]
+  \item Acesse \textbf{Suporte e feedback}.
+  \item Descreva o problema ou sugestao e envie.
+  \item Acompanhe respostas quando disponiveis.
+\end{itemize}
+
+\subsection{Gestor de solicitacoes \textemdash\ Gestor}
+Painel exclusivo para aprovar, recusar ou acompanhar solicitacoes administrativas.
+\begin{itemize}[leftmargin=*]
+  \item Acesse \textbf{Solicitacoes}.
+  \item Analise o pedido e escolha \textbf{Aprovar} ou \textbf{Recusar}.
+  \item Registre observacoes para historico de decisoes.
+\end{itemize}
+
+\subsection{Gerenciar mensagens \textemdash\ Recepcao}
+Organiza mensagens recebidas e garante resposta rapida ao publico-alvo.
+\begin{itemize}[leftmargin=*]
+  \item Acesse \textbf{Mensagens}.
+  \item Classifique por prioridade e responda conforme o protocolo local.
+  \item Marque como resolvida ao concluir o atendimento.
+\end{itemize}
+
+\subsection{Gestao de equipes e microareas \textemdash\ Gestor e Recepcao}
+Controle de equipes, vinculos com microareas e distribuicao de responsabilidades.
+\begin{itemize}[leftmargin=*]
+  \item Acesse \textbf{Gestao de equipes}.
+  \item Cadastre profissionais e vincule a microarea correta.
+  \item Revise periodicamente para manter o mapa atualizado.
+\end{itemize}
+
+\subsection{Setup da UBS \textemdash\ Profissional, Gestor e ACS}
+Fluxo de configuracao inicial da UBS, necessario para liberar o uso da plataforma.
+\begin{itemize}[leftmargin=*]
+  \item Acesse \textbf{Setup da UBS} quando solicitado pelo sistema.
+  \item Preencha identificacao da UBS e dados de contato.
+  \item Salve a configuracao e valide no \textbf{Dashboard}.
+\end{itemize}
+
+\section{Fluxos do dia a dia (passo a passo)}
+
+\subsection{Fluxo 1: Configuracao inicial da UBS}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Passo 1}: faca login com um perfil \pill{PROFISSIONAL}, \pill{GESTOR} ou \pill{ACS}.
+  \item \textbf{Passo 2}: o sistema redireciona para \textbf{Setup da UBS} se ainda nao houver configuracao.
+  \item \textbf{Passo 3}: preencha o nome da UBS, endereco, contatos e dados administrativos.
+  \item \textbf{Passo 4}: revise os dados e clique em \textbf{Salvar}.
+  \item \textbf{Passo 5}: volte ao \textbf{Dashboard} e confirme que os cards aparecem corretamente.
+\end{itemize}
+\textbf{Exemplo}: uma UBS recem-criada cadastra telefone e responsavel tecnico para liberar o acesso dos demais perfis.
+
+\subsection{Fluxo 2: Criar um agendamento}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Passo 1}: acesse \textbf{Agendamento} no menu superior.
+  \item \textbf{Passo 2}: clique em \textbf{Novo agendamento}.
+  \item \textbf{Passo 3}: informe paciente, data, horario, profissional e tipo de atendimento.
+  \item \textbf{Passo 4}: confirme os dados e salve.
+  \item \textbf{Passo 5}: valide se o agendamento aparece na lista e no calendario.
+\end{itemize}
+\textbf{Exemplo}: atendimento de enfermagem agendado para 10/03, 09:30, com profissional Maria Souza.
+
+\subsection{Fluxo 3: Bloquear horarios na agenda}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Passo 1}: em \textbf{Agendamento}, selecione \textbf{Bloquear horario}.
+  \item \textbf{Passo 2}: defina data, hora inicial e hora final.
+  \item \textbf{Passo 3}: informe o motivo do bloqueio (reuniao, treinamento, manutencao).
+  \item \textbf{Passo 4}: salve e confirme o bloqueio no calendario.
+\end{itemize}
+\textbf{Exemplo}: bloqueio das 14:00 as 15:30 para reuniao de equipe.
+
+\subsection{Fluxo 4: Registrar um relatorio situacional}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Passo 1}: acesse \textbf{Relatorios situacionais}.
+  \item \textbf{Passo 2}: selecione a UBS e o periodo (ex.: fevereiro/2026).
+  \item \textbf{Passo 3}: preencha os campos obrigatorios e descreva os principais indicadores.
+  \item \textbf{Passo 4}: anexe documentos e evidencias, se necessario.
+  \item \textbf{Passo 5}: salve e verifique o status do relatorio.
+\end{itemize}
+\textbf{Exemplo}: relatorio mensal com anexos de planilhas e fotos da unidade.
+
+\subsection{Fluxo 5: Mapa de problemas e intervencoes}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Passo 1}: acesse \textbf{Mapa de problemas e intervencoes}.
+  \item \textbf{Passo 2}: clique em \textbf{Novo problema} e descreva a situacao.
+  \item \textbf{Passo 3}: informe local, impacto e prioridade.
+  \item \textbf{Passo 4}: registre a intervencao com responsavel e prazo.
+  \item \textbf{Passo 5}: atualize o status conforme o progresso.
+\end{itemize}
+\textbf{Exemplo}: problema de falta de vacinas com intervencao de reposicao em 7 dias.
+
+\subsection{Fluxo 6: Publicar material educativo}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Passo 1}: acesse \textbf{Materiais educativos}.
+  \item \textbf{Passo 2}: clique em \textbf{Novo material}.
+  \item \textbf{Passo 3}: preencha titulo, descricao e tema.
+  \item \textbf{Passo 4}: anexe arquivos (PDF, imagens ou documentos).
+  \item \textbf{Passo 5}: salve e confirme que o material aparece na lista.
+\end{itemize}
+\textbf{Exemplo}: cartilha de prevencao da dengue para distribuicao na comunidade.
+
+\subsection{Fluxo 7: Atualizar cronograma de acoes}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Passo 1}: acesse \textbf{Cronograma}.
+  \item \textbf{Passo 2}: clique em \textbf{Nova atividade}.
+  \item \textbf{Passo 3}: defina descricao, responsavel e prazo.
+  \item \textbf{Passo 4}: salve e acompanhe o progresso.
+  \item \textbf{Passo 5}: atualize o status semanalmente.
+\end{itemize}
+\textbf{Exemplo}: campanha de vacinacao com inicio em 15/03 e encerramento em 30/03.
+
+\subsection{Fluxo 8: Resolver solicitacoes (Gestor)}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Passo 1}: acesse \textbf{Solicitacoes}.
+  \item \textbf{Passo 2}: abra o pedido e revise os detalhes.
+  \item \textbf{Passo 3}: selecione \textbf{Aprovar} ou \textbf{Recusar}.
+  \item \textbf{Passo 4}: registre observacoes e salve.
+  \item \textbf{Passo 5}: comunique a equipe sobre a decisao.
+\end{itemize}
+\textbf{Exemplo}: aprovacao de compra de materiais para sala de curativos.
+
+\subsection{Fluxo 9: Atendimento de mensagens (Recepcao)}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Passo 1}: acesse \textbf{Mensagens}.
+  \item \textbf{Passo 2}: leia a mensagem e categorize por prioridade.
+  \item \textbf{Passo 3}: responda seguindo o protocolo local.
+  \item \textbf{Passo 4}: marque como resolvida.
+\end{itemize}
+\textbf{Exemplo}: responder solicitacao de reagendamento enviada por um usuario.
+
+\subsection{Fluxo 10: Enviar suporte e feedback}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Passo 1}: acesse \textbf{Suporte e feedback}.
+  \item \textbf{Passo 2}: descreva o problema ou sugestao com detalhes.
+  \item \textbf{Passo 3}: envie e aguarde retorno.
+  \item \textbf{Passo 4}: acompanhe a resposta e confirme a solucao.
+\end{itemize}
+\textbf{Exemplo}: reportar erro ao anexar arquivos em relatorios.
+
+\section{Boas praticas}
+\begin{itemize}[leftmargin=*]
+  \item Mantenha o cadastro da UBS atualizado para garantir relatorios coerentes.
+  \item Revise o cronograma semanalmente com a equipe.
+  \item Utilize materiais educativos padronizados para consistencia nas orientacoes.
+  \item Registre problemas e intervencoes logo apos as visitas de campo.
+\end{itemize}
+
+\section{Seguranca e dados}
+A plataforma utiliza autenticacao por token e controle de acesso baseado em perfil. Nunca compartilhe credenciais e encerre a sessao ao concluir o uso.
+
+\section{Suporte}
+Para suporte tecnico, utilize o modulo \textbf{Suporte e feedback}. Em emergencias operacionais, acione a gestao local.
+
+\vfill
+\begin{center}
+  {\small \color{Slate}Documento interno da Plataforma UBS.}\par
+\end{center}
+
+\end{document}
