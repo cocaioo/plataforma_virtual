@@ -81,7 +81,10 @@ export const NotificationsProvider = ({ children }) => {
     setPromptState(null);
   };
 
-  const contextValue = useMemo(() => ({ notify, confirm, prompt }), [notify, confirm, prompt]);
+  const contextValue = useMemo(
+    () => ({ notify, dismiss: removeToast, confirm, prompt }),
+    [notify, removeToast, confirm, prompt],
+  );
 
   return (
     <NotificationsContext.Provider value={contextValue}>

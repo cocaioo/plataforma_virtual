@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useNotifications } from './ui/Notifications';
 import {
   XMarkIcon,
   BuildingOffice2Icon,
@@ -252,28 +253,37 @@ const RelatorioPublicoDashboard = ({ isOpen, onClose, reportId }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [exporting, setExporting] = useState(false);
+  const { notify, dismiss } = useNotifications();
 
-  const handleExportPdf = () => {
+  const handleExportPdf = async () => {
     if (!reportId || exporting) return;
     setExporting(true);
-    const token = localStorage.getItem('token');
-    axios
-      .get(`/api/ubs/${reportId}/export/pdf`, {
+    const loadingToastId = notify({
+      type: 'info',
+      message: 'Gerando o PDF do relatório... isso pode levar alguns segundos.',
+      duration: 0,
+    });
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`/api/ubs/${reportId}/export/pdf`, {
         headers: { Authorization: `Bearer ${token}` },
         responseType: 'blob',
-      })
-      .then((res) => {
-        const url = window.URL.createObjectURL(new Blob([res.data]));
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', `relatorio_${reportId}.pdf`);
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        window.URL.revokeObjectURL(url);
-      })
-      .catch(() => alert('Erro ao exportar o relatório em PDF. Tente novamente.'))
-      .finally(() => setExporting(false));
+      });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `relatorio_${reportId}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      notify({ type: 'success', message: 'PDF gerado. O download foi iniciado.' });
+    } catch (err) {
+      notify({ type: 'error', message: 'Erro ao exportar o relatório em PDF. Tente novamente.' });
+    } finally {
+      dismiss(loadingToastId);
+      setExporting(false);
+    }
   };
 
   useEffect(() => {

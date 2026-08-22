@@ -1124,8 +1124,9 @@ const FullReportModal = ({ isOpen, onClose, reportId, onRefresh, ubsInfo }) => {
 // --- PÁGINA DE LISTAGEM ---
 
 const RelatoriosSituacionais = () => {
-    const { notify, confirm } = useNotifications();
+    const { notify, dismiss, confirm } = useNotifications();
     const [reports, setReports] = useState([]);
+  const [exportingId, setExportingId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
@@ -1172,15 +1173,35 @@ const RelatoriosSituacionais = () => {
         }
   };
 
-  const handleExport = (id) => {
-    const token = localStorage.getItem('token');
-    axios.get(`/api/ubs/${id}/export/pdf`, { headers: { Authorization: `Bearer ${token}` }, responseType: 'blob' })
-    .then(res => {
-        const url = window.URL.createObjectURL(new Blob([res.data]));
-        const link = document.createElement('a'); link.href = url;
-        link.setAttribute('download', `relatorio_${id}.pdf`);
-        document.body.appendChild(link); link.click();
-        }).catch(() => notify({ type: 'error', message: 'Erro ao exportar o relatório.' }));
+  const handleExport = async (id) => {
+    if (exportingId) return;
+    setExportingId(id);
+    const loadingToastId = notify({
+      type: 'info',
+      message: 'Gerando o PDF do relatório... isso pode levar alguns segundos.',
+      duration: 0,
+    });
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`/api/ubs/${id}/export/pdf`, {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: 'blob',
+      });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `relatorio_${id}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      notify({ type: 'success', message: 'PDF gerado. O download foi iniciado.' });
+    } catch (err) {
+      notify({ type: 'error', message: 'Erro ao exportar o relatório.' });
+    } finally {
+      dismiss(loadingToastId);
+      setExportingId(null);
+    }
   };
 
   return (
@@ -1315,11 +1336,12 @@ const RelatoriosSituacionais = () => {
                                                         </button>
                                                         <button
                                                             onClick={() => handleExport(report.id)}
-                                                            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 dark:border-slate-600 text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 text-sm font-semibold transition-colors"
+                                                            disabled={exportingId !== null}
+                                                            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 dark:border-slate-600 text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 text-sm font-semibold transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                                                             title="Exportar PDF"
                                                         >
                                                             <DocumentArrowDownIcon className="w-4 h-4" />
-                                                            PDF
+                                                            {exportingId === report.id ? 'Gerando...' : 'PDF'}
                                                         </button>
                                                     </>
                                                 ) : (
@@ -1333,8 +1355,9 @@ const RelatoriosSituacionais = () => {
                                                         </button>
                                                         <button
                                                             onClick={() => handleExport(report.id)}
-                                                            className="p-2 text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700 rounded-lg transition-colors border border-transparent hover:border-gray-200 dark:hover:border-slate-600"
-                                                            title="Exportar PDF"
+                                                            disabled={exportingId !== null}
+                                                            className="p-2 text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700 rounded-lg transition-colors border border-transparent hover:border-gray-200 dark:hover:border-slate-600 disabled:opacity-60 disabled:cursor-not-allowed"
+                                                            title={exportingId === report.id ? 'Gerando PDF...' : 'Exportar PDF'}
                                                         >
                                                             <DocumentArrowDownIcon className="w-5 h-5" />
                                                         </button>
